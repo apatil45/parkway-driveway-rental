@@ -7,9 +7,11 @@ import EnhancedMapDisplay from './EnhancedMapDisplay';
 import AdvancedSearch from './AdvancedSearch';
 import SearchResults from './SearchResults';
 import DashboardNav from './DashboardNav';
+import SkeletonLoader from './SkeletonLoader';
 import { toast } from 'react-toastify';
 import { useSmartNotification } from '../hooks/useNotificationQueue';
 import { useSocket } from '../hooks/useSocket';
+import cachedApi from '../services/cachedApi';
 import Button from './Button';
 import './DriverDashboard.css';
 
@@ -56,6 +58,7 @@ const DriverDashboard: React.FC = () => {
   });
   const [addressSearch, setAddressSearch] = useState<string>('');
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingDriveways, setIsLoadingDriveways] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | undefined>(undefined);
   
@@ -184,21 +187,23 @@ const DriverDashboard: React.FC = () => {
 
     try {
       setIsSearching(true);
+      setIsLoadingDriveways(true);
       
-      const config = {
-        headers: {
-        },
-      };
-      const queryParams = new URLSearchParams({
+      const queryParams = {
         latitude: latitude.toString(),
         longitude: longitude.toString(),
         radius: radius.toString(), 
         date: searchParams.date,
         startTime: searchParams.startTime,
         endTime: searchParams.endTime,
-      }).toString();
+      };
 
-      const res = await axios.get<Driveway[]>(`/api/driveways/search?${queryParams}`, config);
+      // Use cached API with 2-minute TTL for search results
+      const res = await cachedApi.get<Driveway[]>(`/api/driveways/search`, {
+        params: queryParams,
+        cache: true,
+        cacheTTL: 2 * 60 * 1000 // 2 minutes cache
+      });
       
       // Filter results by car size compatibility
       const filteredResults = res.data.filter(driveway => {
@@ -220,6 +225,7 @@ const DriverDashboard: React.FC = () => {
       showError(`Failed to search driveways: ${err.response?.data?.msg || 'Server Error'}`);
     } finally {
       setIsSearching(false);
+      setIsLoadingDriveways(false);
     }
   };
 
@@ -945,7 +951,13 @@ const DriverDashboard: React.FC = () => {
 
       {(searchResults.length > 0 || currentSection === 'results') && (
         <div id="results-section">
-          <SearchResults
+          {isLoadingDriveways ? (
+            <div className="search-results-loading">
+              <h3>Finding driveways...</h3>
+              <SkeletonLoader type="card" count={3} />
+            </div>
+          ) : (
+            <SearchResults
             driveways={searchResults.map(driveway => ({
               id: driveway._id,
               title: driveway.address,
@@ -975,6 +987,7 @@ const DriverDashboard: React.FC = () => {
             onBook={handleBookDriveway}
             onViewDetails={handleViewDetails}
           />
+          )}
         </div>
       )}
 

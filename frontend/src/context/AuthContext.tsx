@@ -37,7 +37,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Token refresh interval
   const TOKEN_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
+  const USER_VALIDATION_INTERVAL = 5 * 60 * 1000; // 5 minutes (reduced from frequent calls)
   const MAX_RETRY_COUNT = 3;
+  
+  // Cache for user data to reduce API calls
+  const [lastUserValidation, setLastUserValidation] = useState<number>(0);
 
   // This useEffect runs once on mount to load the user if a token exists
   useEffect(() => {
@@ -92,7 +96,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const refreshInterval = setInterval(async () => {
       if (user && localStorage.getItem('rememberMe') === 'true') {
         try {
+          // Only refresh token, don't validate user unless needed
           await refreshToken();
+          console.log('AuthContext - Token refreshed successfully');
         } catch (err) {
           console.error("Token refresh failed:", err);
           clearAuthData();
@@ -190,26 +196,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const retryAuth = () => {
+  // Cached user validation to reduce API calls
+  const validateUserCached = async (): Promise<boolean> => {
+    const now = Date.now();
+    const timeSinceLastValidation = now - lastUserValidation;
+    
+    // Only validate if enough time has passed
+    if (timeSinceLastValidation < USER_VALIDATION_INTERVAL && user) {
+      console.log('AuthContext - Using cached user data, skipping validation');
+      return true;
+    }
+
+    try {
+      const res = await axios.get('/api/auth/user');
+      setUser(res.data);
+      setLastUserValidation(now);
+      console.log('AuthContext - User validated and cached');
+      return true;
+    } catch (err: any) {
+      console.error("User validation failed:", err);
+      if (err.response?.status === 401) {
+        clearAuthData();
+      }
+      return false;
+    }
+  };
+
+  const retryAuth = async () => {
     console.log("AuthContext - Manual auth retry triggered");
     setRetryCount(0);
     setIsLoading(true);
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['x-auth-token'] = token;
-      axios.get('/api/auth/user')
-        .then(res => {
-          console.log('AuthContext - Manual retry successful:', res.data);
-          setUser(res.data);
-          setIsLoading(false);
-        })
-        .catch(err => {
-          console.error('AuthContext - Manual retry failed:', err);
-          if (err.response?.status === 401) {
-            clearAuthData();
-          }
-          setIsLoading(false);
-        });
+      const success = await validateUserCached();
+      if (success) {
+        console.log('AuthContext - Manual retry successful');
+      } else {
+        console.log('AuthContext - Manual retry failed');
+      }
+      setIsLoading(false);
     } else {
       setIsLoading(false);
     }
