@@ -98,4 +98,21 @@ router.get('/user', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/auth/refresh
+// @desc    Refresh JWT token
+// @access  Private
+router.post('/refresh', auth, async (req, res) => {
+  try {
+    // Generate new token with same user data
+    const payload = { user: { id: req.user.id } };
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+      if (err) throw err;
+      res.json({ token });
+    });
+  } catch (err) {
+    console.error('Token refresh error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 module.exports = router;

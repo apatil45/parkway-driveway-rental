@@ -385,4 +385,67 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/driveways/stats
+// @desc    Get driveway statistics for owner
+// @access  Private (Owner only)
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const totalDriveways = await Driveway.count({
+      where: { owner: userId }
+    });
+    
+    const availableDriveways = await Driveway.count({
+      where: { owner: userId, isAvailable: true }
+    });
+    
+    const totalBookings = await Driveway.count({
+      where: { owner: userId },
+      include: [{
+        model: require('../models/BookingPG'),
+        as: 'bookings',
+        required: true
+      }]
+    });
+    
+    res.json({
+      totalDriveways,
+      availableDriveways,
+      totalBookings,
+      unavailableDriveways: totalDriveways - availableDriveways
+    });
+  } catch (err) {
+    console.error('Get Driveway Stats Error:', err.message);
+    res.status(500).json({ error: 'Server error', message: 'Failed to fetch driveway statistics' });
+  }
+});
+
+// @route   PUT /api/driveways/:id/availability
+// @desc    Toggle driveway availability
+// @access  Private (Owner only)
+router.put('/:id/availability', auth, async (req, res) => {
+  try {
+    const driveway = await Driveway.findByPk(req.params.id);
+    
+    if (!driveway) {
+      return res.status(404).json({ error: 'Driveway not found' });
+    }
+    
+    if (driveway.owner !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    
+    await driveway.update({ isAvailable: !driveway.isAvailable });
+    
+    res.json({ 
+      message: `Driveway ${driveway.isAvailable ? 'made available' : 'made unavailable'}`,
+      isAvailable: driveway.isAvailable 
+    });
+  } catch (err) {
+    console.error('Toggle Availability Error:', err.message);
+    res.status(500).json({ error: 'Server error', message: 'Failed to toggle availability' });
+  }
+});
+
 module.exports = router;

@@ -276,4 +276,104 @@ router.get('/driver/:driver_id', auth, isDriver, async (req, res) => {
   }
 });
 
+// @route   GET /api/bookings/owner/:owner_id
+// @desc    Get all bookings for a driveway owner
+// @access  Private (Owner only)
+router.get('/owner/:owner_id', auth, async (req, res) => {
+  try {
+    const ownerId = req.params.owner_id;
+    
+    // Verify the requesting user is the owner
+    if (req.user.id !== ownerId) {
+      return res.status(403).json({ error: 'Not authorized to view these bookings' });
+    }
+    
+    const bookings = await Booking.findAll({
+      where: {},
+      include: [
+        {
+          model: Driveway,
+          as: 'drivewayInfo',
+          where: { owner: ownerId },
+          attributes: ['id', 'address', 'description']
+        },
+        {
+          model: User,
+          as: 'driverInfo',
+          attributes: ['id', 'name', 'email']
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    
+    res.json(bookings);
+  } catch (err) {
+    console.error('Get Owner Bookings Error:', err.message);
+    res.status(500).json({ error: 'Server error', message: 'Failed to fetch owner bookings' });
+  }
+});
+
+// @route   GET /api/bookings/stats
+// @desc    Get booking statistics for user
+// @access  Private
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRoles = req.user.roles || [];
+    
+    let stats = {};
+    
+    if (userRoles.includes('driver')) {
+      const driverBookings = await Booking.count({
+        where: { driver: userId }
+      });
+      
+      const confirmedBookings = await Booking.count({
+        where: { driver: userId, status: 'confirmed' }
+      });
+      
+      const pendingBookings = await Booking.count({
+        where: { driver: userId, status: 'pending' }
+      });
+      
+      stats.driver = {
+        totalBookings: driverBookings,
+        confirmedBookings,
+        pendingBookings,
+        cancelledBookings: driverBookings - confirmedBookings - pendingBookings
+      };
+    }
+    
+    if (userRoles.includes('owner')) {
+      const ownerBookings = await Booking.count({
+        include: [{
+          model: Driveway,
+          as: 'drivewayInfo',
+          where: { owner: userId }
+        }]
+      });
+      
+      const confirmedOwnerBookings = await Booking.count({
+        where: { status: 'confirmed' },
+        include: [{
+          model: Driveway,
+          as: 'drivewayInfo',
+          where: { owner: userId }
+        }]
+      });
+      
+      stats.owner = {
+        totalBookings: ownerBookings,
+        confirmedBookings: confirmedOwnerBookings,
+        pendingBookings: ownerBookings - confirmedOwnerBookings
+      };
+    }
+    
+    res.json(stats);
+  } catch (err) {
+    console.error('Get Booking Stats Error:', err.message);
+    res.status(500).json({ error: 'Server error', message: 'Failed to fetch booking statistics' });
+  }
+});
+
 module.exports = router;

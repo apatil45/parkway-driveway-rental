@@ -62,7 +62,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         },
       };
 
-      const response = await axios.post('/api/upload/multiple', formData, config);
+      const response = await axios.post('/api/upload/images', formData, config);
       
       if (response.data.success) {
         const newImageUrls = response.data.images.map((img: UploadedImage) => img.imageUrl);

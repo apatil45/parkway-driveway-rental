@@ -110,7 +110,7 @@ const OwnerDashboard: React.FC = () => {
       };
 
       if (editingDriveway) {
-        await cachedApi.put(`/api/driveways/${editingDriveway._id}`, drivewayData);
+        await cachedApi.put(`/api/driveways/${editingDriveway.id}`, drivewayData);
         toast.success('Driveway updated successfully!');
       } else {
         await cachedApi.post('/api/driveways', drivewayData);
