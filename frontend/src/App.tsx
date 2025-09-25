@@ -13,13 +13,15 @@ import AuthDebug from "./components/AuthDebug"; // Import the auth debug compone
 import ConnectionTest from "./components/ConnectionTest"; // Import the connection test component
 import PWAInstallPrompt from './components/PWAInstallPrompt'; // Import PWA install prompt
 import { AuthProvider } from './context/AuthContext';
+import { ErrorProvider } from './context/ErrorContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <AuthProvider>
+      <ErrorProvider>
+        <AuthProvider>
         <Router>
           <EnhancedNav />
           {/* Debug components - uncomment if needed for troubleshooting */}
@@ -40,9 +42,10 @@ const App: React.FC = () => {
             </Routes>
           </div>
         </Router>
-        <ToastContainer position="bottom-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-        <PWAInstallPrompt />
-      </AuthProvider>
+          <ToastContainer position="bottom-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+          <PWAInstallPrompt />
+        </AuthProvider>
+      </ErrorProvider>
     </ErrorBoundary>
   );
 };

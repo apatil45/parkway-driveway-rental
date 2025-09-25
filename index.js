@@ -117,6 +117,7 @@ app.use('/api/auth', require('./routes/authPG'));
 app.use('/api/payments', require('./routes/paymentsPG'));
 app.use('/api/geocoding', require('./routes/geocoding'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/errors', require('./routes/errors')); // Add error reporting route
 
 // Global error handling middleware
 app.use((err, req, res, next) => {

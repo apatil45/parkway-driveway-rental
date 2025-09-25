@@ -138,10 +138,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       setIsLoading(false);
-      return userRes.data.role;
+      return userRes.data.roles?.[0] || 'driver'; // Return first role instead of single role
     } catch (err: any) {
       console.error("AuthContext - Login error:", err.response?.data || err.message);
-      clearAuthData();
+      // Don't clear auth data on login failure - let other users stay logged in
       setIsLoading(false);
       throw err;
     }
@@ -163,7 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setupTokenRefresh();
       
       setIsLoading(false);
-      return userRes.data.role;
+      return userRes.data.roles?.[0] || 'driver'; // Return first role instead of single role
     } catch (err: any) {
       console.error("AuthContext - Register error:", err.response?.data || err.message);
       clearAuthData();
