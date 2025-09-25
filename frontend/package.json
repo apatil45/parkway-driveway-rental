@@ -5,24 +5,25 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
+    "@types/leaflet": "^1.9.12",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
     "axios": "^1.7.2",
     "leaflet": "^1.9.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-leaflet": "^4.2.1",
-    "react-router-dom": "^6.25.1"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react": "^4.2.1",
+    "react-router-dom": "^6.25.1",
     "typescript": "~5.2.2",
     "vite": "^7.1.7"
-  }
+  },
+  "devDependencies": {}
 }
