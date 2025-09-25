@@ -7,7 +7,7 @@ import EnhancedMapDisplay from './EnhancedMapDisplay';
 import AdvancedSearch from './AdvancedSearch';
 import SearchResults from './SearchResults';
 import DashboardNav from './DashboardNav';
-import SkeletonLoader from './SkeletonLoader';
+import { SkeletonSearchResults } from './EnhancedSkeletonLoader';
 import BookingDurationModal from './BookingDurationModal'; // Import new booking modal
 import { notificationService } from '../services/notificationService';
 import { useSocket } from '../hooks/useSocket';
@@ -100,9 +100,9 @@ const DriverDashboard: React.FC = () => {
   
   // Clear existing toasts to prevent duplicates
   const clearExistingToasts = useCallback(() => {
-    // Clear any existing toast notifications
-    clearAll();
-  }, [clearAll]);
+    // Clear any existing notifications
+    notificationService.clearAllNotifications();
+  }, []);
 
   // Get driver's current location
   const getDriverLocation = useCallback(async () => {
@@ -267,7 +267,7 @@ const DriverDashboard: React.FC = () => {
         latitude = geocodeRes.data.latitude;
         longitude = geocodeRes.data.longitude;
       } catch (err: any) {
-        toast.error(`Failed to geocode address: ${err.response?.data?.msg || 'Server Error'}`);
+        showError(`Failed to geocode address: ${err.response?.data?.msg || 'Server Error'}`);
         return;
       }
     } else {
@@ -276,7 +276,7 @@ const DriverDashboard: React.FC = () => {
     }
 
     if (latitude === undefined || longitude === undefined) {
-      toast.error('Could not determine location for search. Please try again.');
+      showError('Could not determine location for search. Please try again.');
       return;
     }
 
@@ -332,7 +332,7 @@ const DriverDashboard: React.FC = () => {
 
   const handleAdvancedSearch = async (filters: any) => {
     if (!user) {
-      toast.error('User not authenticated. Please log in.');
+      showError('User not authenticated. Please log in.');
       return;
     }
 
@@ -363,7 +363,7 @@ const DriverDashboard: React.FC = () => {
           latitude = geocodeRes.data.latitude;
           longitude = geocodeRes.data.longitude;
         } catch (err: any) {
-          toast.error(`Failed to geocode address: ${err.response?.data?.msg || 'Server Error'}`);
+          showError(`Failed to geocode address: ${err.response?.data?.msg || 'Server Error'}`);
           return;
         }
       } else {
@@ -372,7 +372,7 @@ const DriverDashboard: React.FC = () => {
       }
 
       if (latitude === undefined || longitude === undefined) {
-        toast.error('Could not determine location for search. Please try again.');
+        showError('Could not determine location for search. Please try again.');
         return;
       }
 
@@ -497,12 +497,12 @@ const DriverDashboard: React.FC = () => {
 
   const handleViewDetails = (driveway: any) => {
     // Show driveway details in a modal or navigate to details page
-    toast.info(`Viewing details for ${driveway.title}`);
+    showInfo(`Viewing details for ${driveway.title}`);
   };
 
   const handleMapDrivewayClick = async (driveway: any, selectedDate: string, selectedStartTime: string, selectedEndTime: string) => {
     if (!user) {
-      toast.error('User not authenticated. Please log in.');
+      showError('User not authenticated. Please log in.');
       return;
     }
 
@@ -517,7 +517,7 @@ const DriverDashboard: React.FC = () => {
     });
 
     if (!matchingAvailability) {
-      toast.error('Selected time slot is not available or has no price defined.');
+      showError('Selected time slot is not available or has no price defined.');
       return;
     }
 
@@ -531,7 +531,7 @@ const DriverDashboard: React.FC = () => {
     const endDateTime = new Date(endTimeString);
 
     if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-      toast.error('Invalid date or time selected. Please ensure the date and time are valid.');
+      showError('Invalid date or time selected. Please ensure the date and time are valid.');
       return;
     }
 
@@ -539,7 +539,7 @@ const DriverDashboard: React.FC = () => {
     const totalPrice = pricePerHour * durationHours;
 
     if (isNaN(totalPrice) || totalPrice <= 0) {
-      toast.error('Calculated total price is invalid. Please check the selected times and driveway price.');
+      showError('Calculated total price is invalid. Please check the selected times and driveway price.');
       return;
     }
 
@@ -567,7 +567,7 @@ const DriverDashboard: React.FC = () => {
       const res = await axios.get<Booking[]>(`/api/bookings/driver/${user.id}`, config);
       setDriverBookings(res.data);
     } catch (err) {
-      toast.error('Failed to fetch your bookings.');
+      showError('Failed to fetch your bookings.');
     }
   };
 
@@ -610,7 +610,7 @@ const DriverDashboard: React.FC = () => {
 
   const initiateBooking = async (driveway: Driveway, selectedDate: string, selectedStartTime: string, selectedEndTime: string, totalPrice: number) => {
     if (!user) {
-      toast.error('User not authenticated. Please log in.');
+      showError('User not authenticated. Please log in.');
       return;
     }
 
@@ -622,12 +622,12 @@ const DriverDashboard: React.FC = () => {
     const endDateTime = new Date(endTimeString);
 
     if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-      toast.error('Invalid date or time selected. Please ensure the date and time are valid.');
+      showError('Invalid date or time selected. Please ensure the date and time are valid.');
       return;
     }
 
     if (isNaN(totalPrice) || totalPrice <= 0) {
-      toast.error('Calculated total price is invalid. Please check the selected times and driveway price.');
+      showError('Calculated total price is invalid. Please check the selected times and driveway price.');
       return;
     }
 
@@ -662,7 +662,7 @@ const DriverDashboard: React.FC = () => {
         scrollToSection('payment-section');
       }, 300);
     } catch (err: any) {
-      toast.error(`Failed to initiate booking: ${err.response?.data?.msg || 'Server Error'}`);
+      showError(`Failed to initiate booking: ${err.response?.data?.msg || 'Server Error'}`);
     }
   };
 
@@ -1100,7 +1100,7 @@ const DriverDashboard: React.FC = () => {
           {isLoadingDriveways ? (
             <div className="search-results-loading">
               <h3>Finding driveways...</h3>
-              <SkeletonLoader type="card" count={3} />
+              <SkeletonSearchResults count={3} />
             </div>
           ) : (
             <SearchResults
@@ -1216,7 +1216,7 @@ const DriverDashboard: React.FC = () => {
                   const slot = availableSlots[0];
                   handleMapDrivewayClick(driveway, slot.date, slot.startTime, slot.endTime);
                 } else {
-                  toast.warn('No available slots found for the selected time period.');
+                  showWarning('No available slots found for the selected time period.');
                 }
               }}
             />

@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { useSmartNotification } from '../hooks/useNotificationQueue';
+import { notificationService } from './notificationService';
 
 interface NotificationData {
   id: string;

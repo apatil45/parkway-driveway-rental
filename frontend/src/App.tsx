@@ -9,8 +9,9 @@ import ErrorBoundary from './components/ErrorBoundary'; // Import the ErrorBound
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PrivateRoute from './components/PrivateRoute';
 import EnhancedNav from "./components/EnhancedNav"; // Import the enhanced navigation component
-import AuthDebug from "./components/AuthDebug"; // Import the auth debug component
-import ConnectionTest from "./components/ConnectionTest"; // Import the connection test component
+// Debug components - only imported when needed
+// import AuthDebug from "./components/dev/AuthDebug";
+// import ConnectionTest from "./components/dev/ConnectionTest";
 import PWAInstallPrompt from './components/PWAInstallPrompt'; // Import PWA install prompt
 import { AuthProvider } from './context/AuthContext';
 import { ErrorProvider } from './context/ErrorContext';

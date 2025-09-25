@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import socketService from '../services/socketService';
-import { useSmartNotification } from './useNotificationQueue';
+import { notificationService } from '../services/notificationService';
 
 interface NotificationData {
   id: string;
@@ -40,7 +40,7 @@ export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [messages, setMessages] = useState<MessageData[]>([]);
-  const { success: showSuccess, error: showError, info: showInfo } = useSmartNotification();
+  // Use the new professional notification service
   
   const notificationHandlersRef = useRef<(() => void)[]>([]);
   const messageHandlersRef = useRef<(() => void)[]>([]);
@@ -76,9 +76,9 @@ export const useSocket = () => {
     connectionHandlerRef.current = socketService.onConnection((connected) => {
       setIsConnected(connected);
       if (connected) {
-        showInfo('Connected to real-time updates');
+        notificationService.showSystemInfo('Connected to real-time updates');
       } else {
-        showError('Disconnected from real-time updates');
+        notificationService.showSystemWarning('Disconnected from real-time updates');
       }
     });
 
@@ -87,7 +87,7 @@ export const useSocket = () => {
         connectionHandlerRef.current();
       }
     };
-  }, [showInfo, showError]);
+  }, []);
 
   // Setup notification handler
   useEffect(() => {
@@ -97,28 +97,38 @@ export const useSocket = () => {
       // Show toast notification based on type
       switch (notification.type) {
         case 'booking_created':
-          showSuccess(notification.message);
+          notificationService.showBookingSuccess(notification.message);
           break;
         case 'booking_confirmed':
-          showSuccess(notification.message);
+          notificationService.showBookingSuccess(notification.message);
           break;
         case 'booking_cancelled':
-          showError(notification.message);
+          notificationService.showBookingError(notification.message);
           break;
         case 'new_message':
-          showInfo(notification.message);
+          notificationService.showNotification({
+            type: 'info',
+            title: 'New Message',
+            message: notification.message,
+            context: 'system'
+          });
           break;
         case 'availability_update':
-          showInfo(notification.message);
+          notificationService.showNotification({
+            type: 'info',
+            title: 'Availability Update',
+            message: notification.message,
+            context: 'system'
+          });
           break;
         default:
-          showInfo(notification.message);
+          notificationService.showSystemInfo(notification.message);
       }
     });
 
     notificationHandlersRef.current.push(cleanup);
     return cleanup;
-  }, [showSuccess, showError, showInfo]);
+  }, []);
 
   // Setup message handler
   useEffect(() => {
@@ -138,20 +148,20 @@ export const useSocket = () => {
       
       switch (update.type) {
         case 'status_change':
-          showInfo(`Booking ${update.bookingId} status updated`);
+          notificationService.showBookingUpdate(`Booking ${update.bookingId} status updated`);
           break;
         case 'payment_update':
-          showSuccess(`Payment updated for booking ${update.bookingId}`);
+          notificationService.showPaymentSuccess(`Payment updated for booking ${update.bookingId}`);
           break;
         case 'time_change':
-          showInfo(`Time changed for booking ${update.bookingId}`);
+          notificationService.showBookingUpdate(`Time changed for booking ${update.bookingId}`);
           break;
       }
     });
 
     bookingUpdateHandlersRef.current.push(cleanup);
     return cleanup;
-  }, [showSuccess, showInfo]);
+  }, []);
 
   // Setup availability update handler
   useEffect(() => {
@@ -161,20 +171,20 @@ export const useSocket = () => {
       
       switch (update.type) {
         case 'slot_added':
-          showInfo(`New availability added to driveway ${update.drivewayId}`);
+          notificationService.showSystemInfo(`New availability added to driveway ${update.drivewayId}`);
           break;
         case 'slot_removed':
-          showInfo(`Availability removed from driveway ${update.drivewayId}`);
+          notificationService.showSystemInfo(`Availability removed from driveway ${update.drivewayId}`);
           break;
         case 'price_changed':
-          showInfo(`Price updated for driveway ${update.drivewayId}`);
+          notificationService.showSystemInfo(`Price updated for driveway ${update.drivewayId}`);
           break;
       }
     });
 
     availabilityUpdateHandlersRef.current.push(cleanup);
     return cleanup;
-  }, [showInfo]);
+  }, []);
 
   // Public methods
   const joinBookingRoom = (bookingId: string) => {
