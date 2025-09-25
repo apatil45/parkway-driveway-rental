@@ -1,11 +1,11 @@
 # 🚗 Parkway.com - Premium Driveway Rental Platform
 
-A modern, full-stack web application for renting and listing private driveway parking spaces. Built with React, Node.js, and MongoDB.
+A modern, full-stack web application for renting and listing private driveway parking spaces. Built with React, Node.js, and PostgreSQL.
 
 ![Parkway.com](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 ![React](https://img.shields.io/badge/Frontend-React%2018-blue)
 ![Node.js](https://img.shields.io/badge/Backend-Node.js-green)
-![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue)
 
 ## ✨ Features
 
@@ -44,7 +44,7 @@ A modern, full-stack web application for renting and listing private driveway pa
 
 ### Backend
 - **Node.js** with Express.js
-- **MongoDB** with Mongoose ODM
+- **PostgreSQL** with Sequelize ORM
 - **JWT** for authentication
 - **bcryptjs** for password hashing
 - **Stripe** for payment processing
@@ -55,7 +55,7 @@ A modern, full-stack web application for renting and listing private driveway pa
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- MongoDB (local or Atlas)
+- PostgreSQL (local or cloud)
 - Stripe account for payments
 
 ### 1. Clone the repository
@@ -79,8 +79,8 @@ cd ..
 Create a `.env` file in the root directory:
 
 ```env
-# MongoDB Connection
-MONGO_URI=mongodb://localhost:27017/driveway-rental
+# PostgreSQL Connection
+DATABASE_URL=postgresql://username:password@localhost:5432/driveway_rental
 
 # JWT Secret
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
@@ -121,7 +121,7 @@ parkway-driveway-rental/
 │   ├── public/              # Static assets
 │   └── package.json
 ├── routes/                  # Express API routes
-├── models/                  # MongoDB schemas
+├── models/                  # PostgreSQL models
 ├── middleware/              # Express middleware
 ├── utils/                   # Utility functions
 ├── index.js                 # Server entry point
@@ -149,7 +149,7 @@ parkway-driveway-rental/
 - **JWT Authentication** with secure token management
 - **Password Hashing** using bcryptjs
 - **Input Sanitization** to prevent XSS attacks
-- **MongoDB Injection Protection** with express-mongo-sanitize
+- **SQL Injection Protection** with Sequelize ORM
 - **Rate Limiting** to prevent abuse
 - **HTTPS Enforcement** in production
 
@@ -178,8 +178,8 @@ The frontend is optimized for deployment on Vercel with automatic builds and dep
 ### Backend (Railway/Heroku)
 The backend can be deployed to Railway, Heroku, or any Node.js hosting platform.
 
-### Database (MongoDB Atlas)
-Recommended to use MongoDB Atlas for production database hosting.
+### Database (PostgreSQL)
+Recommended to use PostgreSQL cloud hosting (Render, Heroku, AWS RDS) for production database hosting.
 
 ## 🤝 Contributing
 
@@ -197,7 +197,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **React Team** for the amazing framework
 - **Stripe** for secure payment processing
-- **MongoDB** for flexible database solutions
+- **PostgreSQL** for robust relational database solutions
 - **Leaflet** for interactive mapping
 - **Vercel** for seamless deployment
 

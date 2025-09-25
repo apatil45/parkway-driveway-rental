@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const { sequelize, testConnection } = require('./models/database'); // PostgreSQL connection
 const { setupAssociations } = require('./models/associations');
 require('dotenv').config();
@@ -12,9 +11,9 @@ const startServer = async () => {
   try {
     console.log('🚀 Starting Parkway.com server...');
     
-    // Database Connection
+    // Database Connection - PostgreSQL only
     if (process.env.DATABASE_URL) {
-      console.log('🔗 Connecting to PostgreSQL (Production)...');
+      console.log('🔗 Connecting to PostgreSQL...');
       const connected = await testConnection();
       if (!connected) {
         throw new Error('Failed to connect to PostgreSQL after retries');
@@ -31,16 +30,9 @@ const startServer = async () => {
       });
       console.log('✅ Database models synchronized with correct schema');
       
-    } else if (process.env.MONGO_URI) {
-      console.log('🔗 Connecting to MongoDB (Development)...');
-      await mongoose.connect(process.env.MONGO_URI, { 
-        useNewUrlParser: true, 
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000
-      });
-      console.log('✅ MongoDB connected');
     } else {
-      console.log('⚠️  No database connection configured. Please set DATABASE_URL or MONGO_URI.');
+      console.log('⚠️  No database connection configured. Please set DATABASE_URL.');
+      console.log('💡 This application requires PostgreSQL. MongoDB support has been removed.');
     }
 
   } catch (error) {
@@ -109,12 +101,12 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static('public'));
 }
 
-// Define Routes (use PostgreSQL routes in production)
-app.use('/api/driveways', process.env.DATABASE_URL ? require('./routes/drivewaysPG') : require('./routes/driveways'));
-app.use('/api/bookings', require('./routes/bookings'));
-app.use('/api/auth', process.env.DATABASE_URL ? require('./routes/authPG') : require('./routes/auth'));
-app.use('/api/payments', require('./routes/payments'));
-app.use('/api/geocoding', require('./routes/geocoding')); // New geocoding route
+// Define Routes - PostgreSQL only
+app.use('/api/driveways', require('./routes/drivewaysPG'));
+app.use('/api/bookings', require('./routes/bookingsPG'));
+app.use('/api/auth', require('./routes/authPG'));
+app.use('/api/payments', require('./routes/paymentsPG'));
+app.use('/api/geocoding', require('./routes/geocoding'));
 
 // Global error handling middleware
 app.use((err, req, res, next) => {
@@ -142,17 +134,11 @@ const gracefulShutdown = (signal) => {
   server.close(() => {
     console.log('✅ HTTP server closed');
     
-    // Close database connections
+    // Close database connection
     if (process.env.DATABASE_URL) {
       sequelize.close()
         .then(() => console.log('✅ PostgreSQL connection closed'))
         .catch(err => console.error('❌ Error closing PostgreSQL:', err));
-    }
-    
-    if (process.env.MONGO_URI) {
-      mongoose.connection.close()
-        .then(() => console.log('✅ MongoDB connection closed'))
-        .catch(err => console.error('❌ Error closing MongoDB:', err));
     }
     
     process.exit(0);

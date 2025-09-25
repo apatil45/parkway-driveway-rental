@@ -56,7 +56,7 @@ OPENCAGE_API_KEY = your_opencage_geocoding_api_key_here
 - **User Authentication**: Registration, login, JWT tokens
 - **Driveway Management**: CRUD operations for parking spots
 - **Professional UI**: Custom CSS, responsive design
-- **Database**: PostgreSQL with proper relationships
+- **Database**: PostgreSQL with Sequelize ORM and proper relationships
 - **Error Handling**: Comprehensive error management
 - **Health Monitoring**: `/health` endpoint for uptime checks
 - **Security**: Input validation, security headers
