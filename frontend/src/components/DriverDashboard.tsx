@@ -9,6 +9,7 @@ import SearchResults from './SearchResults';
 import DashboardNav from './DashboardNav';
 import { toast } from 'react-toastify';
 import { useSmartNotification } from '../hooks/useNotificationQueue';
+import { useSocket } from '../hooks/useSocket';
 import Button from './Button';
 import './DriverDashboard.css';
 
@@ -44,6 +45,7 @@ interface Booking {
 const DriverDashboard: React.FC = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, clearAll } = useSmartNotification();
+  const { isConnected: socketConnected, notifications, joinBookingRoom, leaveBookingRoom } = useSocket();
   const [searchResults, setSearchResults] = useState<Driveway[]>([]);
   const [searchParams, setSearchParams] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -630,6 +632,12 @@ const DriverDashboard: React.FC = () => {
 
   return (
     <div className="driver-dashboard">
+      {/* Real-time Connection Indicator */}
+      <div className={`connection-indicator ${socketConnected ? 'connected' : 'disconnected'}`}>
+        <div className="connection-dot"></div>
+        <span>{socketConnected ? 'Live Updates Connected' : 'Connecting to Live Updates...'}</span>
+      </div>
+
       <h2 className="dashboard-title">Parkway.com - Driver Dashboard</h2>
       
       {/* Main Action Buttons */}

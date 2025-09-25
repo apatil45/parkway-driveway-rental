@@ -1,10 +1,19 @@
 const express = require('express');
+const http = require('http');
 const { sequelize, testConnection } = require('./models/database'); // PostgreSQL connection
 const { setupAssociations } = require('./models/associations');
+const SocketService = require('./services/socketService');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
+
+// Initialize Socket.IO service
+const socketService = new SocketService(server);
+
+// Make socket service available globally
+global.socketService = socketService;
 
 // Robust startup function
 const startServer = async () => {
@@ -147,9 +156,10 @@ const gracefulShutdown = (signal) => {
 };
 
 // Start server with robust error handling
-const server = app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   console.log(`🌟 Parkway.com server running on port ${PORT}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔌 WebSocket server initialized`);
   
   // Initialize database connection
   await startServer();

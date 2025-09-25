@@ -53,6 +53,22 @@ router.post('/', auth, isDriver, async (req, res) => {
       status: 'pending'
     });
 
+    // Send real-time notification to driveway owner
+    if (global.socketService) {
+      global.socketService.sendNotification(drivewayFound.owner, {
+        type: 'booking_created',
+        title: 'New Booking Request',
+        message: `You have a new booking request for your driveway at ${drivewayFound.address}`,
+        data: { bookingId: newBooking.id, drivewayId: driveway }
+      });
+
+      // Send booking update to booking room
+      global.socketService.sendBookingUpdate(newBooking.id, {
+        type: 'status_change',
+        status: 'pending'
+      });
+    }
+
     res.status(201).json(newBooking);
   } catch (err) {
     console.error('Create Booking Error:', err.message);
@@ -108,6 +124,36 @@ router.put('/:id', auth, isDriver, async (req, res) => {
 
     await booking.update(updateData);
 
+    // Send real-time notifications
+    if (global.socketService) {
+      if (status === 'confirmed') {
+        // Notify driveway owner about confirmed booking
+        const driveway = await Driveway.findByPk(booking.driveway);
+        if (driveway) {
+          global.socketService.sendNotification(driveway.owner, {
+            type: 'booking_confirmed',
+            title: 'Booking Confirmed',
+            message: `Your driveway booking has been confirmed and payment received`,
+            data: { bookingId: booking.id, drivewayId: driveway.id }
+          });
+        }
+
+        // Notify driver about confirmation
+        global.socketService.sendNotification(booking.driver, {
+          type: 'booking_confirmed',
+          title: 'Booking Confirmed',
+          message: `Your booking has been confirmed and payment processed`,
+          data: { bookingId: booking.id }
+        });
+      }
+
+      // Send booking update to booking room
+      global.socketService.sendBookingUpdate(booking.id, {
+        type: 'status_change',
+        status: status
+      });
+    }
+
     // If status is confirmed, add to driveway booked slots
     if (status === 'confirmed') {
       const driveway = await Driveway.findByPk(booking.driveway);
@@ -160,6 +206,33 @@ router.put('/:id/cancel', auth, isDriver, async (req, res) => {
         slot => slot.bookingId !== booking.id
       );
       await driveway.update({ bookedSlots: updatedSlots });
+    }
+
+    // Send real-time notifications
+    if (global.socketService) {
+      // Notify driveway owner about cancelled booking
+      if (driveway) {
+        global.socketService.sendNotification(driveway.owner, {
+          type: 'booking_cancelled',
+          title: 'Booking Cancelled',
+          message: `A booking for your driveway has been cancelled`,
+          data: { bookingId: booking.id, drivewayId: driveway.id }
+        });
+      }
+
+      // Notify driver about cancellation
+      global.socketService.sendNotification(booking.driver, {
+        type: 'booking_cancelled',
+        title: 'Booking Cancelled',
+        message: `Your booking has been cancelled`,
+        data: { bookingId: booking.id }
+      });
+
+      // Send booking update to booking room
+      global.socketService.sendBookingUpdate(booking.id, {
+        type: 'status_change',
+        status: 'cancelled'
+      });
     }
 
     res.json(booking);
