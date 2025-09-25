@@ -25,23 +25,28 @@ const Booking = sequelize.define('Booking', {
   },
   startDate: {
     type: DataTypes.DATE,
-    allowNull: false
+    allowNull: false,
+    field: 'start_date'
   },
   endDate: {
     type: DataTypes.DATE,
-    allowNull: false
+    allowNull: false,
+    field: 'end_date'
   },
   startTime: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    field: 'start_time'
   },
   endTime: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    field: 'end_time'
   },
   totalAmount: {
     type: DataTypes.DECIMAL(10, 2),
-    allowNull: false
+    allowNull: false,
+    field: 'total_amount'
   },
   status: {
     type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'completed'),
@@ -49,11 +54,13 @@ const Booking = sequelize.define('Booking', {
   },
   paymentStatus: {
     type: DataTypes.ENUM('pending', 'paid', 'failed', 'refunded'),
-    defaultValue: 'pending'
+    defaultValue: 'pending',
+    field: 'payment_status'
   },
   stripePaymentId: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
+    field: 'stripe_payment_id'
   }
 }, {
   timestamps: true,

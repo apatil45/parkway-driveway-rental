@@ -30,15 +30,18 @@ const User = sequelize.define('User', {
   },
   carSize: {
     type: DataTypes.ENUM('small', 'medium', 'large', 'extra-large'),
-    allowNull: true
+    allowNull: true,
+    field: 'car_size'
   },
   drivewaySize: {
     type: DataTypes.ENUM('small', 'medium', 'large', 'extra-large'),
-    allowNull: true
+    allowNull: true,
+    field: 'driveway_size'
   },
   phoneNumber: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
+    field: 'phone_number'
   },
   address: {
     type: DataTypes.TEXT,

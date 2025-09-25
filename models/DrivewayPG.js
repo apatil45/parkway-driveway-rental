@@ -37,11 +37,13 @@ const Driveway = sequelize.define('Driveway', {
   },
   carSizeCompatibility: {
     type: DataTypes.JSON,
-    defaultValue: ['small', 'medium']
+    defaultValue: ['small', 'medium'],
+    field: 'car_size_compatibility'
   },
   drivewaySize: {
     type: DataTypes.ENUM('small', 'medium', 'large', 'extra-large'),
-    defaultValue: 'medium'
+    defaultValue: 'medium',
+    field: 'driveway_size'
   }
 }, {
   timestamps: true,
