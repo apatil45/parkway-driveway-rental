@@ -8,6 +8,7 @@ import AdvancedSearch from './AdvancedSearch';
 import SearchResults from './SearchResults';
 import DashboardNav from './DashboardNav';
 import { toast } from 'react-toastify';
+import { useSingleNotification } from '../hooks/useNotificationQueue';
 import Button from './Button';
 import './DriverDashboard.css';
 
@@ -42,6 +43,7 @@ interface Booking {
 
 const DriverDashboard: React.FC = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, clearAll } = useSingleNotification();
   const [searchResults, setSearchResults] = useState<Driveway[]>([]);
   const [searchParams, setSearchParams] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -59,17 +61,17 @@ const DriverDashboard: React.FC = () => {
   // Clear existing toasts to prevent duplicates
   const clearExistingToasts = useCallback(() => {
     // Clear any existing toast notifications
-    toast.dismiss();
-  }, []);
+    clearAll();
+  }, [clearAll]);
 
   // Throttled warning function to prevent duplicate warnings
   const showThrottledWarning = useCallback((message: string) => {
     const now = Date.now();
     if (now - lastWarningTimeRef.current > 2000) { // Only show warning every 2 seconds
       lastWarningTimeRef.current = now;
-      toast.warn(message);
+      showWarning(message);
     }
-  }, []);
+  }, [showWarning]);
 
   // Debounced search to prevent rapid-fire searches
   const debouncedSearch = useCallback((searchFunction: () => void) => {
@@ -213,12 +215,12 @@ const DriverDashboard: React.FC = () => {
       
       // Only show one notification per search
       if (filteredResults.length === 0) {
-        toast.info('No driveways found that match your car size. Try adjusting your search criteria.');
+        showInfo('No driveways found that match your car size. Try adjusting your search criteria.');
       } else {
-        toast.success(`${filteredResults.length} compatible driveways found!`);
+        showSuccess(`${filteredResults.length} compatible driveways found!`);
       }
     } catch (err: any) {
-      toast.error(`Failed to search driveways: ${err.response?.data?.msg || 'Server Error'}`);
+      showError(`Failed to search driveways: ${err.response?.data?.msg || 'Server Error'}`);
     } finally {
       setIsSearching(false);
     }
@@ -297,13 +299,13 @@ const DriverDashboard: React.FC = () => {
       scrollToSection('results-section');
       
       if (filteredResults.length === 0) {
-        toast.info('No driveways found that match your criteria. Try adjusting your search filters.');
+        showInfo('No driveways found that match your criteria. Try adjusting your search filters.');
       } else {
-        toast.success(`${filteredResults.length} driveways found!`);
+        showSuccess(`${filteredResults.length} driveways found!`);
       }
     } catch (err: any) {
       console.error('Advanced search error:', err);
-      toast.error(`Search failed: ${err.response?.data?.msg || 'Server Error'}`);
+      showError(`Search failed: ${err.response?.data?.msg || 'Server Error'}`);
     } finally {
       setIsSearching(false);
     }
@@ -524,27 +526,27 @@ const DriverDashboard: React.FC = () => {
         },
       };
       await axios.put(`/api/bookings/${bookingId}`, { paymentIntentId, status: 'confirmed' }, config);
-      toast.success('Booking confirmed and payment successful!');
+      showSuccess('Booking confirmed and payment successful!');
       setShowPaymentForm(false);
       setClientSecret(null);
       setBookingToConfirm(null);
       fetchDriverBookings();
     } catch (err: any) {
       console.error('Error confirming booking after payment:', err.response?.data || err.message);
-      toast.error(`Failed to confirm booking: ${err.response?.data?.msg || 'Server Error'}`);
+      showError(`Failed to confirm booking: ${err.response?.data?.msg || 'Server Error'}`);
     }
   };
 
   const handlePaymentFailure = async (error: any) => {
-    toast.error(`Payment failed: ${error.message || 'Unknown error'}`);
+    showError(`Payment failed: ${error.message || 'Unknown error'}`);
     if (bookingToConfirm && bookingToConfirm._id) {
       try {
         const config = { headers: {} };
         await axios.put(`/api/bookings/${bookingToConfirm._id}/cancel`, {}, config);
-        toast.info('Pending booking cancelled due to payment failure.');
+        showInfo('Pending booking cancelled due to payment failure.');
         fetchDriverBookings();
       } catch (cancelErr: any) {
-        toast.error(`Failed to cancel pending booking: ${cancelErr.response?.data?.msg || 'Server Error'}`);
+        showError(`Failed to cancel pending booking: ${cancelErr.response?.data?.msg || 'Server Error'}`);
       }
     }
     setShowPaymentForm(false);
@@ -561,10 +563,10 @@ const DriverDashboard: React.FC = () => {
         },
       };
       await axios.put(`/api/bookings/${bookingId}/cancel`, {}, config);
-      toast.success('Booking cancelled successfully!');
+      showSuccess('Booking cancelled successfully!');
       fetchDriverBookings();
     } catch (err: any) {
-      toast.error(`Failed to cancel booking: ${err.response?.data?.msg || 'Server Error'}`);
+      showError(`Failed to cancel booking: ${err.response?.data?.msg || 'Server Error'}`);
     }
   };
 
