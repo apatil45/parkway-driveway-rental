@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const sequelize = require('./models/database'); // PostgreSQL connection
 require('dotenv').config();
-const mongoSanitize = require('express-mongo-sanitize'); // Import mongoSanitize
 const xss = require('xss-clean'); // Import xss-clean
 
 const app = express();
@@ -12,6 +11,7 @@ const errorHandler = require('./middleware/error'); // Import the error handler
 // Connect Database (MongoDB for local, PostgreSQL for production)
 if (process.env.DATABASE_URL) {
   // Production: Use PostgreSQL
+  console.log('Using PostgreSQL for production...');
   sequelize.authenticate()
     .then(() => {
       console.log('PostgreSQL connected...');
@@ -19,11 +19,14 @@ if (process.env.DATABASE_URL) {
     })
     .then(() => console.log('Database synchronized'))
     .catch(err => console.error('PostgreSQL connection error:', err));
-} else {
+} else if (process.env.MONGO_URI) {
   // Local: Use MongoDB
+  console.log('Using MongoDB for local development...');
   mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected...'))
-    .catch(err => console.error(err));
+    .catch(err => console.error('MongoDB connection error:', err));
+} else {
+  console.log('No database connection configured. Please set DATABASE_URL or MONGO_URI.');
 }
 
 // Init Middleware
@@ -34,15 +37,14 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static('public'));
 }
 
-// Define Routes
+// Define Routes (use PostgreSQL routes in production)
 app.use('/api/driveways', require('./routes/driveways'));
 app.use('/api/bookings', require('./routes/bookings'));
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', process.env.DATABASE_URL ? require('./routes/authPG') : require('./routes/auth'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/geocoding', require('./routes/geocoding')); // New geocoding route
 
-// Sanitize data (after routes to ensure req.query is writable)
-app.use(mongoSanitize());
+// Sanitize data against XSS attacks
 app.use(xss());
 
 // Error handling middleware (should be last middleware)

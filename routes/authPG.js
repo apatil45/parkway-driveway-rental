@@ -1,0 +1,90 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/UserPG');
+const auth = require('../middleware/auth');
+
+const router = express.Router();
+
+// @route   POST /api/auth/register
+// @desc    Register user
+// @access  Public
+router.post('/register', async (req, res) => {
+  const { name, email, password, role, carSize, drivewaySize } = req.body;
+
+  try {
+    // Check if user exists
+    let user = await User.findOne({ where: { email } });
+    if (user) {
+      return res.status(400).json({ msg: 'User already exists' });
+    }
+
+    // Create user
+    user = await User.create({
+      name,
+      email,
+      password: await bcrypt.hash(password, 10),
+      role,
+      carSize: role === 'driver' ? carSize : null,
+      drivewaySize: role === 'owner' ? drivewaySize : null
+    });
+
+    // Create JWT token
+    const payload = { user: { id: user.id } };
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+      if (err) throw err;
+      res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    });
+  } catch (err) {
+    console.error('Register Route Error:', err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   POST /api/auth/login
+// @desc    Login user
+// @access  Public
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Check if user exists
+    let user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(400).json({ msg: 'Invalid credentials' });
+    }
+
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Invalid credentials' });
+    }
+
+    // Create JWT token
+    const payload = { user: { id: user.id } };
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+      if (err) throw err;
+      res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    });
+  } catch (err) {
+    console.error('Login Route Error:', err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   GET /api/auth/user
+// @desc    Get user data
+// @access  Private
+router.get('/user', auth, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
+    res.json(user);
+  } catch (err) {
+    console.error('Get User Route Error:', err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+module.exports = router;
