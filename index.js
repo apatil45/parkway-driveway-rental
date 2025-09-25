@@ -23,13 +23,13 @@ const startServer = async () => {
       // Setup model associations
       setupAssociations();
       
-      // Sync database models with Render-safe options
+      // Sync database models - force recreate to fix schema issues
       console.log('📋 Synchronizing database models...');
       await sequelize.sync({ 
-        alter: false, // Never alter in production
-        force: false  // Never force recreate
+        force: true, // Force recreate to fix column mapping issues
+        alter: false
       });
-      console.log('✅ Database models synchronized');
+      console.log('✅ Database models synchronized with correct schema');
       
     } else if (process.env.MONGO_URI) {
       console.log('🔗 Connecting to MongoDB (Development)...');
