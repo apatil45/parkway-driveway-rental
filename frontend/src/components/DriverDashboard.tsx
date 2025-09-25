@@ -8,6 +8,7 @@ import AdvancedSearch from './AdvancedSearch';
 import SearchResults from './SearchResults';
 import DashboardNav from './DashboardNav';
 import SkeletonLoader from './SkeletonLoader';
+import BookingDurationModal from './BookingDurationModal'; // Import new booking modal
 import { toast } from 'react-toastify';
 import { useSmartNotification } from '../hooks/useNotificationQueue';
 import { useSocket } from '../hooks/useSocket';
@@ -68,6 +69,55 @@ const DriverDashboard: React.FC = () => {
     clearAll();
   }, [clearAll]);
 
+  // Get driver's current location
+  const getDriverLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      showError('Geolocation is not supported by this browser');
+      return null;
+    }
+
+    return new Promise<{latitude: number, longitude: number, address: string} | null>((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          try {
+            // Reverse geocode to get address
+            const geocodeRes = await axios.post('/api/geocoding', { 
+              latitude, 
+              longitude 
+            });
+            
+            const address = geocodeRes.data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            
+            resolve({
+              latitude,
+              longitude,
+              address
+            });
+          } catch (error) {
+            // If geocoding fails, still return coordinates
+            resolve({
+              latitude,
+              longitude,
+              address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+            });
+          }
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          showError('Unable to get your location. Please enable location services.');
+          resolve(null);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    });
+  }, [showError]);
+
   // Smart warning function (handled by useSmartNotification)
   const showThrottledWarning = useCallback((message: string) => {
     showWarning(message);
@@ -90,6 +140,16 @@ const DriverDashboard: React.FC = () => {
   const [selectedSlotDetails, setSelectedSlotDetails] = useState<any>(null);
   const [showCustomBooking, setShowCustomBooking] = useState(false);
   const [currentSection, setCurrentSection] = useState<'search' | 'results' | 'booking' | 'payment' | 'confirmation'>('search');
+  
+  // New streamlined booking flow state
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedDriveway, setSelectedDriveway] = useState<any>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<any>(null);
+  const [driverLocation, setDriverLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -337,34 +397,67 @@ const DriverDashboard: React.FC = () => {
       return;
     }
 
-    // Convert the new driveway format to the expected format
-    const convertedDriveway: Driveway = {
-      id: driveway.id,
-      owner: driveway.owner?.name || 'Unknown',
-      address: driveway.location,
-      description: driveway.description,
-      availability: [{
-        date: new Date().toISOString().split('T')[0],
-        startTime: '00:00',
-        endTime: '23:59',
-        pricePerHour: driveway.price
-      }],
-      isAvailable: driveway.isAvailable,
-      location: {
-        type: 'Point',
-        coordinates: [0, 0] // This would need to be populated from the actual data
-      },
-      carSizeCompatibility: driveway.carSizeCompatibility,
-      drivewaySize: driveway.drivewaySize
-    };
+    // Get driver's current location
+    const location = await getDriverLocation();
+    if (!location) {
+      showError('Unable to get your location. Please enable location services and try again.');
+      return;
+    }
 
-    await initiateBooking(
-      convertedDriveway,
-      searchParams.date,
-      searchParams.startTime,
-      searchParams.endTime,
-      driveway.price
-    );
+    // Set up the streamlined booking flow
+    setSelectedDriveway(driveway);
+    setSelectedTimeSlot({
+      startTime: searchParams.startTime,
+      endTime: searchParams.endTime,
+      pricePerHour: driveway.price
+    });
+    setDriverLocation(location);
+    setShowBookingModal(true);
+  };
+
+  // New streamlined booking confirmation
+  const handleStreamlinedBooking = async (duration: number, startTime: string, endTime: string) => {
+    if (!selectedDriveway || !user) {
+      showError('Missing booking information. Please try again.');
+      return;
+    }
+
+    try {
+      const totalPrice = selectedTimeSlot.pricePerHour * duration;
+      
+      const bookingData = {
+        driveway: selectedDriveway.id,
+        driver: user.id,
+        startTime: `${searchParams.date}T${startTime}:00Z`,
+        endTime: `${searchParams.date}T${endTime}:00Z`,
+        totalPrice,
+        status: 'pending',
+        driverLocation: driverLocation
+      };
+
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+
+      const res = await axios.post<Booking>('/api/bookings', bookingData, config);
+      const pendingBooking = res.data;
+
+      const paymentIntentRes = await axios.post('/api/payments/create-payment-intent', { bookingId: pendingBooking.id }, config);
+      setClientSecret(paymentIntentRes.data.clientSecret);
+      setBookingToConfirm(pendingBooking);
+      setShowPaymentForm(true);
+      setShowBookingModal(false);
+      setCurrentSection('payment');
+      
+      // Scroll to payment section after a short delay
+      setTimeout(() => {
+        scrollToSection('payment-section');
+      }, 300);
+    } catch (err: any) {
+      showError(`Failed to initiate booking: ${err.response?.data?.message || 'Server Error'}`);
+    }
   };
 
   const handleViewDetails = (driveway: any) => {
@@ -1152,6 +1245,35 @@ const DriverDashboard: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Streamlined Booking Duration Modal */}
+      {showBookingModal && selectedDriveway && selectedTimeSlot && (
+        <BookingDurationModal
+          isOpen={showBookingModal}
+          onClose={() => {
+            setShowBookingModal(false);
+            setSelectedDriveway(null);
+            setSelectedTimeSlot(null);
+            setDriverLocation(null);
+          }}
+          onConfirm={handleStreamlinedBooking}
+          driveway={{
+            id: selectedDriveway.id,
+            address: selectedDriveway.location,
+            description: selectedDriveway.description,
+            pricePerHour: selectedTimeSlot.pricePerHour,
+            availability: [{
+              date: searchParams.date,
+              startTime: selectedTimeSlot.startTime,
+              endTime: selectedTimeSlot.endTime,
+              pricePerHour: selectedTimeSlot.pricePerHour
+            }]
+          }}
+          selectedDate={searchParams.date}
+          selectedTimeSlot={selectedTimeSlot}
+          driverLocation={driverLocation}
+        />
       )}
       </div>
     </div>

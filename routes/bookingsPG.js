@@ -17,7 +17,7 @@ const isDriver = (req, res, next) => {
 // @desc    Create a new booking
 // @access  Private (Driver only)
 router.post('/', auth, isDriver, async (req, res) => {
-  const { driveway, startTime, endTime, totalPrice } = req.body;
+  const { driveway, startTime, endTime, totalPrice, driverLocation } = req.body;
   const driverId = req.user.id;
 
   try {
@@ -58,7 +58,8 @@ router.post('/', auth, isDriver, async (req, res) => {
       startTime: newStartTime,
       endTime: newEndTime,
       totalAmount: totalPrice,
-      status: 'pending'
+      status: 'pending',
+      driverLocation: driverLocation || null
     });
 
     // Send real-time notification to driveway owner

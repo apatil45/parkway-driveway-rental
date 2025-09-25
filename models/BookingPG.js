@@ -52,6 +52,11 @@ const Booking = sequelize.define('Booking', {
     type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'completed'),
     defaultValue: 'pending'
   },
+  driverLocation: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    field: 'driver_location'
+  },
   paymentStatus: {
     type: DataTypes.ENUM('pending', 'paid', 'failed', 'refunded'),
     defaultValue: 'pending',
