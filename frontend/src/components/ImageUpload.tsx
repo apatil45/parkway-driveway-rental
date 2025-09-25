@@ -65,10 +65,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       const response = await axios.post('/api/upload/images', formData, config);
       
       if (response.data.success) {
-        const newImageUrls = response.data.images.map((img: UploadedImage) => img.imageUrl);
+        const newImageUrls = response.data.imageUrls;
         const updatedImages = [...images, ...newImageUrls];
         handleImagesChange(updatedImages);
         showSuccess(`${imageFiles.length} image(s) uploaded successfully!`);
+      } else {
+        showError(response.data.msg || 'Upload failed');
       }
     } catch (error: any) {
       console.error('Upload error:', error);

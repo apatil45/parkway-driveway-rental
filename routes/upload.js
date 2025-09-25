@@ -12,6 +12,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Check Cloudinary configuration
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.warn('⚠️  Cloudinary configuration missing. Image uploads will fail.');
+  console.warn('Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.');
+} else {
+  console.log('✅ Cloudinary configured successfully');
+}
+
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -195,6 +203,108 @@ router.get('/info/:publicId', auth, async (req, res) => {
       message: error.message 
     });
   }
+});
+
+// Upload multiple images (alias for /images endpoint)
+router.post('/images', auth, upload.array('images', 8), async (req, res) => {
+  try {
+    // Check if Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      return res.status(500).json({ 
+        success: false,
+        msg: 'Image upload service is not configured. Please contact support.' 
+      });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        msg: 'No image files uploaded.' 
+      });
+    }
+
+    console.log(`Processing ${req.files.length} images for upload`);
+
+    const uploadPromises = req.files.map(async (file, index) => {
+      try {
+        console.log(`Processing image ${index + 1}: ${file.originalname}`);
+        
+        // Optimize image
+        const optimizedBuffer = await optimizeImage(file.buffer);
+        
+        // Upload to Cloudinary
+        return new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            {
+              folder: 'parkway_driveways',
+              resource_type: 'image',
+              public_id: `driveway_${Date.now()}_${index}`,
+              transformation: [
+                { width: 1200, height: 800, crop: 'limit' },
+                { quality: 'auto' },
+                { format: 'auto' }
+              ]
+            },
+            (error, result) => {
+              if (error) {
+                console.error(`Cloudinary upload error for image ${index + 1}:`, error);
+                reject(error);
+              } else {
+                console.log(`Successfully uploaded image ${index + 1}:`, result.secure_url);
+                resolve({
+                  imageUrl: result.secure_url,
+                  publicId: result.public_id
+                });
+              }
+            }
+          ).end(optimizedBuffer);
+        });
+      } catch (error) {
+        console.error(`Error processing image ${index + 1}:`, error);
+        throw error;
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const imageUrls = results.map(result => result.imageUrl);
+
+    console.log(`Successfully uploaded ${imageUrls.length} images`);
+
+    res.json({
+      success: true,
+      imageUrls: imageUrls,
+      count: imageUrls.length
+    });
+
+  } catch (error) {
+    console.error('Multiple image upload error:', error);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error during image upload.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Test endpoint to check upload configuration
+router.get('/test', auth, (req, res) => {
+  const config = {
+    cloudinary: {
+      configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET),
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Not Set'
+    },
+    multer: {
+      configured: true,
+      maxFileSize: '10MB',
+      allowedTypes: 'image/*'
+    }
+  };
+  
+  res.json({
+    success: true,
+    message: 'Upload service status',
+    config
+  });
 });
 
 module.exports = router;
