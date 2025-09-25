@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { notificationService } from '../services/notificationService';
 import Button from './Button';
 import './Register.css';
 
@@ -85,10 +85,10 @@ const Register: React.FC = () => {
     setIsRegistering(true);
     try {
       await register(name, email, password, roles);
-      toast.success('Registration Successful!');
+      // Don't show success notification - redirect to login is enough feedback
       navigate('/login');
     } catch (err: any) {
-      toast.error(`Registration Failed: ${err.response?.data?.msg || err.message || 'Server Error'}`);
+      notificationService.showAuthError(`Registration Failed: ${err.response?.data?.msg || err.message || 'Server Error'}`);
     } finally {
       setIsRegistering(false);
     }

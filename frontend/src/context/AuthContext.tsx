@@ -133,9 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthContext - Login successful, user:', userRes.data);
       setUser(userRes.data);
 
-      // Show success notification
-      const roleText = userRes.data.roles?.includes('owner') ? 'Owner' : 'Driver';
-      notificationService.showAuthSuccess(`Welcome back, ${userRes.data.name}! You're logged in as a ${roleText}.`);
+      // Don't show welcome notification on login - user already knows they're logged in
 
       // Set up token refresh if remember me is enabled
       if (rememberMe) {
@@ -169,9 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userRes = await axios.get('/api/auth/user');
       setUser(userRes.data);
       
-      // Show success notification
-      const roleText = userRes.data.roles?.includes('owner') ? 'Owner' : 'Driver';
-      notificationService.showAuthSuccess(`Welcome to Parkway.com, ${userRes.data.name}! Your ${roleText} account has been created successfully.`);
+      // Don't show welcome notification on registration - redirect to login is enough feedback
       
       // Set up token refresh for new registrations
       setupTokenRefresh();

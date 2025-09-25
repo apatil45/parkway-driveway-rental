@@ -27,20 +27,21 @@ class NotificationService {
   private notificationQueue: NotificationConfig[] = [];
   private isProcessing = false;
 
-  // Context-based notification rules
+  // Context-based notification rules - more conservative to avoid spam
   private contextRules = {
-    'auth': { maxPerMinute: 2, cooldown: 5000 },
-    'booking': { maxPerMinute: 3, cooldown: 3000 },
-    'payment': { maxPerMinute: 2, cooldown: 7000 },
-    'upload': { maxPerMinute: 2, cooldown: 4000 },
-    'search': { maxPerMinute: 5, cooldown: 1000 },
-    'system': { maxPerMinute: 1, cooldown: 10000 }
+    'auth': { maxPerMinute: 1, cooldown: 10000 },
+    'booking': { maxPerMinute: 2, cooldown: 5000 },
+    'payment': { maxPerMinute: 1, cooldown: 10000 },
+    'upload': { maxPerMinute: 1, cooldown: 8000 },
+    'search': { maxPerMinute: 2, cooldown: 3000 },
+    'system': { maxPerMinute: 1, cooldown: 15000 }
   };
 
   private lastNotificationTime: Map<string, number> = new Map();
 
   /**
    * Show a contextual notification based on the situation
+   * Only use this for user-initiated actions that require feedback
    */
   showNotification(config: Omit<NotificationConfig, 'id'>): string {
     const id = this.generateId();

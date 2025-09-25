@@ -16,8 +16,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt'; // Import PWA inst
 import { AuthProvider } from './context/AuthContext';
 import { ErrorProvider } from './context/ErrorContext';
 import ProfessionalNotificationSystem from './components/ProfessionalNotificationSystem';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// ToastContainer removed - using ProfessionalNotificationSystem instead
 
 const App: React.FC = () => {
   return (
@@ -45,7 +44,7 @@ const App: React.FC = () => {
             </Routes>
           </div>
         </Router>
-          <ToastContainer position="bottom-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+          {/* ToastContainer removed - using ProfessionalNotificationSystem instead */}
           <PWAInstallPrompt />
         </AuthProvider>
       </ErrorProvider>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useError } from '../context/ErrorContext';
-import { toast } from 'react-toastify';
+import { notificationService } from '../services/notificationService';
 import Button from './Button';
 import DrivewayEditModal from './DrivewayEditModal';
 import DashboardNav from './DashboardNav';
@@ -111,15 +111,31 @@ const OwnerDashboard: React.FC = () => {
 
       if (editingDriveway) {
         await cachedApi.put(`/api/driveways/${editingDriveway.id}`, drivewayData);
-        toast.success('Driveway updated successfully!');
+        notificationService.showNotification({
+          type: 'success',
+          title: 'Driveway Updated',
+          message: 'Your driveway has been updated successfully!',
+          context: 'system'
+        });
       } else {
         await cachedApi.post('/api/driveways', drivewayData);
-        toast.success('Driveway added successfully!');
+        notificationService.showNotification({
+          type: 'success',
+          title: 'Driveway Added',
+          message: 'Your driveway has been added successfully!',
+          context: 'system'
+        });
       }
       
       fetchDriveways();
     } catch (err: any) {
-      toast.error(`Failed to save driveway: ${err.response?.data?.msg || 'Server Error'}`);
+      notificationService.showNotification({
+        type: 'error',
+        title: 'Save Failed',
+        message: `Failed to save driveway: ${err.response?.data?.msg || 'Server Error'}`,
+        context: 'system',
+        priority: 'high'
+      });
       throw err; // Re-throw to let modal handle the error state
     } finally {
       setIsModalLoading(false);

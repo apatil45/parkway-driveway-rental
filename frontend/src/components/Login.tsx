@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { notificationService } from '../services/notificationService';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -54,7 +54,7 @@ const Login: React.FC = () => {
     setIsLoggingIn(true);
     try {
       const userRole = await login(email, password, rememberMe);
-      toast.success('Login Successful!');
+      // Don't show success notification - user will see dashboard
 
       if (userRole === 'owner') {
         navigate('/owner-dashboard');
@@ -64,7 +64,7 @@ const Login: React.FC = () => {
         navigate('/');
       }
     } catch (err: any) {
-      toast.error(`Login Failed: ${err.response?.data?.msg || err.message || 'Server Error'}`);
+      notificationService.showAuthError(`Login Failed: ${err.response?.data?.msg || err.message || 'Server Error'}`);
     } finally {
       setIsLoggingIn(false);
     }

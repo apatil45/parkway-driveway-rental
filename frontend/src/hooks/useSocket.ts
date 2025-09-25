@@ -75,11 +75,7 @@ export const useSocket = () => {
   useEffect(() => {
     connectionHandlerRef.current = socketService.onConnection((connected) => {
       setIsConnected(connected);
-      if (connected) {
-        notificationService.showSystemInfo('Connected to real-time updates');
-      } else {
-        notificationService.showSystemWarning('Disconnected from real-time updates');
-      }
+      // Don't show connection notifications - they're not user-actionable
     });
 
     return () => {

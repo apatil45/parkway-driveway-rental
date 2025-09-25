@@ -567,7 +567,8 @@ const DriverDashboard: React.FC = () => {
       const res = await axios.get<Booking[]>(`/api/bookings/driver/${user.id}`, config);
       setDriverBookings(res.data);
     } catch (err) {
-      showError('Failed to fetch your bookings.');
+      // Don't show error notification for automatic data fetching
+      console.error('Failed to fetch bookings:', err);
     }
   };
 
