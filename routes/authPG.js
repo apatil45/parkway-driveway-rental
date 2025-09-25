@@ -3,13 +3,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/UserPG');
 const auth = require('../middleware/auth');
+const { validateUserRegistration, validateUserLogin } = require('../middleware/validation');
 
 const router = express.Router();
 
 // @route   POST /api/auth/register
 // @desc    Register user
 // @access  Public
-router.post('/register', async (req, res) => {
+router.post('/register', validateUserRegistration, async (req, res) => {
   const { name, email, password, role, carSize, drivewaySize } = req.body;
 
   try {
@@ -44,7 +45,7 @@ router.post('/register', async (req, res) => {
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
-router.post('/login', async (req, res) => {
+router.post('/login', validateUserLogin, async (req, res) => {
   const { email, password } = req.body;
 
   try {

@@ -2,6 +2,7 @@ const express = require('express');
 const Driveway = require('../models/DrivewayPG');
 const User = require('../models/UserPG');
 const auth = require('../middleware/auth');
+const { validateDriveway } = require('../middleware/validation');
 
 const router = express.Router();
 
@@ -44,7 +45,7 @@ router.get('/owner', auth, async (req, res) => {
 // @route   POST /api/driveways
 // @desc    Add a new driveway
 // @access  Private (Owner only)
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, validateDriveway, async (req, res) => {
   const { address, description, images, availability, carSizeCompatibility, drivewaySize } = req.body;
 
   try {

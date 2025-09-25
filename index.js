@@ -1,36 +1,83 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const sequelize = require('./models/database'); // PostgreSQL connection
+const { sequelize, testConnection } = require('./models/database'); // PostgreSQL connection
+const { setupAssociations } = require('./models/associations');
 require('dotenv').config();
-// Security middleware removed due to compatibility issues with Express 5
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const errorHandler = require('./middleware/error'); // Import the error handler
 
-// Connect Database (MongoDB for local, PostgreSQL for production)
-if (process.env.DATABASE_URL) {
-  // Production: Use PostgreSQL
-  console.log('Using PostgreSQL for production...');
-  sequelize.authenticate()
-    .then(() => {
-      console.log('PostgreSQL connected...');
-      return sequelize.sync({ alter: true }); // Create/update tables
-    })
-    .then(() => console.log('Database synchronized'))
-    .catch(err => console.error('PostgreSQL connection error:', err));
-} else if (process.env.MONGO_URI) {
-  // Local: Use MongoDB
-  console.log('Using MongoDB for local development...');
-  mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB connected...'))
-    .catch(err => console.error('MongoDB connection error:', err));
-} else {
-  console.log('No database connection configured. Please set DATABASE_URL or MONGO_URI.');
-}
+// Robust startup function
+const startServer = async () => {
+  try {
+    console.log('🚀 Starting Parkway.com server...');
+    
+    // Database Connection
+    if (process.env.DATABASE_URL) {
+      console.log('🔗 Connecting to PostgreSQL (Production)...');
+      const connected = await testConnection();
+      if (!connected) {
+        throw new Error('Failed to connect to PostgreSQL after retries');
+      }
+      
+      // Setup model associations
+      setupAssociations();
+      
+      // Sync database models
+      console.log('📋 Synchronizing database models...');
+      await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
+      console.log('✅ Database models synchronized');
+      
+    } else if (process.env.MONGO_URI) {
+      console.log('🔗 Connecting to MongoDB (Development)...');
+      await mongoose.connect(process.env.MONGO_URI, { 
+        useNewUrlParser: true, 
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000
+      });
+      console.log('✅ MongoDB connected');
+    } else {
+      console.log('⚠️  No database connection configured. Please set DATABASE_URL or MONGO_URI.');
+    }
 
-// Init Middleware
-app.use(express.json({ extended: false }));
+  } catch (error) {
+    console.error('❌ Server startup failed:', error.message);
+    process.exit(1);
+  }
+};
+
+// Robust middleware setup
+app.use(express.json({ 
+  extended: false,
+  limit: '10mb'
+}));
+app.use(express.urlencoded({ extended: true }));
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// Request logging
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`${timestamp} - ${req.method} ${req.path} - IP: ${req.ip}`);
+  next();
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -44,10 +91,19 @@ app.use('/api/auth', process.env.DATABASE_URL ? require('./routes/authPG') : req
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/geocoding', require('./routes/geocoding')); // New geocoding route
 
-// Security middleware disabled for compatibility with Express 5
+// Global error handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', err.stack);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
 
-// Error handling middleware (should be last middleware)
-app.use(errorHandler);
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
 
 // Serve frontend for all non-API routes in production
 if (process.env.NODE_ENV === 'production') {
@@ -57,4 +113,53 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Graceful shutdown handling
+const gracefulShutdown = (signal) => {
+  console.log(`\n📴 Received ${signal}. Starting graceful shutdown...`);
+  
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+    
+    // Close database connections
+    if (process.env.DATABASE_URL) {
+      sequelize.close()
+        .then(() => console.log('✅ PostgreSQL connection closed'))
+        .catch(err => console.error('❌ Error closing PostgreSQL:', err));
+    }
+    
+    if (process.env.MONGO_URI) {
+      mongoose.connection.close()
+        .then(() => console.log('✅ MongoDB connection closed'))
+        .catch(err => console.error('❌ Error closing MongoDB:', err));
+    }
+    
+    process.exit(0);
+  });
+};
+
+// Start server with robust error handling
+const server = app.listen(PORT, async () => {
+  console.log(`🌟 Parkway.com server running on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Initialize database connection
+  await startServer();
+  
+  console.log('✅ Server fully initialized and ready to accept connections');
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  server.close(() => process.exit(1));
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  server.close(() => process.exit(1));
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
