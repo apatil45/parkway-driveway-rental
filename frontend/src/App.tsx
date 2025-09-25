@@ -1,0 +1,48 @@
+import './App.css'
+import Register from './components/Register';
+import Login from './components/Login';
+import OwnerDashboard from './components/OwnerDashboard';
+import DriverDashboard from './components/DriverDashboard';
+import Home from './components/Home'; // Import the Home component
+import Profile from './components/Profile'; // Import the Profile component
+import ErrorBoundary from './components/ErrorBoundary'; // Import the ErrorBoundary component
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import PrivateRoute from './components/PrivateRoute';
+import EnhancedNav from "./components/EnhancedNav"; // Import the enhanced navigation component
+import AuthDebug from "./components/AuthDebug"; // Import the auth debug component
+import ConnectionTest from "./components/ConnectionTest"; // Import the connection test component
+import { AuthProvider } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const App: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <EnhancedNav />
+          {/* Debug components - uncomment if needed for troubleshooting */}
+          {/* process.env.NODE_ENV === 'development' && (
+            <>
+              <ConnectionTest />
+              <AuthDebug />
+            </>
+          ) */}
+          <div className="app-content">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
+              <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><DriverDashboard /></PrivateRoute>} />
+              <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
+            </Routes>
+          </div>
+        </Router>
+        <ToastContainer position="bottom-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      </AuthProvider>
+    </ErrorBoundary>
+  );
+};
+
+export default App;

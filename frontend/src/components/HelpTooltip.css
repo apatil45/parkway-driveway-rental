@@ -1,0 +1,135 @@
+/* Professional Help Tooltip Styles */
+
+.help-tooltip-trigger {
+  display: inline-block;
+  position: relative;
+}
+
+.help-tooltip {
+  position: absolute;
+  z-index: 10000;
+  pointer-events: none;
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+.help-tooltip-content {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.help-tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+}
+
+/* Arrow positions */
+.help-tooltip-arrow-top {
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: #1f2937;
+  border-bottom: none;
+}
+
+.help-tooltip-arrow-bottom {
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-color: #1f2937;
+  border-top: none;
+}
+
+.help-tooltip-arrow-left {
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left-color: #1f2937;
+  border-right: none;
+}
+
+.help-tooltip-arrow-right {
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-right-color: #1f2937;
+  border-left: none;
+}
+
+/* Animations */
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .help-tooltip-content {
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
+    max-width: 280px;
+  }
+  
+  .help-tooltip-arrow {
+    border-width: 5px;
+  }
+  
+  .help-tooltip-arrow-top {
+    bottom: -10px;
+  }
+  
+  .help-tooltip-arrow-bottom {
+    top: -10px;
+  }
+  
+  .help-tooltip-arrow-left {
+    right: -10px;
+  }
+  
+  .help-tooltip-arrow-right {
+    left: -10px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .help-tooltip-content {
+    background: #111827;
+    color: #f3f4f6;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .help-tooltip-arrow-top {
+    border-top-color: #111827;
+  }
+  
+  .help-tooltip-arrow-bottom {
+    border-bottom-color: #111827;
+  }
+  
+  .help-tooltip-arrow-left {
+    border-left-color: #111827;
+  }
+  
+  .help-tooltip-arrow-right {
+    border-right-color: #111827;
+  }
+}
