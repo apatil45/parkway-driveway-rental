@@ -1,0 +1,259 @@
+/* PWA Install Prompt Styles */
+
+.pwa-prompt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+.pwa-prompt {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: slideUp 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pwa-prompt::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+}
+
+.pwa-prompt-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.pwa-prompt-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.pwa-prompt h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.pwa-prompt p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.pwa-prompt-features {
+  margin-bottom: 2rem;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.feature svg {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.pwa-prompt-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.pwa-prompt-button {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pwa-prompt-button.primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.4);
+}
+
+.pwa-prompt-button.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
+}
+
+.pwa-prompt-button.primary:active {
+  transform: translateY(0);
+}
+
+.pwa-prompt-button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.pwa-prompt-button.secondary:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.pwa-prompt-button.secondary:active {
+  transform: translateY(0);
+}
+
+/* Update Prompt Specific Styles */
+.update-prompt .pwa-prompt-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.update-prompt .pwa-prompt-button.primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.4);
+}
+
+.update-prompt .pwa-prompt-button.primary:hover {
+  box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.5);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .pwa-prompt {
+    margin: 1rem;
+    padding: 1.5rem;
+    max-width: none;
+    width: auto;
+  }
+  
+  .pwa-prompt h3 {
+    font-size: 1.25rem;
+  }
+  
+  .pwa-prompt-actions {
+    flex-direction: column;
+  }
+  
+  .pwa-prompt-button {
+    padding: 1rem 1.5rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .pwa-prompt {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .pwa-prompt h3 {
+    color: #f9fafb;
+  }
+  
+  .pwa-prompt p {
+    color: #d1d5db;
+  }
+  
+  .feature {
+    color: #e5e7eb;
+  }
+  
+  .pwa-prompt-button.secondary {
+    background: #374151;
+    color: #e5e7eb;
+    border-color: #4b5563;
+  }
+  
+  .pwa-prompt-button.secondary:hover {
+    background: #4b5563;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .pwa-prompt {
+    border: 2px solid #000;
+  }
+  
+  .pwa-prompt-button {
+    border: 2px solid #000;
+  }
+  
+  .pwa-prompt-button.primary {
+    background: #000;
+    color: #fff;
+  }
+  
+  .pwa-prompt-button.secondary {
+    background: #fff;
+    color: #000;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .pwa-prompt-overlay,
+  .pwa-prompt,
+  .pwa-prompt-button {
+    animation: none;
+    transition: none;
+  }
+  
+  .pwa-prompt-button:hover {
+    transform: none;
+  }
+}

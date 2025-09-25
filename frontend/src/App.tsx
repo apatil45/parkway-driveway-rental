@@ -11,6 +11,7 @@ import PrivateRoute from './components/PrivateRoute';
 import EnhancedNav from "./components/EnhancedNav"; // Import the enhanced navigation component
 import AuthDebug from "./components/AuthDebug"; // Import the auth debug component
 import ConnectionTest from "./components/ConnectionTest"; // Import the connection test component
+import PWAInstallPrompt from './components/PWAInstallPrompt'; // Import PWA install prompt
 import { AuthProvider } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -40,6 +41,7 @@ const App: React.FC = () => {
           </div>
         </Router>
         <ToastContainer position="bottom-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+        <PWAInstallPrompt />
       </AuthProvider>
     </ErrorBoundary>
   );
