@@ -107,6 +107,7 @@ app.use('/api/bookings', require('./routes/bookingsPG'));
 app.use('/api/auth', require('./routes/authPG'));
 app.use('/api/payments', require('./routes/paymentsPG'));
 app.use('/api/geocoding', require('./routes/geocoding'));
+app.use('/api/upload', require('./routes/upload'));
 
 // Global error handling middleware
 app.use((err, req, res, next) => {

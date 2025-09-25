@@ -3,6 +3,7 @@ import { useFormValidation } from '../hooks/useFormValidation';
 import FormInput from './FormInput';
 import Button from './Button';
 import HelpTooltip from './HelpTooltip';
+import ImageUpload from './ImageUpload';
 import './DrivewayEditModal.css';
 
 interface Driveway {
@@ -39,6 +40,7 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
     pricePerHour: number;
   }>>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [images, setImages] = useState<string[]>([]);
 
   const validationRules = {
     address: { required: true, minLength: 5 },
@@ -84,6 +86,8 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
         drivewaySize: driveway.drivewaySize || 'medium',
         carSizeCompatibility: driveway.carSizeCompatibility || ['small', 'medium']
       });
+      
+      setImages(driveway.images || []);
       
       setAvailabilitySlots(driveway.availability.map(slot => ({
         date: slot.date.split('T')[0],
@@ -176,6 +180,7 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
 
     const drivewayData = {
       ...formData,
+      images: images,
       availability: availabilitySlots.map(slot => ({
         date: slot.date,
         startTime: slot.startTime,
@@ -381,6 +386,15 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Image Upload Section */}
+              <div className="image-upload-section">
+                <ImageUpload
+                  onImagesChange={setImages}
+                  existingImages={images}
+                  maxImages={8}
+                />
               </div>
             </div>
           )}
