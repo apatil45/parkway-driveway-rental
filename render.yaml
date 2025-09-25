@@ -1,0 +1,18 @@
+databases:
+  - name: parkway-db
+    databaseName: parkway_db
+    user: parkway_user
+
+services:
+  - type: web
+    name: parkway-app
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: parkway-db
+          property: connectionString

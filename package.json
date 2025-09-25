@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node index.js",
     "start": "node index.js",
+    "build": "cd frontend && npm install && npm run build && cd .. && node -e \"const fs=require('fs');const path=require('path');if(fs.existsSync('public'))fs.rmSync('public',{recursive:true});fs.cpSync('frontend/dist','public',{recursive:true});\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:backend": "jest",
     "lint:backend": "eslint .",
@@ -29,8 +30,10 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.2",
     "node-geocoder": "^4.4.1",
+    "pg": "^8.16.3",
     "react-router-dom": "^7.9.1",
     "react-toastify": "^11.0.5",
+    "sequelize": "^6.37.7",
     "stripe": "^18.5.0",
     "xss-clean": "^0.1.4"
   },
