@@ -53,12 +53,22 @@ const DriverDashboard: React.FC = () => {
   const [addressSearch, setAddressSearch] = useState<string>('');
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastWarningTimeRef = useRef<number>(0);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | undefined>(undefined);
   
   // Clear existing toasts to prevent duplicates
   const clearExistingToasts = useCallback(() => {
     // Clear any existing toast notifications
     toast.dismiss();
+  }, []);
+
+  // Throttled warning function to prevent duplicate warnings
+  const showThrottledWarning = useCallback((message: string) => {
+    const now = Date.now();
+    if (now - lastWarningTimeRef.current > 2000) { // Only show warning every 2 seconds
+      lastWarningTimeRef.current = now;
+      toast.warn(message);
+    }
   }, []);
 
   // Debounced search to prevent rapid-fire searches
@@ -92,12 +102,19 @@ const DriverDashboard: React.FC = () => {
     };
   }, [isAuthenticated, user]);
 
-  // Auto-search for current date/time when component loads
+  // Auto-search for current date/time when component loads (debounced)
   useEffect(() => {
-    if (currentLocation && addressSearch) {
-      handleSearch(new Event('submit') as any);
+    if (currentLocation && addressSearch && !isSearching) {
+      // Debounce the auto-search to prevent multiple rapid calls
+      const timeoutId = setTimeout(() => {
+        if (!isSearching) {
+          handleSearch(new Event('submit') as any);
+        }
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [currentLocation, addressSearch]);
+  }, [currentLocation, addressSearch, isSearching]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -134,6 +151,9 @@ const DriverDashboard: React.FC = () => {
       return;
     }
 
+    // Clear any existing toasts before starting new search
+    clearExistingToasts();
+
     let latitude: number | undefined;
     let longitude: number | undefined;
     let radius = searchParams.radius || 5;
@@ -154,7 +174,7 @@ const DriverDashboard: React.FC = () => {
         return;
       }
     } else {
-      toast.warn('Please enter an address or use your current location to search.');
+      showThrottledWarning('Please enter an address or use your current location to search.');
       return;
     }
 
@@ -165,7 +185,6 @@ const DriverDashboard: React.FC = () => {
 
     try {
       setIsSearching(true);
-      clearExistingToasts(); // Clear any existing toasts
       
       const config = {
         headers: {
@@ -216,8 +235,10 @@ const DriverDashboard: React.FC = () => {
       return;
     }
 
+    // Clear any existing toasts before starting new search
+    clearExistingToasts();
+    
     setIsSearching(true);
-    clearExistingToasts(); // Clear any existing toasts
     
     try {
       let latitude: number | undefined;
@@ -240,7 +261,7 @@ const DriverDashboard: React.FC = () => {
           return;
         }
       } else {
-        toast.warn('Please enter an address or use your current location to search.');
+        showThrottledWarning('Please enter an address or use your current location to search.');
         return;
       }
 
@@ -551,7 +572,7 @@ const DriverDashboard: React.FC = () => {
     return <div className="text-center mt-8 text-lg font-medium">Loading user data...</div>;
   }
 
-  if (!isAuthenticated || user?.role !== 'driver') {
+  if (!isAuthenticated || !user?.roles.includes('driver')) {
     return <div className="text-center mt-12 text-red-600 text-xl font-bold">Access Denied or Not Authenticated.</div>;
   }
 
