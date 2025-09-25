@@ -7,7 +7,7 @@ const auth = require('../middleware/auth');
 
 // Middleware to check if user is a driver
 const isDriver = (req, res, next) => {
-  if (req.user.role !== 'driver') {
+  if (!req.user.roles || !req.user.roles.includes('driver')) {
     return res.status(403).json({ msg: 'Access denied. Only drivers can perform this action.' });
   }
   next();

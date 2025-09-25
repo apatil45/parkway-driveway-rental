@@ -139,11 +139,11 @@ const Profile: React.FC = () => {
                 <div className="form-group">
                   <label className="form-label">Role</label>
                   <div className="info-value role-badge">
-                    {user?.role === 'driver' ? 'Driver' : 'Property Owner'}
+                    {user?.roles.includes('driver') ? 'Driver' : 'Property Owner'}
                   </div>
                 </div>
 
-                {user?.role === 'driver' && (
+                {user?.roles.includes('driver') && (
                   <div className="form-group">
                     <label className="form-label">Car Size</label>
                     {isEditing ? (
@@ -164,7 +164,7 @@ const Profile: React.FC = () => {
                   </div>
                 )}
 
-                {user?.role === 'owner' && (
+                {user?.roles.includes('owner') && (
                   <div className="form-group">
                     <label className="form-label">Driveway Size</label>
                     {isEditing ? (

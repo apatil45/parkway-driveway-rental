@@ -31,7 +31,7 @@ const Home: React.FC = () => {
         </h1>
         <p className="home-subtitle">
           {isAuthenticated 
-            ? `Continue your parking journey with us. ${user?.role === 'driver' 
+            ? `Continue your parking journey with us. ${user?.roles.includes('driver') 
                 ? 'Find available spots or manage your bookings.' 
                 : 'Manage your listings and track your earnings.'}`
             : 'Your premium platform for renting and listing private driveways. Find the perfect parking spot or monetize your unused driveway space with confidence.'
@@ -59,7 +59,7 @@ const Home: React.FC = () => {
               <div className="welcome-back">
                 <h3 className="welcome-message">Welcome back, {user?.name}! 👋</h3>
                 <p className="user-role-message">
-                  {user?.role === 'driver' 
+                  {user?.roles.includes('driver') 
                     ? "Ready to find the perfect parking spot?" 
                     : "Ready to manage your driveway listings?"
                   }
@@ -67,7 +67,7 @@ const Home: React.FC = () => {
               </div>
               
               <div className="quick-actions">
-                {user?.role === 'driver' ? (
+                {user?.roles.includes('driver') ? (
                   <>
                     <Button 
                       variant="primary" 
