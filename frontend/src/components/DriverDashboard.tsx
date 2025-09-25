@@ -9,8 +9,7 @@ import SearchResults from './SearchResults';
 import DashboardNav from './DashboardNav';
 import SkeletonLoader from './SkeletonLoader';
 import BookingDurationModal from './BookingDurationModal'; // Import new booking modal
-import { toast } from 'react-toastify';
-import { useSmartNotification } from '../hooks/useNotificationQueue';
+import { notificationService } from '../services/notificationService';
 import { useSocket } from '../hooks/useSocket';
 import cachedApi from '../services/cachedApi';
 import Button from './Button';
@@ -47,7 +46,43 @@ interface Booking {
 
 const DriverDashboard: React.FC = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, clearAll } = useSmartNotification();
+  // Notification functions using the new professional notification service
+  const showSuccess = useCallback((message: string, title?: string) => {
+    notificationService.showNotification({
+      type: 'success',
+      title: title || 'Success',
+      message,
+      context: 'booking'
+    });
+  }, []);
+
+  const showError = useCallback((message: string, title?: string) => {
+    notificationService.showNotification({
+      type: 'error',
+      title: title || 'Error',
+      message,
+      context: 'booking',
+      priority: 'high'
+    });
+  }, []);
+
+  const showWarning = useCallback((message: string, title?: string) => {
+    notificationService.showNotification({
+      type: 'warning',
+      title: title || 'Warning',
+      message,
+      context: 'booking'
+    });
+  }, []);
+
+  const showInfo = useCallback((message: string, title?: string) => {
+    notificationService.showNotification({
+      type: 'info',
+      title: title || 'Information',
+      message,
+      context: 'booking'
+    });
+  }, []);
   const { isConnected: socketConnected, notifications, joinBookingRoom, leaveBookingRoom } = useSocket();
   const [searchResults, setSearchResults] = useState<Driveway[]>([]);
   const [searchParams, setSearchParams] = useState({
@@ -640,7 +675,7 @@ const DriverDashboard: React.FC = () => {
         },
       };
       await axios.put(`/api/bookings/${bookingId}`, { paymentIntentId, status: 'confirmed' }, config);
-      showSuccess('Booking confirmed and payment successful!');
+      notificationService.showBookingSuccess('Your booking has been confirmed and payment processed successfully!');
       setShowPaymentForm(false);
       setClientSecret(null);
       setBookingToConfirm(null);

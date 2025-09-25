@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, type ReactNode } from 'react';
 import axios from 'axios';
+import { notificationService } from '../services/notificationService';
 
 interface User {
   id: string;
@@ -132,6 +133,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthContext - Login successful, user:', userRes.data);
       setUser(userRes.data);
 
+      // Show success notification
+      const roleText = userRes.data.roles?.includes('owner') ? 'Owner' : 'Driver';
+      notificationService.showAuthSuccess(`Welcome back, ${userRes.data.name}! You're logged in as a ${roleText}.`);
+
       // Set up token refresh if remember me is enabled
       if (rememberMe) {
         setupTokenRefresh();
@@ -141,6 +146,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return userRes.data.roles?.[0] || 'driver'; // Return first role instead of single role
     } catch (err: any) {
       console.error("AuthContext - Login error:", err.response?.data || err.message);
+      
+      // Show contextual error notification
+      const errorMessage = err.response?.data?.msg || err.response?.data?.message || 'Login failed. Please check your credentials.';
+      notificationService.showAuthError(errorMessage);
+      
       // Don't clear auth data on login failure - let other users stay logged in
       setIsLoading(false);
       throw err;
@@ -159,6 +169,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userRes = await axios.get('/api/auth/user');
       setUser(userRes.data);
       
+      // Show success notification
+      const roleText = userRes.data.roles?.includes('owner') ? 'Owner' : 'Driver';
+      notificationService.showAuthSuccess(`Welcome to Parkway.com, ${userRes.data.name}! Your ${roleText} account has been created successfully.`);
+      
       // Set up token refresh for new registrations
       setupTokenRefresh();
       
@@ -166,6 +180,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return userRes.data.roles?.[0] || 'driver'; // Return first role instead of single role
     } catch (err: any) {
       console.error("AuthContext - Register error:", err.response?.data || err.message);
+      
+      // Show contextual error notification
+      const errorMessage = err.response?.data?.msg || err.response?.data?.message || 'Registration failed. Please try again.';
+      notificationService.showAuthError(errorMessage);
+      
       clearAuthData();
       setIsLoading(false);
       throw err;

@@ -1,0 +1,351 @@
+/* Professional Notification System Styles */
+
+.professional-notification-system {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.notification-item {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  cursor: pointer;
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.notification-item.visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.notification-item.removing {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Priority-based styling */
+.notification-item.critical {
+  border-left: 4px solid #dc2626;
+  box-shadow: 0 8px 32px rgba(220, 38, 38, 0.2);
+}
+
+.notification-item.high {
+  border-left: 4px solid #ea580c;
+  box-shadow: 0 8px 32px rgba(234, 88, 12, 0.15);
+}
+
+.notification-item.medium {
+  border-left: 4px solid #2563eb;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.1);
+}
+
+.notification-item.low {
+  border-left: 4px solid #059669;
+  box-shadow: 0 8px 32px rgba(5, 150, 105, 0.1);
+}
+
+/* Type-based styling */
+.notification-item.success {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.notification-item.error {
+  background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.notification-item.warning {
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.notification-item.info {
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.notification-item.booking {
+  background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
+}
+
+.notification-item.payment {
+  background: linear-gradient(135deg, #faf5ff 0%, #ffffff 100%);
+}
+
+.notification-item.system {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.notification-content {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 12px;
+}
+
+.notification-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.notification-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.notification-message {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+
+.notification-actions {
+  padding: 0 16px 16px 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-button.primary {
+  background: #2563eb;
+  color: white;
+}
+
+.action-button.primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.action-button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.action-button.secondary:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.action-button.danger {
+  background: #dc2626;
+  color: white;
+}
+
+.action-button.danger:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+  width: 100%;
+  transform-origin: left;
+  animation: progress-shrink linear forwards;
+}
+
+@keyframes progress-shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Hover effects */
+.notification-item:hover {
+  transform: translateX(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.notification-item.removing:hover {
+  transform: translateX(100%);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .professional-notification-system {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .notification-item {
+    border-radius: 8px;
+  }
+  
+  .notification-content {
+    padding: 12px;
+  }
+  
+  .notification-title {
+    font-size: 13px;
+  }
+  
+  .notification-message {
+    font-size: 12px;
+  }
+  
+  .notification-actions {
+    padding: 0 12px 12px 12px;
+  }
+  
+  .action-button {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .notification-item {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f9fafb;
+  }
+  
+  .notification-title {
+    color: #f9fafb;
+  }
+  
+  .notification-message {
+    color: #d1d5db;
+  }
+  
+  .notification-close {
+    color: #9ca3af;
+  }
+  
+  .notification-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+  }
+  
+  .action-button.secondary {
+    background: #374151;
+    color: #f3f4f6;
+    border-color: #4b5563;
+  }
+  
+  .action-button.secondary:hover {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+}
+
+/* Animation for new notifications */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Special effects for different notification types */
+.notification-item.booking {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.notification-item.payment {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.notification-item.error {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Stacking animation for multiple notifications */
+.notification-item:nth-child(1) {
+  z-index: 10003;
+}
+
+.notification-item:nth-child(2) {
+  z-index: 10002;
+}
+
+.notification-item:nth-child(3) {
+  z-index: 10001;
+}

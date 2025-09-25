@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { useSmartNotification } from '../hooks/useNotificationQueue';
+import { notificationService } from '../services/notificationService';
 import './ImageUpload.css';
 
 interface ImageUploadProps {
@@ -27,7 +27,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { success: showSuccess, error: showError } = useSmartNotification();
+  // Use the new professional notification service
 
   const handleImagesChange = useCallback((newImages: string[]) => {
     setImages(newImages);
@@ -39,12 +39,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     const imageFiles = fileArray.filter(file => file.type.startsWith('image/'));
     
     if (imageFiles.length === 0) {
-      showError('Please select valid image files');
+      notificationService.showUploadError('Please select valid image files');
       return;
     }
 
     if (images.length + imageFiles.length > maxImages) {
-      showError(`You can only upload up to ${maxImages} images`);
+      notificationService.showUploadError(`You can only upload up to ${maxImages} images`);
       return;
     }
 
@@ -68,17 +68,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         const newImageUrls = response.data.imageUrls;
         const updatedImages = [...images, ...newImageUrls];
         handleImagesChange(updatedImages);
-        showSuccess(`${imageFiles.length} image(s) uploaded successfully!`);
+        notificationService.showUploadSuccess(imageFiles.length);
       } else {
-        showError(response.data.msg || 'Upload failed');
+        notificationService.showUploadError(response.data.msg || 'Upload failed');
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      showError(`Failed to upload images: ${error.response?.data?.message || 'Server Error'}`);
+      notificationService.showUploadError(`Failed to upload images: ${error.response?.data?.message || 'Server Error'}`);
     } finally {
       setUploading(false);
     }
-  }, [images, maxImages, handleImagesChange, showSuccess, showError]);
+  }, [images, maxImages, handleImagesChange]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();

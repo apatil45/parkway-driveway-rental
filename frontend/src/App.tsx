@@ -14,6 +14,7 @@ import ConnectionTest from "./components/ConnectionTest"; // Import the connecti
 import PWAInstallPrompt from './components/PWAInstallPrompt'; // Import PWA install prompt
 import { AuthProvider } from './context/AuthContext';
 import { ErrorProvider } from './context/ErrorContext';
+import ProfessionalNotificationSystem from './components/ProfessionalNotificationSystem';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -24,6 +25,7 @@ const App: React.FC = () => {
         <AuthProvider>
         <Router>
           <EnhancedNav />
+          <ProfessionalNotificationSystem />
           {/* Debug components - uncomment if needed for troubleshooting */}
           {/* process.env.NODE_ENV === 'development' && (
             <>
