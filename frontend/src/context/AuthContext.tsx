@@ -5,7 +5,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'driver' | 'owner' | 'admin';
+  roles: ('driver' | 'owner' | 'admin')[];
   carSize?: string;
   drivewaySize?: string;
   phoneNumber?: string;
@@ -17,7 +17,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean; // Derived property
   login: (email: string, password: string, rememberMe?: boolean) => Promise<string>;
-  register: (name: string, email: string, password: string, role: 'driver' | 'owner') => Promise<string>;
+  register: (name: string, email: string, password: string, roles: ('driver' | 'owner')[]) => Promise<string>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   refreshToken: () => Promise<boolean>;
@@ -141,10 +141,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: 'driver' | 'owner'): Promise<string> => {
+  const register = async (name: string, email: string, password: string, roles: ('driver' | 'owner')[]): Promise<string> => {
     setIsLoading(true);
     try {
-      const res = await axios.post('/api/auth/register', { name, email, password, role });
+      const res = await axios.post('/api/auth/register', { name, email, password, roles });
       const token = res.data.token;
       localStorage.setItem('token', token);
       localStorage.setItem('rememberMe', 'true'); // Auto-remember on registration

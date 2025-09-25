@@ -32,9 +32,17 @@ const validateUserRegistration = [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   
-  body('role')
-    .isIn(['driver', 'owner'])
-    .withMessage('Role must be either driver or owner'),
+  body('roles')
+    .custom((value) => {
+      if (!value) return true; // Optional field
+      const roles = Array.isArray(value) ? value : [value];
+      const validRoles = ['driver', 'owner'];
+      const invalidRoles = roles.filter(role => !validRoles.includes(role));
+      if (invalidRoles.length > 0) {
+        throw new Error(`Invalid roles: ${invalidRoles.join(', ')}. Must be driver and/or owner.`);
+      }
+      return true;
+    }),
   
   body('carSize')
     .optional()

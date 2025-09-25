@@ -36,14 +36,24 @@ const EnhancedNav: React.FC = () => {
     navigate('/login');
   };
 
-  const getDashboardLink = () => {
-    if (!user) return '/';
-    return user.role === 'owner' ? '/owner-dashboard' : '/driver-dashboard';
+  const getDashboardLinks = () => {
+    if (!user) return [];
+    const links = [];
+    if (user.roles.includes('driver')) {
+      links.push({ path: '/driver-dashboard', label: 'Driver Dashboard' });
+    }
+    if (user.roles.includes('owner')) {
+      links.push({ path: '/owner-dashboard', label: 'Owner Dashboard' });
+    }
+    return links;
   };
 
-  const getDashboardLabel = () => {
-    if (!user) return 'Dashboard';
-    return user.role === 'owner' ? 'Owner Dashboard' : 'Driver Dashboard';
+  const getPrimaryDashboardLink = () => {
+    if (!user) return '/';
+    // If user has both roles, default to driver dashboard
+    if (user.roles.includes('driver')) return '/driver-dashboard';
+    if (user.roles.includes('owner')) return '/owner-dashboard';
+    return '/';
   };
 
   const isActiveRoute = (path: string) => {
@@ -76,8 +86,8 @@ const EnhancedNav: React.FC = () => {
             {isAuthenticated ? (
               <>
                 <Link 
-                  to={getDashboardLink()} 
-                  className={`nav-link ${isActiveRoute(getDashboardLink()) ? 'active' : ''}`}
+                  to={getPrimaryDashboardLink()} 
+                  className={`nav-link ${isActiveRoute(getPrimaryDashboardLink()) ? 'active' : ''}`}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="3" width="7" height="7"/>
@@ -85,10 +95,10 @@ const EnhancedNav: React.FC = () => {
                     <rect x="14" y="14" width="7" height="7"/>
                     <rect x="3" y="14" width="7" height="7"/>
                   </svg>
-                  {getDashboardLabel()}
+                  Dashboard
                 </Link>
 
-                {user?.role === 'driver' && (
+                {user?.roles.includes('driver') && (
                   <Link 
                     to="/driver-dashboard" 
                     className={`nav-link ${isActiveRoute('/driver-dashboard') ? 'active' : ''}`}
@@ -101,7 +111,7 @@ const EnhancedNav: React.FC = () => {
                   </Link>
                 )}
 
-                {user?.role === 'owner' && (
+                {user?.roles.includes('owner') && (
                   <Link 
                     to="/owner-dashboard" 
                     className={`nav-link ${isActiveRoute('/owner-dashboard') ? 'active' : ''}`}
@@ -268,7 +278,7 @@ const EnhancedNav: React.FC = () => {
               {isAuthenticated ? (
                 <>
                   <Link 
-                    to={getDashboardLink()} 
+                    to={getPrimaryDashboardLink()} 
                     className="mobile-nav-link"
                     onClick={() => setShowMobileMenu(false)}
                   >
@@ -278,10 +288,10 @@ const EnhancedNav: React.FC = () => {
                       <rect x="14" y="14" width="7" height="7"/>
                       <rect x="3" y="14" width="7" height="7"/>
                     </svg>
-                    {getDashboardLabel()}
+                    Dashboard
                   </Link>
 
-                  {user?.role === 'driver' && (
+                  {user?.roles.includes('driver') && (
                     <Link 
                       to="/driver-dashboard" 
                       className="mobile-nav-link"
@@ -295,7 +305,7 @@ const EnhancedNav: React.FC = () => {
                     </Link>
                   )}
 
-                  {user?.role === 'owner' && (
+                  {user?.roles.includes('owner') && (
                     <Link 
                       to="/owner-dashboard" 
                       className="mobile-nav-link"

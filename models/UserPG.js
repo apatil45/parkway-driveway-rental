@@ -23,10 +23,10 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  role: {
-    type: DataTypes.ENUM('driver', 'owner', 'admin'),
+  roles: {
+    type: DataTypes.ARRAY(DataTypes.ENUM('driver', 'owner', 'admin')),
     allowNull: false,
-    defaultValue: 'driver'
+    defaultValue: ['driver']
   },
   carSize: {
     type: DataTypes.ENUM('small', 'medium', 'large', 'extra-large'),

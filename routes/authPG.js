@@ -11,7 +11,7 @@ const router = express.Router();
 // @desc    Register user
 // @access  Public
 router.post('/register', validateUserRegistration, async (req, res) => {
-  const { name, email, password, role, carSize, drivewaySize } = req.body;
+  const { name, email, password, roles, carSize, drivewaySize } = req.body;
 
   try {
     // Check if user exists
@@ -20,21 +20,24 @@ router.post('/register', validateUserRegistration, async (req, res) => {
       return res.status(400).json({ msg: 'User already exists' });
     }
 
+    // Ensure roles is an array
+    const userRoles = Array.isArray(roles) ? roles : [roles || 'driver'];
+
     // Create user
     user = await User.create({
       name,
       email,
       password: await bcrypt.hash(password, 10),
-      role,
-      carSize: role === 'driver' ? carSize : null,
-      drivewaySize: role === 'owner' ? drivewaySize : null
+      roles: userRoles,
+      carSize: userRoles.includes('driver') ? carSize : null,
+      drivewaySize: userRoles.includes('owner') ? drivewaySize : null
     });
 
     // Create JWT token
     const payload = { user: { id: user.id } };
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
-      res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+      res.json({ token, user: { id: user.id, name: user.name, email: user.email, roles: user.roles } });
     });
   } catch (err) {
     console.error('Register Route Error:', err.message);
@@ -65,7 +68,7 @@ router.post('/login', validateUserLogin, async (req, res) => {
     const payload = { user: { id: user.id } };
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
-      res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+      res.json({ token, user: { id: user.id, name: user.name, email: user.email, roles: user.roles } });
     });
   } catch (err) {
     console.error('Login Route Error:', err.message);

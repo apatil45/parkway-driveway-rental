@@ -10,7 +10,7 @@ const Register: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    role: 'driver',
+    roles: ['driver'], // Default to driver, can be both
     carSize: 'medium', // For drivers
     drivewaySize: 'medium', // For owners
   });
@@ -20,7 +20,7 @@ const Register: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const { name, email, password, role, carSize, drivewaySize } = formData;
+  const { name, email, password, roles, carSize, drivewaySize } = formData;
 
   const validateForm = () => {
     const newErrors: { name?: string; email?: string; password?: string } = {};
@@ -84,7 +84,7 @@ const Register: React.FC = () => {
 
     setIsRegistering(true);
     try {
-      await register(name, email, password, role as 'driver' | 'owner');
+      await register(name, email, password, roles);
       toast.success('Registration Successful!');
       navigate('/login');
     } catch (err: any) {
@@ -167,20 +167,40 @@ const Register: React.FC = () => {
         </div>
         
         <div className="form-group">
-          <label htmlFor="role" className="form-label">Account Type</label>
-          <select
-            id="role"
-            name="role"
-            value={role}
-            onChange={onChange}
-            className="form-select"
-          >
-            <option value="driver">Driver - Find parking spaces</option>
-            <option value="owner">Owner - List your driveway</option>
-          </select>
+          <label className="form-label">Account Type</label>
+          <div className="role-selection">
+            <label className="role-option">
+              <input
+                type="checkbox"
+                name="driver"
+                checked={roles.includes('driver')}
+                onChange={(e) => {
+                  const newRoles = e.target.checked 
+                    ? [...roles, 'driver']
+                    : roles.filter(role => role !== 'driver');
+                  setFormData({ ...formData, roles: newRoles });
+                }}
+              />
+              <span>Driver - Find parking spaces</span>
+            </label>
+            <label className="role-option">
+              <input
+                type="checkbox"
+                name="owner"
+                checked={roles.includes('owner')}
+                onChange={(e) => {
+                  const newRoles = e.target.checked 
+                    ? [...roles, 'owner']
+                    : roles.filter(role => role !== 'owner');
+                  setFormData({ ...formData, roles: newRoles });
+                }}
+              />
+              <span>Owner - List your driveway</span>
+            </label>
+          </div>
         </div>
         
-        {role === 'driver' && (
+        {roles.includes('driver') && (
           <div className="form-group">
             <label htmlFor="carSize" className="form-label">Car Size</label>
             <select
@@ -198,7 +218,7 @@ const Register: React.FC = () => {
           </div>
         )}
         
-        {role === 'owner' && (
+        {roles.includes('owner') && (
           <div className="form-group">
             <label htmlFor="drivewaySize" className="form-label">Driveway Size</label>
             <select
