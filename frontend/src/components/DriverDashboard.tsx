@@ -205,8 +205,14 @@ const DriverDashboard: React.FC = () => {
         cacheTTL: 2 * 60 * 1000 // 2 minutes cache
       });
       
-      // Filter results by car size compatibility
+      // Filter results by car size compatibility and exclude user's own driveways
       const filteredResults = res.data.filter(driveway => {
+        // Exclude user's own driveways
+        if (driveway.owner === user?.id) {
+          return false;
+        }
+        
+        // Filter by car size compatibility
         if (!driveway.carSizeCompatibility || driveway.carSizeCompatibility.length === 0) {
           return true; // If no compatibility specified, show all
         }
@@ -289,8 +295,14 @@ const DriverDashboard: React.FC = () => {
 
       const res = await axios.get<Driveway[]>(`/api/driveways/search?${queryParams}`, config);
       
-      // Filter results by car size compatibility
+      // Filter results by car size compatibility and exclude user's own driveways
       const filteredResults = res.data.filter(driveway => {
+        // Exclude user's own driveways
+        if (driveway.owner === user?.id) {
+          return false;
+        }
+        
+        // Filter by car size compatibility
         if (!driveway.carSizeCompatibility || driveway.carSizeCompatibility.length === 0) {
           return true; // If no compatibility specified, show all
         }
@@ -319,6 +331,12 @@ const DriverDashboard: React.FC = () => {
   };
 
   const handleBookDriveway = async (driveway: any) => {
+    // Check if user is trying to book their own driveway
+    if (driveway.owner === user?.id) {
+      showError('You cannot book your own driveway. Please select a different driveway to book.');
+      return;
+    }
+
     // Convert the new driveway format to the expected format
     const convertedDriveway: Driveway = {
       _id: driveway.id,

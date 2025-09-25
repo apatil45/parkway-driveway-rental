@@ -26,6 +26,14 @@ router.post('/', auth, isDriver, async (req, res) => {
       return res.status(404).json({ error: 'Driveway not found' });
     }
 
+    // Prevent users from booking their own driveways
+    if (drivewayFound.owner === driverId) {
+      return res.status(400).json({ 
+        error: 'Cannot book your own driveway',
+        message: 'You cannot book a driveway that you own. Please select a different driveway.'
+      });
+    }
+
     const newStartTime = new Date(startTime);
     const newEndTime = new Date(endTime);
 
