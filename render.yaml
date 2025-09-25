@@ -23,3 +23,7 @@ services:
         generateValue: true
       - key: PORT
         value: 10000
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: OPENCAGE_API_KEY
+        sync: false
