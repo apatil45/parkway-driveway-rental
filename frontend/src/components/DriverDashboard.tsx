@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { loadStripe } from '@stripe/stripe-js';
@@ -11,7 +11,7 @@ import { toast } from 'react-toastify';
 import Button from './Button';
 import './DriverDashboard.css';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51SAemo2MWNtZFiP8XnJ30lVvWp7e3D0bXnZ8jE8V2xL5n3d1oY9tS7pA5jY4t4oY0w0c0j0d0j0f0');
+const stripePromise = loadStripe((import.meta as any).env?.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51SAemo2MWNtZFiP8XnJ30lVvWp7e3D0bXnZ8jE8V2xL5n3d1oY9tS7pA5jY4t4oY0w0c0j0d0j0f0');
 
 interface Driveway {
   _id: string;
@@ -52,7 +52,24 @@ const DriverDashboard: React.FC = () => {
   });
   const [addressSearch, setAddressSearch] = useState<string>('');
   const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | undefined>(undefined);
+  
+  // Clear existing toasts to prevent duplicates
+  const clearExistingToasts = useCallback(() => {
+    // Clear any existing toast notifications
+    toast.dismiss();
+  }, []);
+
+  // Debounced search to prevent rapid-fire searches
+  const debouncedSearch = useCallback((searchFunction: () => void) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      searchFunction();
+    }, 300); // 300ms debounce
+  }, []);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [driverBookings, setDriverBookings] = useState<Booking[]>([]);
   const [showPaymentForm, setShowPaymentForm] = useState<boolean>(false);
@@ -66,6 +83,13 @@ const DriverDashboard: React.FC = () => {
     if (isAuthenticated && user) {
       fetchDriverBookings();
     }
+    
+    // Cleanup function to clear timeouts
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [isAuthenticated, user]);
 
   // Auto-search for current date/time when component loads
@@ -105,6 +129,11 @@ const DriverDashboard: React.FC = () => {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Prevent multiple simultaneous searches
+    if (isSearching) {
+      return;
+    }
+
     let latitude: number | undefined;
     let longitude: number | undefined;
     let radius = searchParams.radius || 5;
@@ -135,6 +164,9 @@ const DriverDashboard: React.FC = () => {
     }
 
     try {
+      setIsSearching(true);
+      clearExistingToasts(); // Clear any existing toasts
+      
       const config = {
         headers: {
         },
@@ -159,6 +191,8 @@ const DriverDashboard: React.FC = () => {
       });
       
       setSearchResults(filteredResults);
+      
+      // Only show one notification per search
       if (filteredResults.length === 0) {
         toast.info('No driveways found that match your car size. Try adjusting your search criteria.');
       } else {
@@ -167,7 +201,7 @@ const DriverDashboard: React.FC = () => {
     } catch (err: any) {
       toast.error(`Failed to search driveways: ${err.response?.data?.msg || 'Server Error'}`);
     } finally {
-      // setIsLoading(false); // End loading after search attempt
+      setIsSearching(false);
     }
   };
 
@@ -177,7 +211,14 @@ const DriverDashboard: React.FC = () => {
       return;
     }
 
+    // Prevent multiple simultaneous searches
+    if (isSearching) {
+      return;
+    }
+
     setIsSearching(true);
+    clearExistingToasts(); // Clear any existing toasts
+    
     try {
       let latitude: number | undefined;
       let longitude: number | undefined;
