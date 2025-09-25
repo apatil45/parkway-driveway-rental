@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useError } from '../context/ErrorContext';
 import { toast } from 'react-toastify';
 import Button from './Button';
 import DrivewayEditModal from './DrivewayEditModal';
@@ -9,7 +10,7 @@ import cachedApi from '../services/cachedApi';
 import './OwnerDashboard.css';
 
 interface Driveway {
-  _id: string;
+  id: string; // Changed from _id to id to match PostgreSQL model
   address: string;
   description: string;
   availability: { date: string; startTime: string; endTime: string; pricePerHour: number }[];
@@ -20,6 +21,7 @@ interface Driveway {
 
 const OwnerDashboard: React.FC = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { handleApiError, showSuccess, showError } = useError();
   const [driveways, setDriveways] = useState<Driveway[]>([]);
   const [formData, setFormData] = useState({
     address: '',
@@ -50,7 +52,7 @@ const OwnerDashboard: React.FC = () => {
       setDriveways(res.data);
     } catch (err: any) {
       console.error('Fetch driveways error:', err);
-      toast.error(`Failed to fetch driveways: ${err.response?.data?.msg || 'Server Error'}`);
+      handleApiError(err, 'fetching driveways');
     }
   };
 
@@ -139,15 +141,16 @@ const OwnerDashboard: React.FC = () => {
 
       if (editingDrivewayId) {
         await cachedApi.put(`/api/driveways/${editingDrivewayId}`, formData);
-        toast.success('Driveway updated successfully!');
+        showSuccess('Driveway updated successfully!');
       } else {
         await cachedApi.post('/api/driveways', formData);
-        toast.success('Driveway added successfully!');
+        showSuccess('Driveway added successfully!');
       }
       resetForm();
       fetchDriveways();
     } catch (err: any) {
-      toast.error(`Failed to save driveway: ${err.response?.data?.msg || 'Server Error'}`);
+      console.error('Save driveway error:', err);
+      handleApiError(err, 'saving driveway');
     }
   };
 
@@ -159,10 +162,11 @@ const OwnerDashboard: React.FC = () => {
           },
         };
         await cachedApi.delete(`/api/driveways/${id}`);
-        toast.success('Driveway deleted successfully!');
+        showSuccess('Driveway deleted successfully!');
         fetchDriveways();
       } catch (err: any) {
-        toast.error(`Failed to delete driveway: ${err.response?.data?.msg || 'Server Error'}`);
+        console.error('Delete driveway error:', err);
+        handleApiError(err, 'deleting driveway');
       }
     }
   };
@@ -419,7 +423,7 @@ const OwnerDashboard: React.FC = () => {
       ) : (
         <div id="driveways-section" className="driveways-grid">
           {driveways.map((driveway) => (
-            <div key={driveway._id} className="driveway-card">
+            <div key={driveway.id} className="driveway-card">
               <h4 className="driveway-title">{driveway.address}</h4>
               <p className="driveway-description">
                 <strong>Description:</strong> {driveway.description}
@@ -450,7 +454,7 @@ const OwnerDashboard: React.FC = () => {
               <div className="driveway-actions">
                 <Button
                   variant="danger"
-                onClick={() => handleDeleteDriveway(driveway._id)}
+                onClick={() => handleDeleteDriveway(driveway.id)}
                   fullWidth
                 >
                   Delete

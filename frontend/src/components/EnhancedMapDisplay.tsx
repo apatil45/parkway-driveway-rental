@@ -11,7 +11,7 @@ L.Icon.Default.mergeOptions({
 });
 
 interface Driveway {
-  _id: string;
+  id: string; // Changed from _id to id to match PostgreSQL model
   address: string;
   description: string;
   availability: { date: string; startTime: string; endTime: string; pricePerHour: number }[];
@@ -156,7 +156,7 @@ const EnhancedMapDisplay: React.FC<EnhancedMapDisplayProps> = ({
             ` : ''}
             ${onDrivewayClick ? `
               <button 
-                onclick="window.selectDriveway('${driveway._id}')"
+                onclick="window.selectDriveway('${driveway.id}')"
                 style="
                   background: #10b981; 
                   color: white; 
@@ -194,7 +194,7 @@ const EnhancedMapDisplay: React.FC<EnhancedMapDisplayProps> = ({
 
     // Add global function for popup button clicks
     (window as any).selectDriveway = (drivewayId: string) => {
-      const driveway = driveways.find(d => d._id === drivewayId);
+      const driveway = driveways.find(d => d.id === drivewayId);
       if (driveway && onDrivewayClick) {
         onDrivewayClick(driveway);
       }

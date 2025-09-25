@@ -228,33 +228,136 @@ router.post('/', auth, validateDriveway, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   const { address, description, images, availability, carSizeCompatibility, drivewaySize, isAvailable } = req.body;
 
+  console.log('PUT /api/driveways/:id - User:', req.user);
+  console.log('PUT /api/driveways/:id - Params:', req.params);
+  console.log('PUT /api/driveways/:id - Body:', req.body);
+
   try {
+    // Validate required fields
+    if (!req.params.id) {
+      return res.status(400).json({ 
+        error: 'Driveway ID is required',
+        message: 'Please provide a valid driveway ID'
+      });
+    }
+
     const driveway = await Driveway.findByPk(req.params.id);
     
     if (!driveway) {
-      return res.status(404).json({ msg: 'Driveway not found' });
+      console.log('Driveway not found:', req.params.id);
+      return res.status(404).json({ 
+        error: 'Driveway not found',
+        message: 'The driveway you are trying to update does not exist'
+      });
     }
 
     // Check if user owns this driveway
     if (driveway.owner !== req.user.id) {
-      return res.status(401).json({ msg: 'Not authorized' });
+      console.log('Unauthorized access attempt:', {
+        drivewayOwner: driveway.owner,
+        requestingUser: req.user.id
+      });
+      return res.status(403).json({ 
+        error: 'Not authorized',
+        message: 'You can only update driveways that you own'
+      });
     }
 
-    // Update driveway
-    await driveway.update({
-      address: address || driveway.address,
-      description: description || driveway.description,
-      images: images || driveway.images,
-      availability: availability || driveway.availability,
-      carSizeCompatibility: carSizeCompatibility || driveway.carSizeCompatibility,
-      drivewaySize: drivewaySize || driveway.drivewaySize,
-      isAvailable: isAvailable !== undefined ? isAvailable : driveway.isAvailable
-    });
+    // Validate input data
+    const updateData = {};
+    
+    if (address !== undefined) {
+      if (!address || address.trim().length < 5) {
+        return res.status(400).json({
+          error: 'Invalid address',
+          message: 'Address must be at least 5 characters long'
+        });
+      }
+      updateData.address = address.trim();
+    }
 
-    res.json(driveway);
+    if (description !== undefined) {
+      if (!description || description.trim().length < 10) {
+        return res.status(400).json({
+          error: 'Invalid description',
+          message: 'Description must be at least 10 characters long'
+        });
+      }
+      updateData.description = description.trim();
+    }
+
+    if (images !== undefined) {
+      if (!Array.isArray(images)) {
+        return res.status(400).json({
+          error: 'Invalid images',
+          message: 'Images must be an array'
+        });
+      }
+      updateData.images = images;
+    }
+
+    if (availability !== undefined) {
+      if (!Array.isArray(availability)) {
+        return res.status(400).json({
+          error: 'Invalid availability',
+          message: 'Availability must be an array'
+        });
+      }
+      updateData.availability = availability;
+    }
+
+    if (carSizeCompatibility !== undefined) {
+      if (!Array.isArray(carSizeCompatibility)) {
+        return res.status(400).json({
+          error: 'Invalid car size compatibility',
+          message: 'Car size compatibility must be an array'
+        });
+      }
+      updateData.carSizeCompatibility = carSizeCompatibility;
+    }
+
+    if (drivewaySize !== undefined) {
+      const validSizes = ['small', 'medium', 'large', 'extra-large'];
+      if (!validSizes.includes(drivewaySize)) {
+        return res.status(400).json({
+          error: 'Invalid driveway size',
+          message: 'Driveway size must be one of: small, medium, large, extra-large'
+        });
+      }
+      updateData.drivewaySize = drivewaySize;
+    }
+
+    if (isAvailable !== undefined) {
+      updateData.isAvailable = Boolean(isAvailable);
+    }
+
+    console.log('Updating driveway with data:', updateData);
+
+    // Update driveway
+    await driveway.update(updateData);
+
+    // Fetch updated driveway
+    const updatedDriveway = await Driveway.findByPk(req.params.id);
+    
+    console.log('Driveway updated successfully:', updatedDriveway.id);
+    res.json(updatedDriveway);
   } catch (err) {
-    console.error('Update Driveway Error:', err.message);
-    res.status(500).send('Server error');
+    console.error('Update Driveway Error:', err);
+    console.error('Error stack:', err.stack);
+    console.error('Error details:', {
+      message: err.message,
+      name: err.name,
+      code: err.code,
+      constraint: err.constraint,
+      table: err.table,
+      column: err.column
+    });
+    
+    res.status(500).json({ 
+      error: 'Server error',
+      message: 'Failed to update driveway. Please try again.',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 

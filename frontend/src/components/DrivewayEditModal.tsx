@@ -7,7 +7,7 @@ import ImageUpload from './ImageUpload';
 import './DrivewayEditModal.css';
 
 interface Driveway {
-  _id: string;
+  id: string; // Changed from _id to id to match PostgreSQL model
   address: string;
   description: string;
   availability: { date: string; startTime: string; endTime: string; pricePerHour: number }[];

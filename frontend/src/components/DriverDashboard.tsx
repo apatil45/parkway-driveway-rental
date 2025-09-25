@@ -18,7 +18,7 @@ import './DriverDashboard.css';
 const stripePromise = loadStripe((import.meta as any).env?.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51SAemo2MWNtZFiP8XnJ30lVvWp7e3D0bXnZ8jE8V2xL5n3d1oY9tS7pA5jY4t4oY0w0c0j0d0j0f0');
 
 interface Driveway {
-  _id: string;
+  id: string; // Changed from _id to id to match PostgreSQL model
   owner: string;
   address: string;
   description: string;
@@ -33,7 +33,7 @@ interface Driveway {
 }
 
 interface Booking {
-  _id: string;
+  id: string; // Changed from _id to id to match PostgreSQL model
   driver: string;
   driveway: string;
   startTime: string;
@@ -339,7 +339,7 @@ const DriverDashboard: React.FC = () => {
 
     // Convert the new driveway format to the expected format
     const convertedDriveway: Driveway = {
-      _id: driveway.id,
+      id: driveway.id,
       owner: driveway.owner?.name || 'Unknown',
       address: driveway.location,
       description: driveway.description,
@@ -505,7 +505,7 @@ const DriverDashboard: React.FC = () => {
 
     try {
       const bookingData = {
-        driveway: driveway._id,
+        driveway: driveway.id,
         driver: user.id,
         startTime: startTimeString,
         endTime: endTimeString,
@@ -522,7 +522,7 @@ const DriverDashboard: React.FC = () => {
       const res = await axios.post<Booking>('/api/bookings', bookingData, config);
       const pendingBooking = res.data;
 
-      const paymentIntentRes = await axios.post('/api/payments/create-payment-intent', { bookingId: pendingBooking._id }, config);
+      const paymentIntentRes = await axios.post('/api/payments/create-payment-intent', { bookingId: pendingBooking.id }, config);
       setClientSecret(paymentIntentRes.data.clientSecret);
       setBookingToConfirm(pendingBooking);
       setShowPaymentForm(true);
@@ -560,10 +560,10 @@ const DriverDashboard: React.FC = () => {
 
   const handlePaymentFailure = async (error: any) => {
     showError(`Payment failed: ${error.message || 'Unknown error'}`);
-    if (bookingToConfirm && bookingToConfirm._id) {
+    if (bookingToConfirm && bookingToConfirm.id) {
       try {
         const config = { headers: {} };
-        await axios.put(`/api/bookings/${bookingToConfirm._id}/cancel`, {}, config);
+        await axios.put(`/api/bookings/${bookingToConfirm.id}/cancel`, {}, config);
         showInfo('Pending booking cancelled due to payment failure.');
         fetchDriverBookings();
       } catch (cancelErr: any) {
@@ -628,7 +628,7 @@ const DriverDashboard: React.FC = () => {
       if (error) {
         handlePaymentFailure(error);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        handlePaymentSuccess(paymentIntent.id, bookingToConfirm._id);
+        handlePaymentSuccess(paymentIntent.id, bookingToConfirm.id);
       } else {
         handlePaymentFailure({ message: 'Payment did not succeed.' });
       }
@@ -977,7 +977,7 @@ const DriverDashboard: React.FC = () => {
           ) : (
             <SearchResults
             driveways={searchResults.map(driveway => ({
-              id: driveway._id,
+              id: driveway.id,
               title: driveway.address,
               description: driveway.description,
               location: driveway.address,
@@ -1123,8 +1123,8 @@ const DriverDashboard: React.FC = () => {
       ) : (
         <div className="bookings-grid">
           {driverBookings.map((booking) => (
-            <div key={booking._id} className="booking-card">
-              <h4 className="booking-id">Booking ID: {booking._id.substring(0, 8)}...</h4>
+            <div key={booking.id} className="booking-card">
+              <h4 className="booking-id">Booking ID: {booking.id.substring(0, 8)}...</h4>
               <div className="booking-detail">
                 <strong>Driveway:</strong> {booking.driveway.substring(0, 8)}...
               </div>
@@ -1143,7 +1143,7 @@ const DriverDashboard: React.FC = () => {
               {booking.status === 'pending' && (
                 <Button 
                   variant="danger"
-                  onClick={() => handleCancelBooking(booking._id)}
+                  onClick={() => handleCancelBooking(booking.id)}
                   fullWidth
                 >
                   Cancel Booking

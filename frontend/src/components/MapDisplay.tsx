@@ -12,7 +12,7 @@ L.Icon.Default.mergeOptions({
 });
 
 interface Driveway {
-  _id: string;
+  id: string; // Changed from _id to id to match PostgreSQL model
   address: string;
   description: string;
   pricePerHour: number;
@@ -46,7 +46,7 @@ const MapDisplay: React.FC<MapDisplayProps> = ({ driveways, center = [0, 0], zoo
       />
       {driveways.map((driveway) => (
         <Marker
-          key={driveway._id}
+          key={driveway.id}
           position={[driveway.location.coordinates[1], driveway.location.coordinates[0]]} // [latitude, longitude]
         >
           <Popup>
