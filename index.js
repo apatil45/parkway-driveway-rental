@@ -23,9 +23,12 @@ const startServer = async () => {
       // Setup model associations
       setupAssociations();
       
-      // Sync database models
+      // Sync database models with Render-safe options
       console.log('📋 Synchronizing database models...');
-      await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
+      await sequelize.sync({ 
+        alter: false, // Never alter in production
+        force: false  // Never force recreate
+      });
       console.log('✅ Database models synchronized');
       
     } else if (process.env.MONGO_URI) {
@@ -69,14 +72,36 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage()
-  });
+// Health check endpoint - Render compatible
+app.get('/health', async (req, res) => {
+  try {
+    const healthData = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      environment: process.env.NODE_ENV || 'development'
+    };
+
+    // Test database connection if available
+    if (process.env.DATABASE_URL) {
+      try {
+        await sequelize.authenticate();
+        healthData.database = 'connected';
+      } catch (dbError) {
+        healthData.database = 'disconnected';
+        healthData.databaseError = dbError.message;
+      }
+    }
+
+    res.status(200).json(healthData);
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
 });
 
 // Serve static files in production

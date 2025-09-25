@@ -64,7 +64,10 @@ const Booking = sequelize.define('Booking', {
   }
 }, {
   timestamps: true,
-  tableName: 'bookings'
+  tableName: 'bookings',
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  underscored: true
 });
 
 module.exports = Booking;

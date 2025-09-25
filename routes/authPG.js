@@ -79,12 +79,19 @@ router.post('/login', validateUserLogin, async (req, res) => {
 router.get('/user', auth, async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] },
+      raw: false
     });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
     res.json(user);
   } catch (err) {
     console.error('Get User Route Error:', err.message);
-    res.status(500).send('Server error');
+    console.error('Error details:', err);
+    res.status(500).json({ error: 'Server error', message: 'Failed to fetch user data' });
   }
 });
 

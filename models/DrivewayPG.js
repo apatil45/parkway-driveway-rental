@@ -47,7 +47,10 @@ const Driveway = sequelize.define('Driveway', {
   }
 }, {
   timestamps: true,
-  tableName: 'driveways'
+  tableName: 'driveways',
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  underscored: true
 });
 
 // Set up associations

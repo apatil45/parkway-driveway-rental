@@ -2,13 +2,16 @@ databases:
   - name: parkway-db
     databaseName: parkway_db
     user: parkway_user
+    plan: free
 
 services:
   - type: web
     name: parkway-app
     env: node
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,3 +19,7 @@ services:
         fromDatabase:
           name: parkway-db
           property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000

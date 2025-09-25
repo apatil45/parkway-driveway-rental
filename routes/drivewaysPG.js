@@ -15,14 +15,17 @@ router.get('/', async (req, res) => {
       where: { isAvailable: true },
       include: [{
         model: User,
+        as: 'ownerInfo',
         attributes: ['name', 'email']
       }],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']],
+      raw: false
     });
     res.json(driveways);
   } catch (err) {
     console.error('Get Driveways Error:', err.message);
-    res.status(500).send('Server error');
+    console.error('Error details:', err);
+    res.status(500).json({ error: 'Server error', message: 'Failed to fetch driveways' });
   }
 });
 
@@ -33,12 +36,14 @@ router.get('/owner', auth, async (req, res) => {
   try {
     const driveways = await Driveway.findAll({
       where: { owner: req.user.id },
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']],
+      raw: false
     });
     res.json(driveways);
   } catch (err) {
     console.error('Get Owner Driveways Error:', err.message);
-    res.status(500).send('Server error');
+    console.error('Error details:', err);
+    res.status(500).json({ error: 'Server error', message: 'Failed to fetch owner driveways' });
   }
 });
 
