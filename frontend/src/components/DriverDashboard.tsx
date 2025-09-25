@@ -8,7 +8,7 @@ import AdvancedSearch from './AdvancedSearch';
 import SearchResults from './SearchResults';
 import DashboardNav from './DashboardNav';
 import { toast } from 'react-toastify';
-import { useSingleNotification } from '../hooks/useNotificationQueue';
+import { useSmartNotification } from '../hooks/useNotificationQueue';
 import Button from './Button';
 import './DriverDashboard.css';
 
@@ -43,7 +43,7 @@ interface Booking {
 
 const DriverDashboard: React.FC = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, clearAll } = useSingleNotification();
+  const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, clearAll } = useSmartNotification();
   const [searchResults, setSearchResults] = useState<Driveway[]>([]);
   const [searchParams, setSearchParams] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -55,7 +55,6 @@ const DriverDashboard: React.FC = () => {
   const [addressSearch, setAddressSearch] = useState<string>('');
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastWarningTimeRef = useRef<number>(0);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | undefined>(undefined);
   
   // Clear existing toasts to prevent duplicates
@@ -64,13 +63,9 @@ const DriverDashboard: React.FC = () => {
     clearAll();
   }, [clearAll]);
 
-  // Throttled warning function to prevent duplicate warnings
+  // Smart warning function (handled by useSmartNotification)
   const showThrottledWarning = useCallback((message: string) => {
-    const now = Date.now();
-    if (now - lastWarningTimeRef.current > 2000) { // Only show warning every 2 seconds
-      lastWarningTimeRef.current = now;
-      showWarning(message);
-    }
+    showWarning(message);
   }, [showWarning]);
 
   // Debounced search to prevent rapid-fire searches
