@@ -48,4 +48,9 @@ const Driveway = sequelize.define('Driveway', {
   tableName: 'driveways'
 });
 
+// Set up associations
+Driveway.associate = (models) => {
+  Driveway.belongsTo(models.User, { foreignKey: 'owner' });
+};
+
 module.exports = Driveway;

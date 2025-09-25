@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const sequelize = require('./models/database'); // PostgreSQL connection
 require('dotenv').config();
-const xss = require('xss-clean'); // Import xss-clean
+// Security middleware removed due to compatibility issues with Express 5
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,14 +38,13 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Define Routes (use PostgreSQL routes in production)
-app.use('/api/driveways', require('./routes/driveways'));
+app.use('/api/driveways', process.env.DATABASE_URL ? require('./routes/drivewaysPG') : require('./routes/driveways'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/auth', process.env.DATABASE_URL ? require('./routes/authPG') : require('./routes/auth'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/geocoding', require('./routes/geocoding')); // New geocoding route
 
-// Sanitize data against XSS attacks
-app.use(xss());
+// Security middleware disabled for compatibility with Express 5
 
 // Error handling middleware (should be last middleware)
 app.use(errorHandler);
