@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Button from './Button';
 import DrivewayEditModal from './DrivewayEditModal';
 import DashboardNav from './DashboardNav';
+import cachedApi from '../services/cachedApi';
 import './OwnerDashboard.css';
 
 interface Driveway {
@@ -42,13 +43,13 @@ const OwnerDashboard: React.FC = () => {
 
   const fetchDriveways = async () => {
     try {
-      const config = {
-        headers: {
-        },
-      };
-      const res = await axios.get<Driveway[]>('/api/driveways', config);
+      const res = await cachedApi.get<Driveway[]>('/api/driveways', {
+        cache: true,
+        cacheTTL: 30 * 1000 // 30 seconds cache
+      });
       setDriveways(res.data);
     } catch (err: any) {
+      console.error('Fetch driveways error:', err);
       toast.error(`Failed to fetch driveways: ${err.response?.data?.msg || 'Server Error'}`);
     }
   };
@@ -107,10 +108,10 @@ const OwnerDashboard: React.FC = () => {
       };
 
       if (editingDriveway) {
-        await axios.put(`/api/driveways/${editingDriveway._id}`, drivewayData, config);
+        await cachedApi.put(`/api/driveways/${editingDriveway._id}`, drivewayData);
         toast.success('Driveway updated successfully!');
       } else {
-        await axios.post('/api/driveways', drivewayData, config);
+        await cachedApi.post('/api/driveways', drivewayData);
         toast.success('Driveway added successfully!');
       }
       
@@ -137,10 +138,10 @@ const OwnerDashboard: React.FC = () => {
       };
 
       if (editingDrivewayId) {
-        await axios.put(`/api/driveways/${editingDrivewayId}`, formData, config);
+        await cachedApi.put(`/api/driveways/${editingDrivewayId}`, formData);
         toast.success('Driveway updated successfully!');
       } else {
-        await axios.post('/api/driveways', formData, config);
+        await cachedApi.post('/api/driveways', formData);
         toast.success('Driveway added successfully!');
       }
       resetForm();
@@ -157,7 +158,7 @@ const OwnerDashboard: React.FC = () => {
           headers: {
           },
         };
-        await axios.delete(`/api/driveways/${id}`, config);
+        await cachedApi.delete(`/api/driveways/${id}`);
         toast.success('Driveway deleted successfully!');
         fetchDriveways();
       } catch (err: any) {
@@ -170,7 +171,7 @@ const OwnerDashboard: React.FC = () => {
     return <div className="text-center mt-8 text-lg font-medium">Loading user data...</div>;
   }
 
-  if (!isAuthenticated || user?.role !== 'owner') {
+  if (!isAuthenticated || !user?.roles.includes('owner')) {
     return <div className="text-center mt-12 text-red-600 text-xl font-bold">Access Denied or Not Authenticated.</div>;
   }
 

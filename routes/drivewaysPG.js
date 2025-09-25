@@ -201,6 +201,9 @@ router.get('/owner', auth, async (req, res) => {
 router.post('/', auth, validateDriveway, async (req, res) => {
   const { address, description, images, availability, carSizeCompatibility, drivewaySize } = req.body;
 
+  console.log('POST /api/driveways - User:', req.user);
+  console.log('POST /api/driveways - Body:', req.body);
+
   try {
     const driveway = await Driveway.create({
       owner: req.user.id,
