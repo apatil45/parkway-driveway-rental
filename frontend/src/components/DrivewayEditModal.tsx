@@ -174,6 +174,22 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
   };
 
   const handleSave = async () => {
+    console.log('DrivewayEditModal: handleSave called');
+    console.log('Form data:', formData);
+    console.log('Errors:', errors);
+    console.log('Is valid:', isValid);
+    console.log('Availability slots:', availabilitySlots);
+
+    // Check form validation first
+    const isFormValid = validateForm();
+    console.log('Form validation result:', isFormValid);
+
+    if (!isFormValid) {
+      console.log('Form validation failed, errors:', errors);
+      alert('Please fix the form errors before saving.');
+      return;
+    }
+
     if (availabilitySlots.length === 0) {
       alert('Please add at least one availability slot.');
       return;
@@ -192,12 +208,16 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
       isAvailable: true
     };
 
+    console.log('Driveway data to save:', drivewayData);
+
     try {
       await submitForm(async (data) => {
+        console.log('Submitting driveway data:', drivewayData);
         await onSave(drivewayData);
         onClose();
       });
     } catch (error) {
+      console.error('Error in handleSave:', error);
       // Error handling is done in parent component
     }
   };
@@ -245,8 +265,14 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
                 label="Address"
                 name="address"
                 value={formData.address}
-                onChange={(e) => handleChange('address', e.target.value)}
-                onBlur={() => handleBlur('address')}
+                onChange={(e) => {
+                  console.log('Address changed:', e.target.value);
+                  handleChange('address', e.target.value);
+                }}
+                onBlur={() => {
+                  console.log('Address blurred');
+                  handleBlur('address');
+                }}
                 error={errors.address}
                 touched={touched.address}
                 placeholder="Enter the full address of your driveway"
@@ -263,8 +289,14 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
                 <textarea
                   name="description"
                   value={formData.description}
-                  onChange={(e) => handleChange('description', e.target.value)}
-                  onBlur={() => handleBlur('description')}
+                  onChange={(e) => {
+                    console.log('Description changed:', e.target.value);
+                    handleChange('description', e.target.value);
+                  }}
+                  onBlur={() => {
+                    console.log('Description blurred');
+                    handleBlur('description');
+                  }}
                   className={`form-textarea ${errors.description && touched.description ? 'error' : ''}`}
                   placeholder="Describe your driveway, including size, surface type, access instructions, and any special features..."
                   rows={4}

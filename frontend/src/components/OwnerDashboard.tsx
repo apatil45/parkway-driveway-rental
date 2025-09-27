@@ -7,6 +7,8 @@ import { robustDrivewayService } from '../services/robustDrivewayService';
 import { offlineService } from '../services/offlineService';
 import Button from './Button';
 import DrivewayEditModal from './DrivewayEditModal';
+import DrivewayFormDebug from './DrivewayFormDebug';
+import SimpleDrivewayForm from './SimpleDrivewayForm';
 import DashboardNav from './DashboardNav';
 import cachedApi from '../services/cachedApi';
 import './OwnerDashboard.css';
@@ -244,6 +246,12 @@ const OwnerDashboard: React.FC = () => {
           }
         }}
       />
+      
+      {/* Debug Component - Remove in production */}
+      {process.env.NODE_ENV === 'development' && <DrivewayFormDebug />}
+      
+      {/* Simple Form Test - Remove in production */}
+      {process.env.NODE_ENV === 'development' && <SimpleDrivewayForm />}
       
       {/* Legacy form - hidden but kept for compatibility */}
       <form onSubmit={onSubmit} className="dashboard-form" style={{ display: 'none' }}>
