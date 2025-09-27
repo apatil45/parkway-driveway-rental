@@ -11,6 +11,8 @@ import { SkeletonSearchResults } from './EnhancedSkeletonLoader';
 import BookingDurationModal from './BookingDurationModal'; // Import new booking modal
 import { notificationService } from '../services/notificationService';
 import { useSocket } from '../hooks/useSocket';
+import { useKeyboardShortcuts, commonShortcuts } from '../hooks/useKeyboardShortcuts';
+import BreadcrumbNav from './BreadcrumbNav';
 import cachedApi from '../services/cachedApi';
 import Button from './Button';
 import './DriverDashboard.css';
@@ -84,7 +86,31 @@ const DriverDashboard: React.FC = () => {
     });
   }, []);
   const { isConnected: socketConnected, notifications, joinBookingRoom, leaveBookingRoom } = useSocket();
+
+  // Add keyboard shortcuts
+  useKeyboardShortcuts([
+    ...commonShortcuts,
+    {
+      key: 'b',
+      ctrlKey: true,
+      action: () => {
+        if (searchResults.length > 0) {
+          setCurrentSection('results');
+        }
+      },
+      description: 'Go to search results (Ctrl+B)'
+    },
+    {
+      key: 'm',
+      ctrlKey: true,
+      action: () => {
+        setCurrentSection('map');
+      },
+      description: 'Go to map view (Ctrl+M)'
+    }
+  ]);
   const [searchResults, setSearchResults] = useState<Driveway[]>([]);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [searchParams, setSearchParams] = useState({
     date: new Date().toISOString().split('T')[0],
     startTime: new Date().toTimeString().slice(0, 5),
@@ -248,6 +274,9 @@ const DriverDashboard: React.FC = () => {
       return;
     }
 
+    setIsSearching(true);
+    setIsLoadingResults(true);
+
     // Clear any existing toasts before starting new search
     clearExistingToasts();
 
@@ -326,6 +355,7 @@ const DriverDashboard: React.FC = () => {
       showError(`Failed to search driveways: ${err.response?.data?.msg || 'Server Error'}`);
     } finally {
       setIsSearching(false);
+      setIsLoadingResults(false);
       setIsLoadingDriveways(false);
     }
   };
@@ -835,6 +865,22 @@ const DriverDashboard: React.FC = () => {
       )}
 
       <h2 className="dashboard-title">Parkway.com - Driver Dashboard</h2>
+      
+      {/* Breadcrumb Navigation */}
+      <BreadcrumbNav 
+        items={[
+          { label: 'Home', onClick: () => setCurrentSection('search') },
+          ...(currentSection === 'results' ? [
+            { label: 'Search Results', active: true }
+          ] : []),
+          ...(currentSection === 'map' ? [
+            { label: 'Map View', active: true }
+          ] : []),
+          ...(currentSection === 'bookings' ? [
+            { label: 'My Bookings', active: true }
+          ] : [])
+        ]}
+      />
       
       {/* Main Action Buttons */}
       <div style={{ 
