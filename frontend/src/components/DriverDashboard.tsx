@@ -258,7 +258,7 @@ const DriverDashboard: React.FC = () => {
     if (addressSearch === 'Current Location' && currentLocation) {
       latitude = currentLocation.latitude;
       longitude = currentLocation.longitude;
-    } else if (addressSearch) {
+    } else if (addressSearch && addressSearch.trim() !== '') {
       try {
         const geocodeConfig = {
           headers: { 'Content-Type': 'application/json' },
@@ -582,11 +582,28 @@ const DriverDashboard: React.FC = () => {
     }
   };
 
-  const handleBookNow = () => {
+  const handleBookNow = async () => {
     // Set current time and search immediately
     const now = new Date();
     const currentTime = now.toTimeString().slice(0, 5);
     const endTime = new Date(now.getTime() + 2 * 60 * 60 * 1000).toTimeString().slice(0, 5);
+    
+    // Show loading notification
+    showInfo('Getting your current location...', 'Location Detection');
+    
+    // Get driver's current location automatically
+    const location = await getDriverLocation();
+    
+    if (location) {
+      // Set the current address in the search
+      setAddressSearch(location.address);
+      setCurrentLocation({ latitude: location.latitude, longitude: location.longitude });
+      
+      showSuccess(`Location detected: ${location.address}`, 'Location Found');
+    } else {
+      // Fallback to manual address entry
+      showWarning('Could not detect your location. Please enter your address manually.', 'Location Detection Failed');
+    }
     
     setSearchParams({
       ...searchParams,
@@ -806,7 +823,7 @@ const DriverDashboard: React.FC = () => {
           size="lg"
           onClick={handleBookNow}
         >
-          Book Now
+          📍 Book Now (Auto-Location)
         </Button>
         <Button 
           variant="secondary" 
@@ -899,7 +916,7 @@ const DriverDashboard: React.FC = () => {
           name="addressSearch"
           value={addressSearch}
           onChange={onSearchChange}
-          placeholder="Enter Address or 'Current Location'"
+          placeholder="Enter Address or 'Current Location' (Auto-detected when using Book Now)"
           required={!currentLocation}
             className="form-input"
         />
