@@ -337,7 +337,7 @@ class NotificationService {
 
   // Public methods for manual control
   removeNotification(id: string) {
-    this.removeNotification(id);
+    this.removeNotificationInternal(id);
   }
 
   clearAllNotifications() {

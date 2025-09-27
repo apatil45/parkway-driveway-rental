@@ -17,6 +17,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ErrorProvider } from './context/ErrorContext';
 import ProfessionalNotificationSystem from './components/ProfessionalNotificationSystem';
 import PerformanceOptimizer from './components/PerformanceOptimizer';
+import PerformanceMonitor from './components/PerformanceMonitor';
 // ToastContainer removed - using ProfessionalNotificationSystem instead
 
 const App: React.FC = () => {
@@ -28,6 +29,7 @@ const App: React.FC = () => {
           <PerformanceOptimizer />
           <EnhancedNav />
           <ProfessionalNotificationSystem />
+          <PerformanceMonitor />
           {/* Debug components - uncomment if needed for troubleshooting */}
           {/* process.env.NODE_ENV === 'development' && (
             <>

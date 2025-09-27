@@ -38,11 +38,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Token refresh interval
   const TOKEN_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
-  const USER_VALIDATION_INTERVAL = 5 * 60 * 1000; // 5 minutes (reduced from frequent calls)
-  const MAX_RETRY_COUNT = 3;
+  const USER_VALIDATION_INTERVAL = 10 * 60 * 1000; // 10 minutes (increased to reduce API calls)
+  const MAX_RETRY_COUNT = 2; // Reduced retry count
   
   // Cache for user data to reduce API calls
   const [lastUserValidation, setLastUserValidation] = useState<number>(0);
+  const [isValidating, setIsValidating] = useState<boolean>(false);
+
+  // Debounced user validation to prevent excessive API calls
+  const validateUser = async () => {
+    if (isValidating) return; // Prevent concurrent validations
+    
+    const now = Date.now();
+    if (now - lastUserValidation < USER_VALIDATION_INTERVAL) {
+      return; // Skip if recently validated
+    }
+    
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    setIsValidating(true);
+    setLastUserValidation(now);
+    
+    try {
+      const res = await axios.get('/api/auth/user');
+      setUser(res.data);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        clearAuthData();
+      }
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   // This useEffect runs once on mount to load the user if a token exists
   useEffect(() => {
@@ -58,6 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const res = await axios.get('/api/auth/user');
           console.log('AuthContext - User loaded successfully:', res.data);
           setUser(res.data);
+          setLastUserValidation(Date.now()); // Update validation timestamp
           
           // Set up token refresh if remember me is enabled
           if (rememberMe) {
