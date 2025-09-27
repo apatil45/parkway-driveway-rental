@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useFormValidation } from '../hooks/useFormValidation';
+import { useRobustFormValidation } from '../hooks/useRobustFormValidation';
 import FormInput from './FormInput';
 import Button from './Button';
 import HelpTooltip from './HelpTooltip';
@@ -52,11 +52,14 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
     formData,
     errors,
     touched,
+    isValid,
+    isSubmitting,
     handleChange,
     handleBlur,
     validateForm,
-    setFormData
-  } = useFormValidation({
+    setFormData,
+    submitForm
+  } = useRobustFormValidation({
     address: '',
     description: '',
     drivewaySize: 'medium',
@@ -171,8 +174,6 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (!validateForm()) return;
-    
     if (availabilitySlots.length === 0) {
       alert('Please add at least one availability slot.');
       return;
@@ -192,8 +193,10 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
     };
 
     try {
-      await onSave(drivewayData);
-      onClose();
+      await submitForm(async (data) => {
+        await onSave(drivewayData);
+        onClose();
+      });
     } catch (error) {
       // Error handling is done in parent component
     }

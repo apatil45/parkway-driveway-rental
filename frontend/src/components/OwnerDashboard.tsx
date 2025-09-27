@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useError } from '../context/ErrorContext';
 import { notificationService } from '../services/notificationService';
+import { robustDrivewayService } from '../services/robustDrivewayService';
+import { offlineService } from '../services/offlineService';
 import Button from './Button';
 import DrivewayEditModal from './DrivewayEditModal';
 import DashboardNav from './DashboardNav';
@@ -149,36 +151,28 @@ const OwnerDashboard: React.FC = () => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-
       if (editingDrivewayId) {
-        await cachedApi.put(`/api/driveways/${editingDrivewayId}`, formData);
-        showSuccess('Driveway updated successfully!');
+        await robustDrivewayService.updateDriveway(editingDrivewayId, formData);
       } else {
-        await cachedApi.post('/api/driveways', formData);
-        showSuccess('Driveway added successfully!');
+        await robustDrivewayService.createDriveway(formData);
       }
       resetForm();
       fetchDriveways();
     } catch (err: any) {
       console.error('Save driveway error:', err);
-      handleApiError(err, 'saving driveway');
+      
+      // Save driveway data offline for retry if offline
+      if (!offlineService.isOnline()) {
+        offlineService.saveDrivewayData(formData);
+        showError('You are offline. Your driveway has been saved and will be processed when you are back online.');
+      }
     }
   };
 
   const handleDeleteDriveway = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this driveway?')) {
       try {
-        const config = {
-          headers: {
-          },
-        };
-        await cachedApi.delete(`/api/driveways/${id}`);
-        showSuccess('Driveway deleted successfully!');
+        await robustDrivewayService.deleteDriveway(id);
         fetchDriveways();
       } catch (err: any) {
         console.error('Delete driveway error:', err);

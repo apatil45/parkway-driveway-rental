@@ -14,6 +14,8 @@ import { useSocket } from '../hooks/useSocket';
 import { useKeyboardShortcuts, commonShortcuts } from '../hooks/useKeyboardShortcuts';
 import BreadcrumbNav from './BreadcrumbNav';
 import cachedApi from '../services/cachedApi';
+import { robustBookingService } from '../services/robustBookingService';
+import { offlineService } from '../services/offlineService';
 import Button from './Button';
 import './DriverDashboard.css';
 
@@ -680,26 +682,22 @@ const DriverDashboard: React.FC = () => {
     }
 
     try {
-      const bookingData = {
+      const bookingRequest = {
         driveway: driveway.id,
         driver: user.id,
         startTime: startTimeString,
         endTime: endTimeString,
         totalPrice,
-        status: 'pending',
+        driverLocation: driverLocation
       };
 
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
+      // Create booking using robust service
+      const pendingBooking = await robustBookingService.createBooking(bookingRequest);
 
-      const res = await axios.post<Booking>('/api/bookings', bookingData, config);
-      const pendingBooking = res.data;
-
-      const paymentIntentRes = await axios.post('/api/payments/create-payment-intent', { bookingId: pendingBooking.id }, config);
-      setClientSecret(paymentIntentRes.data.clientSecret);
+      // Create payment intent using robust service
+      const paymentIntent = await robustBookingService.createPaymentIntent(pendingBooking.id);
+      
+      setClientSecret(paymentIntent.clientSecret);
       setBookingToConfirm(pendingBooking);
       setShowPaymentForm(true);
       setSelectedSlotDetails(null);
@@ -710,20 +708,30 @@ const DriverDashboard: React.FC = () => {
         scrollToSection('payment-section');
       }, 300);
     } catch (err: any) {
-      showError(`Failed to initiate booking: ${err.response?.data?.msg || 'Server Error'}`);
+      console.error('Booking initiation failed:', err);
+      
+      // Save booking data offline for retry if offline
+      if (!offlineService.isOnline()) {
+        const bookingData = {
+          driveway: driveway.id,
+          driver: user.id,
+          startTime: startTimeString,
+          endTime: endTimeString,
+          totalPrice,
+          driverLocation
+        };
+        offlineService.saveBookingData(bookingData);
+        showError('You are offline. Your booking has been saved and will be processed when you are back online.');
+      }
     }
   };
 
 
   const handlePaymentSuccess = async (paymentIntentId: string, bookingId: string) => {
     try {
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-      await axios.put(`/api/bookings/${bookingId}`, { paymentIntentId, status: 'confirmed' }, config);
-      notificationService.showBookingSuccess('Your booking has been confirmed and payment processed successfully!');
+      // Confirm booking using robust service
+      await robustBookingService.confirmBooking(bookingId, paymentIntentId);
+      
       setShowPaymentForm(false);
       setClientSecret(null);
       setBookingToConfirm(null);
