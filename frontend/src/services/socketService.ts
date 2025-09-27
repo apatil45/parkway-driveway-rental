@@ -37,8 +37,8 @@ class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
+  private maxReconnectAttempts = 3; // Reduced from 5 to 3
+  private reconnectDelay = 5000; // Increased from 1 second to 5 seconds
   private token: string | null = null;
 
   // Event handlers

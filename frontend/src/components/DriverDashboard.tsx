@@ -802,11 +802,37 @@ const DriverDashboard: React.FC = () => {
 
   return (
     <div className="driver-dashboard">
-      {/* Real-time Connection Indicator */}
-      <div className={`connection-indicator ${socketConnected ? 'connected' : 'disconnected'}`}>
-        <div className="connection-dot"></div>
-        <span>{socketConnected ? 'Live Updates Connected' : 'Connecting to Live Updates...'}</span>
-      </div>
+      {/* Minimal Connection Indicator - Only show when disconnected for more than 5 seconds */}
+      {!socketConnected && (
+        <div className="connection-indicator disconnected" style={{ 
+          position: 'fixed', 
+          top: '20px', 
+          right: '20px', 
+          zIndex: 1000,
+          background: 'rgba(255, 193, 7, 0.95)',
+          color: '#000',
+          padding: '6px 10px',
+          borderRadius: '20px',
+          fontSize: '11px',
+          fontWeight: '500',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 193, 7, 0.3)',
+          minWidth: '120px',
+          textAlign: 'center'
+        }}>
+          <div style={{ 
+            display: 'inline-block', 
+            width: '6px', 
+            height: '6px', 
+            borderRadius: '50%', 
+            backgroundColor: '#ff6b6b', 
+            marginRight: '6px',
+            animation: 'pulse 2s infinite'
+          }}></div>
+          <span>Reconnecting...</span>
+        </div>
+      )}
 
       <h2 className="dashboard-title">Parkway.com - Driver Dashboard</h2>
       

@@ -48,11 +48,16 @@ export const useSocket = () => {
   const availabilityUpdateHandlersRef = useRef<(() => void)[]>([]);
   const connectionHandlerRef = useRef<(() => void) | null>(null);
 
-  // Connect to socket when user is authenticated
+  // Connect to socket when user is authenticated - with delay to avoid spam
   useEffect(() => {
     if (user && token) {
-      console.log('🔌 Connecting to WebSocket...');
-      socketService.connect(token);
+      // Add a small delay to prevent immediate connection attempts
+      const connectTimer = setTimeout(() => {
+        console.log('🔌 Connecting to WebSocket...');
+        socketService.connect(token);
+      }, 2000); // 2 second delay
+      
+      return () => clearTimeout(connectTimer);
     } else {
       console.log('🔌 Disconnecting from WebSocket...');
       socketService.disconnect();
