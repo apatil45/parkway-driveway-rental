@@ -1,5 +1,6 @@
-/* Global Styles */
+/* Global Styles - Enhanced Cross-Platform */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import './styles/responsive.css';
 
 * {
   box-sizing: border-box;
@@ -14,8 +15,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
+  min-height: -webkit-fill-available; /* iOS Safari fix */
   color: #1e293b;
   line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+  -webkit-transform: translateZ(0); /* GPU acceleration */
+  transform: translateZ(0);
 }
 
 code {

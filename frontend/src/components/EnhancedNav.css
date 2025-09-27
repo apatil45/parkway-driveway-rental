@@ -1,13 +1,17 @@
-/* Professional Enhanced Navigation Styles */
+/* Professional Enhanced Navigation Styles - Cross-Platform Optimized */
 
 .enhanced-nav {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px); /* Safari support */
   border-bottom: 1px solid rgba(229, 231, 235, 0.5);
   position: sticky;
   top: 0;
   z-index: 1000;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  -webkit-transform: translateZ(0); /* GPU acceleration */
+  transform: translateZ(0);
+  will-change: transform; /* Performance hint */
 }
 
 .nav-container {

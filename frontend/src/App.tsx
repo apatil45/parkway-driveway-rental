@@ -16,6 +16,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt'; // Import PWA inst
 import { AuthProvider } from './context/AuthContext';
 import { ErrorProvider } from './context/ErrorContext';
 import ProfessionalNotificationSystem from './components/ProfessionalNotificationSystem';
+import PerformanceOptimizer from './components/PerformanceOptimizer';
 // ToastContainer removed - using ProfessionalNotificationSystem instead
 
 const App: React.FC = () => {
@@ -24,6 +25,7 @@ const App: React.FC = () => {
       <ErrorProvider>
         <AuthProvider>
         <Router>
+          <PerformanceOptimizer />
           <EnhancedNav />
           <ProfessionalNotificationSystem />
           {/* Debug components - uncomment if needed for troubleshooting */}
