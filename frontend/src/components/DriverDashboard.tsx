@@ -1138,15 +1138,21 @@ const DriverDashboard: React.FC = () => {
             <Button 
               variant="secondary" 
               size="sm"
-              onClick={() => {
+              onClick={async () => {
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
-                setSearchParams({ 
+                const newParams = { 
                   ...searchParams, 
                   date: tomorrow.toISOString().split('T')[0],
                   startTime: '09:00',
                   endTime: '17:00'
-                });
+                };
+                setSearchParams(newParams);
+                
+                // Auto-trigger search with new parameters
+                setTimeout(() => {
+                  handleSearch(new Event('submit') as any);
+                }, 100);
               }}
             >
               Tomorrow 9AM-5PM
@@ -1154,15 +1160,21 @@ const DriverDashboard: React.FC = () => {
             <Button 
               variant="secondary" 
               size="sm"
-              onClick={() => {
+              onClick={async () => {
                 const nextWeek = new Date();
                 nextWeek.setDate(nextWeek.getDate() + 7);
-                setSearchParams({ 
+                const newParams = { 
                   ...searchParams, 
                   date: nextWeek.toISOString().split('T')[0],
                   startTime: '09:00',
                   endTime: '17:00'
-                });
+                };
+                setSearchParams(newParams);
+                
+                // Auto-trigger search with new parameters
+                setTimeout(() => {
+                  handleSearch(new Event('submit') as any);
+                }, 100);
               }}
             >
               Next Week
@@ -1170,13 +1182,19 @@ const DriverDashboard: React.FC = () => {
             <Button 
               variant="secondary" 
               size="sm"
-              onClick={() => {
-                setSearchParams({ 
+              onClick={async () => {
+                const newParams = { 
                   ...searchParams, 
                   date: new Date().toISOString().split('T')[0],
                   startTime: new Date().toTimeString().slice(0, 5),
                   endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toTimeString().slice(0, 5)
-                });
+                };
+                setSearchParams(newParams);
+                
+                // Auto-trigger search with new parameters
+                setTimeout(() => {
+                  handleSearch(new Event('submit') as any);
+                }, 100);
               }}
             >
               Back to Now

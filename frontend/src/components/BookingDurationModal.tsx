@@ -228,7 +228,7 @@ const BookingDurationModal: React.FC<BookingDurationModalProps> = ({
             <Button
               variant="primary"
               onClick={handleConfirmBooking}
-              isLoading={isLoading}
+              loading={isLoading}
               disabled={selectedDuration <= 0}
             >
               {isLoading ? 'Processing...' : `Book for $${totalPrice.toFixed(2)}`}
