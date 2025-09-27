@@ -1,42 +1,46 @@
 const { Sequelize } = require('sequelize');
 
-// Robust database connection with retry logic - Render optimized
-const sequelize = new Sequelize(
-  process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/parkway_db',
-  {
-    dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    pool: {
-      max: 3, // Reduced for Render free tier
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
-      evict: 1000
+// PostgreSQL database connection only
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL environment variable is required');
+  process.exit(1);
+}
+
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  logging: console.log,
+  pool: {
+    max: 3,
+    min: 0,
+    acquire: 30000,
+    idle: 10000,
+    evict: 1000
+  },
+  retry: {
+    max: 3
+  },
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
     },
-    retry: {
-      max: 3
-    },
-    dialectOptions: process.env.NODE_ENV === 'production' ? {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      },
-      connectTimeout: 60000,
-      acquireTimeout: 60000,
-      timeout: 60000
-    } : {},
-    define: {
-      timestamps: true,
-      underscored: true,
-      freezeTableName: true,
-      paranoid: false
-    },
-    benchmark: false,
-    query: {
-      raw: false
-    }
+    connectTimeout: 60000,
+    acquireTimeout: 60000,
+    timeout: 60000
+  },
+  define: {
+    timestamps: true,
+    underscored: true,
+    freezeTableName: true,
+    paranoid: false
+  },
+  benchmark: false,
+  query: {
+    raw: false
   }
-);
+});
+
+console.log('🗄️  Using PostgreSQL database');
 
 // Test connection with retry logic
 const testConnection = async () => {

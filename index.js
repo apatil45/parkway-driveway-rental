@@ -1,9 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { sequelize, testConnection } = require('./models/database'); // PostgreSQL connection
 const { setupAssociations } = require('./models/associations');
 const SocketService = require('./services/socketService');
-require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
