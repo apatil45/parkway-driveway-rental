@@ -1,13 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const auth = require('../middleware/auth');
 const Booking = require('../models/BookingPG');
+
+// Initialize Stripe only if API key is available
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+} else {
+  console.warn('⚠️  Stripe not configured - payment functionality will be disabled');
+}
 
 // @route   POST api/payments/create-payment-intent
 // @desc    Create a Stripe Payment Intent
 // @access  Private (Driver only)
 router.post('/create-payment-intent', auth, async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Payment service not configured' });
+  }
   const { bookingId } = req.body;
 
   try {
@@ -41,6 +51,9 @@ router.post('/create-payment-intent', auth, async (req, res) => {
 // @desc    Confirm payment and update booking status
 // @access  Private (Driver only)
 router.post('/confirm-payment', auth, async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Payment service not configured' });
+  }
   const { bookingId, paymentIntentId } = req.body;
 
   try {

@@ -12,6 +12,10 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ msg: 'Address is required for geocoding' });
   }
 
+  if (!geocoder) {
+    return res.status(503).json({ msg: 'Geocoding service not configured' });
+  }
+
   try {
     const loc = await geocoder.geocode(address);
 
