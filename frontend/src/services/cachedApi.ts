@@ -1,6 +1,7 @@
 // Cached API Service for Parkway.com
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import apiCache from './apiCache';
+import { performanceMonitor } from './performanceMonitor';
 
 interface CachedRequestConfig extends AxiosRequestConfig {
   cache?: boolean;
@@ -33,8 +34,14 @@ class CachedAPIService {
     }
     
     // Make actual API call
+    const startTime = performance.now();
     try {
       const response = await axios.get<T>(url, axiosConfig);
+      const endTime = performance.now();
+      const responseTime = endTime - startTime;
+      
+      // Track API performance
+      performanceMonitor.trackAPICall(url, responseTime, response.status, JSON.stringify(response.data).length);
       
       // Cache successful responses
       if (cache && response.status === 200) {
@@ -42,7 +49,13 @@ class CachedAPIService {
       }
       
       return response;
-    } catch (error) {
+    } catch (error: any) {
+      const endTime = performance.now();
+      const responseTime = endTime - startTime;
+      
+      // Track failed API calls
+      performanceMonitor.trackAPICall(url, responseTime, error.response?.status || 0, 0);
+      
       console.error(`API GET Error for ${url}:`, error);
       throw error;
     }
@@ -52,8 +65,14 @@ class CachedAPIService {
   async post<T>(url: string, data?: any, config?: CachedRequestConfig): Promise<AxiosResponse<T>> {
     const { cache = false, cacheKey, ...axiosConfig } = config || {};
     
+    const startTime = performance.now();
     try {
       const response = await axios.post<T>(url, data, axiosConfig);
+      const endTime = performance.now();
+      const responseTime = endTime - startTime;
+      
+      // Track API performance
+      performanceMonitor.trackAPICall(url, responseTime, response.status, JSON.stringify(response.data).length);
       
       // Cache successful responses if requested
       if (cache && response.status === 200) {
@@ -65,7 +84,13 @@ class CachedAPIService {
       this.invalidateRelatedCache(url);
       
       return response;
-    } catch (error) {
+    } catch (error: any) {
+      const endTime = performance.now();
+      const responseTime = endTime - startTime;
+      
+      // Track failed API calls
+      performanceMonitor.trackAPICall(url, responseTime, error.response?.status || 0, 0);
+      
       console.error(`API POST Error for ${url}:`, error);
       throw error;
     }
