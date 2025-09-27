@@ -9,6 +9,7 @@ import Button from './Button';
 import DrivewayEditModal from './DrivewayEditModal';
 import DrivewayFormDebug from './DrivewayFormDebug';
 import SimpleDrivewayForm from './SimpleDrivewayForm';
+import RobustDrivewayModal from './RobustDrivewayModal';
 import DashboardNav from './DashboardNav';
 import cachedApi from '../services/cachedApi';
 import './OwnerDashboard.css';
@@ -40,6 +41,7 @@ const OwnerDashboard: React.FC = () => {
   const [editingDriveway, setEditingDriveway] = useState<Driveway | null>(null);
   const [isModalLoading, setIsModalLoading] = useState(false);
   const [currentSection, setCurrentSection] = useState('driveways');
+  const [showRobustModal, setShowRobustModal] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -197,7 +199,7 @@ const OwnerDashboard: React.FC = () => {
 
       <div className="section-header">
         <h3 className="section-title">Manage Your Driveways</h3>
-        <Button variant="primary" onClick={handleAddNew}>
+        <Button variant="primary" onClick={() => setShowRobustModal(true)}>
           Add New Driveway
         </Button>
       </div>
@@ -247,11 +249,14 @@ const OwnerDashboard: React.FC = () => {
         }}
       />
       
-      {/* Debug Component - Remove in production */}
-      {process.env.NODE_ENV === 'development' && <DrivewayFormDebug />}
-      
-      {/* Simple Form Test - Remove in production */}
-      {process.env.NODE_ENV === 'development' && <SimpleDrivewayForm />}
+      {/* Debug Components - Only in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{ margin: '20px 0', padding: '20px', border: '2px dashed #3b82f6', borderRadius: '8px' }}>
+          <h4 style={{ color: '#3b82f6', marginBottom: '15px' }}>🔧 Development Tools</h4>
+          <DrivewayFormDebug />
+          <SimpleDrivewayForm />
+        </div>
+      )}
       
       {/* Legacy form - hidden but kept for compatibility */}
       <form onSubmit={onSubmit} className="dashboard-form" style={{ display: 'none' }}>
@@ -497,6 +502,16 @@ const OwnerDashboard: React.FC = () => {
         onSave={handleModalSave}
         driveway={editingDriveway}
         isLoading={isModalLoading}
+      />
+
+      {/* Robust Driveway Modal */}
+      <RobustDrivewayModal
+        isOpen={showRobustModal}
+        onClose={() => setShowRobustModal(false)}
+        onSuccess={() => {
+          setShowRobustModal(false);
+          fetchDriveways();
+        }}
       />
     </div>
   );
