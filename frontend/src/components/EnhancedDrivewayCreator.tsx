@@ -16,6 +16,12 @@ interface DrivewayFormData {
     endTime: string;
     isAvailable: boolean;
   }>;
+  specificSlots: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    pricePerHour: number;
+  }>;
   amenities: string[];
   images: string[];
   isAvailable: boolean;
@@ -45,6 +51,7 @@ const EnhancedDrivewayCreator: React.FC<{
       { dayOfWeek: 'saturday', startTime: '08:00', endTime: '18:00', isAvailable: true },
       { dayOfWeek: 'sunday', startTime: '08:00', endTime: '18:00', isAvailable: true }
     ],
+    specificSlots: [],
     amenities: [],
     images: [],
     isAvailable: true
@@ -291,6 +298,38 @@ const EnhancedDrivewayCreator: React.FC<{
     }));
   };
 
+  const addSpecificSlot = () => {
+    setFormData(prev => ({
+      ...prev,
+      specificSlots: [...prev.specificSlots, {
+        date: '',
+        startTime: '08:00',
+        endTime: '18:00',
+        pricePerHour: prev.pricePerHour
+      }]
+    }));
+  };
+
+  const removeSpecificSlot = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      specificSlots: prev.specificSlots.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSpecificSlotChange = (index: number, field: string, value: any) => {
+    const newSpecificSlots = [...formData.specificSlots];
+    newSpecificSlots[index] = {
+      ...newSpecificSlots[index],
+      [field]: field === 'pricePerHour' ? parseFloat(value) || 0 : value
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      specificSlots: newSpecificSlots
+    }));
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -329,6 +368,7 @@ const EnhancedDrivewayCreator: React.FC<{
         carSizeCompatibility: formData.carSizeCompatibility,
         images: formData.images,
         availability: formData.availability,
+        specificSlots: formData.specificSlots,
         amenities: formData.amenities,
         isAvailable: formData.isAvailable,
         pricePerHour: formData.pricePerHour
@@ -609,6 +649,88 @@ const EnhancedDrivewayCreator: React.FC<{
                   type="button"
                   onClick={() => removeImage(index)}
                   className="remove-image"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Specific Time Slots */}
+      <div className="form-field">
+        <div className="field-header">
+          <label className="form-label">Specific Time Slots (Optional)</label>
+          <button
+            type="button"
+            onClick={addSpecificSlot}
+            className="add-slot-button"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Time Slot
+          </button>
+        </div>
+        <p className="field-help">
+          Add specific dates and times when your driveway is available (overrides weekly schedule)
+        </p>
+        
+        {formData.specificSlots.length > 0 && (
+          <div className="specific-slots">
+            {formData.specificSlots.map((slot, index) => (
+              <div key={index} className="slot-item">
+                <div className="slot-fields">
+                  <div className="slot-field">
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      value={slot.date}
+                      onChange={(e) => handleSpecificSlotChange(index, 'date', e.target.value)}
+                      className="form-input"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div className="slot-field">
+                    <label>Start Time</label>
+                    <input
+                      type="time"
+                      value={slot.startTime}
+                      onChange={(e) => handleSpecificSlotChange(index, 'startTime', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="slot-field">
+                    <label>End Time</label>
+                    <input
+                      type="time"
+                      value={slot.endTime}
+                      onChange={(e) => handleSpecificSlotChange(index, 'endTime', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="slot-field">
+                    <label>Price/Hour</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={slot.pricePerHour}
+                      onChange={(e) => handleSpecificSlotChange(index, 'pricePerHour', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeSpecificSlot(index)}
+                  className="remove-slot-button"
+                  title="Remove this time slot"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>

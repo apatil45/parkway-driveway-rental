@@ -367,6 +367,163 @@
   margin-top: 0.5rem;
 }
 
+/* Specific Slots Styles */
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.add-slot-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-slot-button:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.add-slot-button:active {
+  transform: translateY(0);
+}
+
+.specific-slots {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.slot-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.slot-item:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.slot-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-right: 2.5rem;
+}
+
+.slot-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.slot-field label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.slot-field .form-input {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.remove-slot-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.remove-slot-button:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+.remove-slot-button:active {
+  transform: scale(0.95);
+}
+
+/* Dark mode styles for slots */
+@media (prefers-color-scheme: dark) {
+  .slot-item {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .slot-item:hover {
+    border-color: #475569;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .slot-field label {
+    color: #94a3b8;
+  }
+}
+
+/* Responsive styles for slots */
+@media (max-width: 768px) {
+  .field-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .add-slot-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .slot-fields {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .remove-slot-button {
+    position: static;
+    width: 100%;
+    height: 2.5rem;
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .slot-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
 .uploaded-images {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));

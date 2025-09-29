@@ -262,7 +262,8 @@ router.post('/', auth, validateDriveway, async (req, res) => {
     drivewaySize,
     amenities,
     pricePerHour,
-    isAvailable
+    isAvailable,
+    specificSlots
   } = req.body;
 
   console.log('POST /api/driveways - User:', req.user);
@@ -279,7 +280,8 @@ router.post('/', auth, validateDriveway, async (req, res) => {
       drivewaySize: drivewaySize || 'medium',
       amenities: amenities || [],
       pricePerHour: pricePerHour || 5,
-      isAvailable: isAvailable !== undefined ? isAvailable : true
+      isAvailable: isAvailable !== undefined ? isAvailable : true,
+      specificSlots: specificSlots || []
     });
 
     res.json(driveway);

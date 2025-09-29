@@ -55,6 +55,12 @@ const Driveway = sequelize.define('Driveway', {
     defaultValue: 5.00,
     allowNull: true,
     field: 'price_per_hour'
+  },
+  specificSlots: {
+    type: DataTypes.JSON,
+    defaultValue: [],
+    allowNull: true,
+    field: 'specific_slots'
   }
 }, {
   timestamps: true,
