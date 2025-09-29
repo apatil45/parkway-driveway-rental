@@ -589,14 +589,13 @@ const EnhancedDrivewayCreator: React.FC<{
   );
 
   return (
-    <ResponsiveForm
-      title="List Your Driveway"
-      subtitle="Share your parking space and start earning"
-      onSubmit={handleSubmit}
-      isLoading={isSubmitting}
-      maxWidth="lg"
-    >
-      <div className="driveway-creator">
+    <div className="enhanced-driveway-creator">
+      <div className="creator-header">
+        <h2 className="creator-title">List Your Driveway</h2>
+        <p className="creator-subtitle">Share your parking space and start earning</p>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="creator-form">
         <div className="step-indicator">
           <div className={`step ${currentStep >= 1 ? 'active' : ''}`}>
             <span className="step-number">1</span>
@@ -670,8 +669,8 @@ const EnhancedDrivewayCreator: React.FC<{
             </FormButton>
           )}
         </div>
-      </div>
-    </ResponsiveForm>
+      </form>
+    </div>
   );
 };
 

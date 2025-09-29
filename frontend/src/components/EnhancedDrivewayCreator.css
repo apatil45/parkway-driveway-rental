@@ -1,8 +1,31 @@
 /* Enhanced Driveway Creator Styles */
-.driveway-creator {
+.enhanced-driveway-creator {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+  padding: 2rem;
+}
+
+.creator-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.creator-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.creator-subtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.creator-form {
+  width: 100%;
 }
 
 /* Step Indicator */
@@ -451,8 +474,12 @@
 }
 
 @media (max-width: 480px) {
-  .driveway-creator {
-    padding: 0 1rem;
+  .enhanced-driveway-creator {
+    padding: 1rem;
+  }
+
+  .creator-title {
+    font-size: 1.5rem;
   }
 
   .step-indicator {
@@ -504,6 +531,14 @@
 
   .step.active:not(:last-child)::after {
     background: #3b82f6;
+  }
+
+  .creator-title {
+    color: #f1f5f9;
+  }
+
+  .creator-subtitle {
+    color: #9ca3af;
   }
 
   .step-title {
