@@ -49,7 +49,7 @@ const ImprovedHome: React.FC = () => {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
-              Premium Parking Platform
+              Smart Parking Solutions
             </div>
 
             <h1 className="hero-title">
@@ -206,34 +206,74 @@ const ImprovedHome: React.FC = () => {
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
               </div>
-              <h3 className="feature-title">24/7 Support</h3>
+              <h3 className="feature-title">Community Support</h3>
               <p className="feature-description">
-                Get help when you need it with our dedicated customer support team available around the clock.
+                Get help from our community and support team. We're here to assist you with any questions or issues.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="stats-section">
-        <div className="stats-container">
-          <div className="stats-grid">
-            <div className="stat-item">
-              <div className="stat-number">10K+</div>
-              <div className="stat-label">Active Users</div>
+      {/* Trust Section */}
+      <section className="trust-section">
+        <div className="trust-container">
+          <div className="section-header">
+            <h2 className="section-title">Why Trust Parkway?</h2>
+            <p className="section-description">
+              We're building a community-driven platform with real benefits for everyone
+            </p>
+          </div>
+
+          <div className="trust-grid">
+            <div className="trust-item">
+              <div className="trust-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <h3 className="trust-title">Verified Listings</h3>
+              <p className="trust-description">
+                All driveways are verified for safety and accuracy before being listed on our platform.
+              </p>
             </div>
-            <div className="stat-item">
-              <div className="stat-number">5K+</div>
-              <div className="stat-label">Listed Driveways</div>
+
+            <div className="trust-item">
+              <div className="trust-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <circle cx="12" cy="16" r="1"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </div>
+              <h3 className="trust-title">Secure Payments</h3>
+              <p className="trust-description">
+                Your payments are processed securely through Stripe with full protection and instant confirmation.
+              </p>
             </div>
-            <div className="stat-item">
-              <div className="stat-number">50K+</div>
-              <div className="stat-label">Successful Bookings</div>
+
+            <div className="trust-item">
+              <div className="trust-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <h3 className="trust-title">Community Support</h3>
+              <p className="trust-description">
+                Join a growing community of drivers and homeowners helping each other find and provide parking solutions.
+              </p>
             </div>
-            <div className="stat-item">
-              <div className="stat-number">99%</div>
-              <div className="stat-label">Customer Satisfaction</div>
+
+            <div className="trust-item">
+              <div className="trust-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <h3 className="trust-title">Instant Booking</h3>
+              <p className="trust-description">
+                Book parking spots instantly with real-time availability and immediate confirmation.
+              </p>
             </div>
           </div>
         </div>
@@ -246,7 +286,7 @@ const ImprovedHome: React.FC = () => {
             <div className="cta-content">
               <h2 className="cta-title">Ready to Get Started?</h2>
               <p className="cta-description">
-                Join thousands of users who trust Parkway for their parking needs
+                Be part of our growing community and start your parking journey today
               </p>
               <div className="cta-actions">
                 <Link to="/register" className="cta-button primary large">

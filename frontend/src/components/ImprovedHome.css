@@ -324,45 +324,64 @@
   text-decoration: underline;
 }
 
-/* Stats Section */
-.stats-section {
-  padding: 4rem 0;
+/* Trust Section */
+.trust-section {
+  padding: 6rem 0;
   background: linear-gradient(135deg, #0f172a, #1e293b);
   color: white;
 }
 
-.stats-container {
+.trust-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
 }
 
-.stats-grid {
+.trust-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
+  margin-top: 3rem;
+}
+
+.trust-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
   text-align: center;
+  transition: all 0.3s ease;
 }
 
-.stat-item {
-  padding: 1.5rem;
+.trust-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-5px);
 }
 
-.stat-number {
-  font-size: 3rem;
-  font-weight: 800;
-  color: #3b82f6;
-  margin-bottom: 0.5rem;
+.trust-icon {
+  width: 80px;
+  height: 80px;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem auto;
+  color: white;
 }
 
-.stat-label {
-  font-size: 1.1rem;
+.trust-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin-bottom: 1rem;
+}
+
+.trust-description {
   color: #94a3b8;
-  font-weight: 500;
+  line-height: 1.6;
+  font-size: 1rem;
 }
 
 /* CTA Section */
@@ -469,13 +488,13 @@
     padding: 1.5rem;
   }
 
-  .stats-grid {
+  .trust-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
   }
 
-  .stat-number {
-    font-size: 2.5rem;
+  .trust-item {
+    padding: 1.5rem;
   }
 
   .cta-section {
@@ -551,13 +570,13 @@
     font-size: 1.25rem;
   }
 
-  .stats-grid {
+  .trust-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
 
-  .stat-number {
-    font-size: 2rem;
+  .trust-item {
+    padding: 1.25rem;
   }
 
   .cta-content {
@@ -627,6 +646,28 @@
   }
 
   .feature-description {
+    color: #94a3b8;
+  }
+
+  .trust-section {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+  }
+
+  .trust-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .trust-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .trust-title {
+    color: #f1f5f9;
+  }
+
+  .trust-description {
     color: #94a3b8;
   }
 
