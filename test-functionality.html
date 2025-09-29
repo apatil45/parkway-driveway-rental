@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Functionality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Parkway Functionality Test</h1>
+    
+    <div class="test-section">
+        <h2>1. API Health Check</h2>
+        <button class="test-button" onclick="testHealth()">Test Health Endpoint</button>
+        <div id="health-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. User Registration</h2>
+        <button class="test-button" onclick="testRegistration()">Test User Registration</button>
+        <div id="register-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. User Login</h2>
+        <button class="test-button" onclick="testLogin()">Test User Login</button>
+        <div id="login-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Image Upload Test</h2>
+        <input type="file" id="test-file" accept="image/*" multiple>
+        <button class="test-button" onclick="testImageUpload()">Test Image Upload</button>
+        <div id="upload-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Driveway Creation Test</h2>
+        <button class="test-button" onclick="testDrivewayCreation()">Test Driveway Creation</button>
+        <div id="driveway-result" class="result"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+
+        async function testHealth() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                document.getElementById('health-result').innerHTML = 
+                    `<div class="success">✅ Health check passed: ${data.status}</div>`;
+            } catch (error) {
+                document.getElementById('health-result').innerHTML = 
+                    `<div class="error">❌ Health check failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testRegistration() {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: 'Test User',
+                        email: `test${Date.now()}@example.com`,
+                        password: 'Password123',
+                        roles: ['driver']
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    authToken = data.token;
+                    document.getElementById('register-result').innerHTML = 
+                        `<div class="success">✅ Registration successful! Token received.</div>`;
+                } else {
+                    document.getElementById('register-result').innerHTML = 
+                        `<div class="error">❌ Registration failed: ${data.error || data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('register-result').innerHTML = 
+                    `<div class="error">❌ Registration error: ${error.message}</div>`;
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'Password123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    authToken = data.token;
+                    document.getElementById('login-result').innerHTML = 
+                        `<div class="success">✅ Login successful! Token received.</div>`;
+                } else {
+                    document.getElementById('login-result').innerHTML = 
+                        `<div class="error">❌ Login failed: ${data.error || data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('login-result').innerHTML = 
+                    `<div class="error">❌ Login error: ${error.message}</div>`;
+            }
+        }
+
+        async function testImageUpload() {
+            if (!authToken) {
+                document.getElementById('upload-result').innerHTML = 
+                    `<div class="error">❌ Please login first to test image upload</div>`;
+                return;
+            }
+
+            const fileInput = document.getElementById('test-file');
+            if (!fileInput.files.length) {
+                document.getElementById('upload-result').innerHTML = 
+                    `<div class="error">❌ Please select an image file first</div>`;
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+
+                const response = await fetch('http://localhost:3000/api/upload/single', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('upload-result').innerHTML = 
+                        `<div class="success">✅ Image upload successful! URL: ${data.imageUrl}</div>`;
+                } else {
+                    document.getElementById('upload-result').innerHTML = 
+                        `<div class="error">❌ Image upload failed: ${data.message || data.error}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('upload-result').innerHTML = 
+                    `<div class="error">❌ Image upload error: ${error.message}</div>`;
+            }
+        }
+
+        async function testDrivewayCreation() {
+            if (!authToken) {
+                document.getElementById('driveway-result').innerHTML = 
+                    `<div class="error">❌ Please login first to test driveway creation</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/driveways', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        address: '123 Test Street, Test City',
+                        description: 'Test driveway for functionality testing',
+                        drivewaySize: 'medium',
+                        carSizeCompatibility: ['small', 'medium'],
+                        pricePerHour: 5,
+                        availability: [
+                            { dayOfWeek: 'monday', startTime: '08:00', endTime: '18:00', isAvailable: true }
+                        ],
+                        specificSlots: [
+                            { date: '2024-12-25', startTime: '10:00', endTime: '16:00', pricePerHour: 8 }
+                        ],
+                        amenities: ['security', 'lighting'],
+                        images: [],
+                        isAvailable: true
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('driveway-result').innerHTML = 
+                        `<div class="success">✅ Driveway creation successful! ID: ${data.id}</div>`;
+                } else {
+                    document.getElementById('driveway-result').innerHTML = 
+                        `<div class="error">❌ Driveway creation failed: ${data.message || data.error}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('driveway-result').innerHTML = 
+                    `<div class="error">❌ Driveway creation error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

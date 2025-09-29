@@ -228,6 +228,10 @@ const EnhancedDrivewayCreator: React.FC<{
   const handleImageUpload = async (files: FileList) => {
     if (files.length === 0) return;
     
+    console.log('Starting image upload with files:', files.length);
+    console.log('User authenticated:', !!user);
+    console.log('Token available:', !!localStorage.getItem('token'));
+    
     setIsUploading(true);
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
@@ -299,6 +303,7 @@ const EnhancedDrivewayCreator: React.FC<{
   };
 
   const addSpecificSlot = () => {
+    console.log('Adding specific slot, current slots:', formData.specificSlots.length);
     setFormData(prev => ({
       ...prev,
       specificSlots: [...prev.specificSlots, {
@@ -308,6 +313,7 @@ const EnhancedDrivewayCreator: React.FC<{
         pricePerHour: prev.pricePerHour
       }]
     }));
+    console.log('Specific slot added successfully');
   };
 
   const removeSpecificSlot = (index: number) => {
@@ -628,6 +634,7 @@ const EnhancedDrivewayCreator: React.FC<{
             className="upload-area"
             onDragOver={handleDragOver}
             onDrop={handleDrop}
+            onClick={() => console.log('Upload area clicked')}
           >
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -667,7 +674,11 @@ const EnhancedDrivewayCreator: React.FC<{
           <label className="form-label">Specific Time Slots (Optional)</label>
           <button
             type="button"
-            onClick={addSpecificSlot}
+            onClick={(e) => {
+              console.log('Add slot button clicked');
+              e.preventDefault();
+              addSpecificSlot();
+            }}
             className="add-slot-button"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
