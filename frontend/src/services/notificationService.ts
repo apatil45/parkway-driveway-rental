@@ -299,12 +299,12 @@ class NotificationService {
     // Auto-remove after duration (unless persistent)
     if (!config.persistent && config.duration) {
       setTimeout(() => {
-        this.removeNotification(config.id);
+        this.removeNotificationInternal(config.id);
       }, config.duration);
     }
   }
 
-  private removeNotification(id: string) {
+  private removeNotificationInternal(id: string) {
     this.notifications.delete(id);
     
     // Emit removal event

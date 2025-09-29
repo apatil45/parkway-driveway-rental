@@ -1,14 +1,14 @@
 import './App.css'
-import Register from './components/Register';
-import Login from './components/Login';
+import ImprovedRegister from './components/ImprovedRegister';
+import ImprovedLogin from './components/ImprovedLogin';
 import OwnerDashboard from './components/OwnerDashboard';
 import DriverDashboard from './components/DriverDashboard';
-import Home from './components/Home'; // Import the Home component
+import ImprovedHome from './components/ImprovedHome'; // Import the improved Home component
 import Profile from './components/Profile'; // Import the Profile component
 import ErrorBoundary from './components/ErrorBoundary'; // Import the ErrorBoundary component
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PrivateRoute from './components/PrivateRoute';
-import EnhancedNav from "./components/EnhancedNav"; // Import the enhanced navigation component
+import ImprovedNav from "./components/ImprovedNav"; // Import the improved navigation component
 // Debug components - only imported when needed
 // import AuthDebug from "./components/dev/AuthDebug";
 // import ConnectionTest from "./components/dev/ConnectionTest";
@@ -27,7 +27,7 @@ const App: React.FC = () => {
         <AuthProvider>
         <Router>
           <PerformanceOptimizer />
-          <EnhancedNav />
+          <ImprovedNav />
           <ProfessionalNotificationSystem />
           <PerformanceMonitor />
           {/* Debug components - uncomment if needed for troubleshooting */}
@@ -39,9 +39,9 @@ const App: React.FC = () => {
           ) */}
           <div className="app-content">
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<ImprovedHome />} />
+              <Route path="/register" element={<ImprovedRegister />} />
+              <Route path="/login" element={<ImprovedLogin />} />
               <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
               <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><DriverDashboard /></PrivateRoute>} />
               <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />

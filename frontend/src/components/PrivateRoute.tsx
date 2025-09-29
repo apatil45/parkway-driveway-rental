@@ -1,37 +1,35 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LoadingSpinner from './LoadingSpinner';
+import './PrivateRoute.css';
 
 interface PrivateRouteProps {
-  children: JSX.Element;
+  children: React.ReactNode;
   allowedRoles?: ('driver' | 'owner' | 'admin')[];
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, allowedRoles }) => {
-  const { isAuthenticated, isLoading, user } = useAuth(); // AuthState no longer needed
-
-  console.log('PrivateRoute - isLoading:', isLoading);
-  console.log('PrivateRoute - isAuthenticated:', isAuthenticated);
-  console.log('PrivateRoute - user:', user);
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
-    console.log('PrivateRoute: Loading authentication...');
-    return <div>Loading authentication...</div>; // Or a spinner component
+    return (
+      <div className="private-route-loading">
+        <LoadingSpinner />
+        <p className="loading-text">Verifying authentication...</p>
+      </div>
+    );
   }
 
-  // Explicitly check for isAuthenticated and user (which implies a token presence now)
   if (!isAuthenticated || !user) {
-    console.log('PrivateRoute: Not authenticated or user data missing, redirecting to /login');
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !user.roles.some(role => allowedRoles.includes(role))) {
-    console.log('PrivateRoute: User roles not allowed, redirecting to /');
+  if (allowedRoles && !user.roles?.some(role => allowedRoles.includes(role))) {
     return <Navigate to="/" replace />;
   }
 
-  console.log('PrivateRoute: User authenticated and authorized, rendering children.');
-  return children;
+  return <>{children}</>;
 };
 
 export default PrivateRoute;

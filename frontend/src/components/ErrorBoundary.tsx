@@ -1,6 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import Button from './Button';
-import './ErrorBoundary.css';
+import ErrorFallback from './ErrorFallback';
 
 interface Props {
   children: ReactNode;
@@ -36,73 +35,32 @@ class ErrorBoundary extends Component<Props, State> {
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
+
+    // In production, you might want to send error to monitoring service
+    if (process.env.NODE_ENV === 'production') {
+      // Example: Send to error monitoring service
+      // errorReportingService.captureException(error, { extra: errorInfo });
+      console.error('Production error caught:', error.message);
+    }
   }
 
-  handleRetry = () => {
+  resetErrorBoundary = () => {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
-  handleReload = () => {
-    window.location.reload();
-  };
-
   render() {
-    if (this.state.hasError) {
-      // Custom fallback UI
+    if (this.state.hasError && this.state.error) {
+      // If custom fallback is provided, use it
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Default error UI
+      // Otherwise, use our professional error fallback
       return (
-        <div className="error-boundary">
-          <div className="error-boundary-content">
-            <div className="error-boundary-icon">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
-              </svg>
-            </div>
-            
-            <h2 className="error-boundary-title">Something went wrong</h2>
-            <p className="error-boundary-message">
-              We're sorry, but something unexpected happened. Our team has been notified and is working to fix this issue.
-            </p>
-            
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="error-boundary-details">
-                <summary className="error-boundary-details-summary">
-                  Error Details (Development Only)
-                </summary>
-                <div className="error-boundary-details-content">
-                  <h4>Error:</h4>
-                  <pre className="error-boundary-stack">
-                    {this.state.error.toString()}
-                  </pre>
-                  
-                  {this.state.errorInfo && (
-                    <>
-                      <h4>Component Stack:</h4>
-                      <pre className="error-boundary-stack">
-                        {this.state.errorInfo.componentStack}
-                      </pre>
-                    </>
-                  )}
-                </div>
-              </details>
-            )}
-            
-            <div className="error-boundary-actions">
-              <Button variant="primary" onClick={this.handleRetry}>
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={this.handleReload}>
-                Reload Page
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ErrorFallback 
+          error={this.state.error}
+          resetErrorBoundary={this.resetErrorBoundary}
+        />
       );
     }
 
