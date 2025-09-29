@@ -14,7 +14,6 @@ import { useSocket } from '../hooks/useSocket';
 import { useKeyboardShortcuts, commonShortcuts } from '../hooks/useKeyboardShortcuts';
 import BreadcrumbNav from './BreadcrumbNav';
 import cachedApi from '../services/cachedApi';
-import { robustBookingService } from '../services/robustBookingService';
 import { offlineService } from '../services/offlineService';
 import Button from './Button';
 import './DriverDashboard.css';
@@ -494,11 +493,9 @@ const DriverDashboard: React.FC = () => {
       
       const bookingData = {
         driveway: selectedDriveway.id,
-        driver: user.id,
         startTime: `${searchParams.date}T${startTime}:00Z`,
         endTime: `${searchParams.date}T${endTime}:00Z`,
-        totalPrice,
-        status: 'pending',
+        totalAmount: totalPrice,
         driverLocation: driverLocation
       };
 

@@ -360,6 +360,13 @@
   color: #6b7280;
 }
 
+.uploading-text {
+  font-size: 0.875rem;
+  color: #3b82f6;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
 .uploaded-images {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));

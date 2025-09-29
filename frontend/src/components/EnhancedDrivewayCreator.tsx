@@ -219,9 +219,21 @@ const EnhancedDrivewayCreator: React.FC<{
   };
 
   const handleImageUpload = async (files: FileList) => {
+    if (files.length === 0) return;
+    
     setIsUploading(true);
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`File ${file.name} is too large. Maximum size is 5MB.`);
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`File ${file.name} is not an image.`);
+        }
+
         const formData = new FormData();
         formData.append('image', file);
         
@@ -234,7 +246,8 @@ const EnhancedDrivewayCreator: React.FC<{
         });
 
         if (!response.ok) {
-          throw new Error('Upload failed');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Upload failed');
         }
 
         const result = await response.json();
@@ -248,11 +261,26 @@ const EnhancedDrivewayCreator: React.FC<{
       }));
 
       notificationService.showSuccess(`${uploadedUrls.length} image(s) uploaded successfully`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Image upload error:', error);
-      notificationService.showError('Failed to upload images. Please try again.');
+      notificationService.showError(error.message || 'Failed to upload images. Please try again.');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleImageUpload(files);
     }
   };
 
@@ -553,8 +581,14 @@ const EnhancedDrivewayCreator: React.FC<{
             onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
             className="file-input"
             disabled={isUploading}
+            id="image-upload-input"
           />
-          <div className="upload-area">
+          <label 
+            htmlFor="image-upload-input" 
+            className="upload-area"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="17,8 12,3 7,8"/>
@@ -562,7 +596,8 @@ const EnhancedDrivewayCreator: React.FC<{
             </svg>
             <p>Click to upload photos or drag and drop</p>
             <p className="upload-hint">Up to 5 images, max 5MB each</p>
-          </div>
+            {isUploading && <p className="uploading-text">Uploading...</p>}
+          </label>
         </div>
         
         {formData.images.length > 0 && (
