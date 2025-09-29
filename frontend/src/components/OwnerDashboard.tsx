@@ -9,7 +9,7 @@ import Button from './Button';
 import DrivewayEditModal from './DrivewayEditModal';
 import DrivewayFormDebug from './DrivewayFormDebug';
 import SimpleDrivewayForm from './SimpleDrivewayForm';
-import RobustDrivewayModal from './RobustDrivewayModal';
+import EnhancedDrivewayCreator from './EnhancedDrivewayCreator';
 import DashboardNav from './DashboardNav';
 import cachedApi from '../services/cachedApi';
 import './OwnerDashboard.css';
@@ -504,15 +504,20 @@ const OwnerDashboard: React.FC = () => {
         isLoading={isModalLoading}
       />
 
-      {/* Robust Driveway Modal */}
-      <RobustDrivewayModal
-        isOpen={showRobustModal}
-        onClose={() => setShowRobustModal(false)}
-        onSuccess={() => {
-          setShowRobustModal(false);
-          fetchDriveways();
-        }}
-      />
+      {/* Enhanced Driveway Creator Modal */}
+      {showRobustModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <EnhancedDrivewayCreator
+              onSuccess={() => {
+                setShowRobustModal(false);
+                fetchDriveways();
+              }}
+              onCancel={() => setShowRobustModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

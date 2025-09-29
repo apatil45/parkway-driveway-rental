@@ -17,10 +17,25 @@ const isDriver = (req, res, next) => {
 // @desc    Create a new booking
 // @access  Private (Driver only)
 router.post('/', auth, isDriver, async (req, res) => {
-  const { driveway, startTime, endTime, totalPrice, driverLocation } = req.body;
+  const { 
+    driveway, 
+    startTime, 
+    endTime, 
+    totalAmount, 
+    driverLocation, 
+    specialRequests 
+  } = req.body;
   const driverId = req.user.id;
 
   try {
+    // Validate required fields
+    if (!driveway || !startTime || !endTime || !totalAmount) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        message: 'Driveway, start time, end time, and total amount are required'
+      });
+    }
+
     const drivewayFound = await Driveway.findByPk(driveway);
     if (!drivewayFound) {
       return res.status(404).json({ error: 'Driveway not found' });
@@ -37,29 +52,98 @@ router.post('/', auth, isDriver, async (req, res) => {
     const newStartTime = new Date(startTime);
     const newEndTime = new Date(endTime);
 
-    // Check for conflicts in booked slots
-    if (drivewayFound.bookedSlots && Array.isArray(drivewayFound.bookedSlots)) {
-      const isConflicting = drivewayFound.bookedSlots.some(slot => {
-        const existingStartTime = new Date(slot.startTime);
-        const existingEndTime = new Date(slot.endTime);
-        return (
-          (newStartTime < existingEndTime && newEndTime > existingStartTime)
-        );
+    // Validate date/time logic
+    if (newStartTime >= newEndTime) {
+      return res.status(400).json({ 
+        error: 'Invalid time range',
+        message: 'End time must be after start time'
       });
+    }
 
-      if (isConflicting) {
-        return res.status(400).json({ error: 'Driveway already booked for this time slot' });
+    // Check if booking is in the past
+    if (newStartTime < new Date()) {
+      return res.status(400).json({ 
+        error: 'Cannot book in the past',
+        message: 'Booking start time cannot be in the past'
+      });
+    }
+
+    // Check if booking is too far in the future (6 months)
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 6);
+    if (newStartTime > maxDate) {
+      return res.status(400).json({ 
+        error: 'Booking too far in advance',
+        message: 'Cannot book more than 6 months in advance'
+      });
+    }
+
+    // Check driveway availability for the requested day/time
+    const requestedDate = new Date(startTime);
+    const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const dayAvailability = drivewayFound.availability.find(av => av.dayOfWeek === dayOfWeek);
+
+    if (!dayAvailability || !dayAvailability.isAvailable) {
+      return res.status(400).json({ 
+        error: 'Driveway not available',
+        message: 'Driveway is not available on this day'
+      });
+    }
+
+    // Check if requested time is within driveway availability hours
+    const startTimeStr = newStartTime.toTimeString().slice(0, 5);
+    const endTimeStr = newEndTime.toTimeString().slice(0, 5);
+    
+    if (startTimeStr < dayAvailability.startTime || endTimeStr > dayAvailability.endTime) {
+      return res.status(400).json({ 
+        error: 'Outside availability hours',
+        message: `Driveway is only available from ${dayAvailability.startTime} to ${dayAvailability.endTime}`
+      });
+    }
+
+    // Check for conflicts with existing bookings
+    const { Op } = require('sequelize');
+    const existingBookings = await Booking.findAll({
+      where: {
+        driveway: driveway,
+        status: ['pending', 'confirmed'],
+        [Op.or]: [
+          {
+            startDate: {
+              [Op.lte]: newEndTime
+            },
+            endDate: {
+              [Op.gte]: newStartTime
+            }
+          }
+        ]
       }
+    });
+
+    if (existingBookings.length > 0) {
+      return res.status(400).json({ 
+        error: 'Time slot conflict',
+        message: 'This time slot is already booked by another user',
+        conflicts: existingBookings.map(booking => ({
+          id: booking.id,
+          startTime: booking.startDate,
+          endTime: booking.endDate,
+          status: booking.status
+        }))
+      });
     }
 
     const newBooking = await Booking.create({
       driver: driverId,
       driveway: driveway,
-      startTime: newStartTime,
-      endTime: newEndTime,
-      totalAmount: totalPrice,
+      startDate: newStartTime,
+      endDate: newEndTime,
+      startTime: startTimeStr,
+      endTime: endTimeStr,
+      totalAmount: totalAmount,
       status: 'pending',
-      driverLocation: driverLocation || null
+      driverLocation: driverLocation || null,
+      specialRequests: specialRequests || null
     });
 
     // Send real-time notification to driveway owner

@@ -66,6 +66,11 @@ const Booking = sequelize.define('Booking', {
     type: DataTypes.STRING,
     allowNull: true,
     field: 'stripe_payment_id'
+  },
+  specialRequests: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'special_requests'
   }
 }, {
   timestamps: true,

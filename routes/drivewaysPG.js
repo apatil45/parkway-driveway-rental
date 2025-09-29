@@ -1,4 +1,5 @@
 const express = require('express');
+const { Op } = require('sequelize');
 const Driveway = require('../models/DrivewayPG');
 const User = require('../models/UserPG');
 const auth = require('../middleware/auth');
@@ -26,6 +27,59 @@ router.get('/', async (req, res) => {
     console.error('Get Driveways Error:', err.message);
     console.error('Error details:', err);
     res.status(500).json({ error: 'Server error', message: 'Failed to fetch driveways' });
+  }
+});
+
+// @route   POST /api/driveways/:id/availability
+// @desc    Check availability for a specific driveway on a given date/time
+// @access  Public
+router.post('/:id/availability', async (req, res) => {
+  const { id } = req.params;
+  const { date, startTime, endTime } = req.body;
+
+  try {
+    const driveway = await Driveway.findByPk(id);
+    if (!driveway) {
+      return res.status(404).json({ error: 'Driveway not found' });
+    }
+
+    // Check if the requested time slot conflicts with existing bookings
+    const Booking = require('../models/BookingPG');
+    const conflictingBookings = await Booking.findAll({
+      where: {
+        driveway: id,
+        status: ['pending', 'confirmed'],
+        [Op.or]: [
+          {
+            startDate: {
+              [Op.lte]: new Date(`${date}T${endTime}:00.000Z`)
+            },
+            endDate: {
+              [Op.gte]: new Date(`${date}T${startTime}:00.000Z`)
+            }
+          }
+        ]
+      }
+    });
+
+    // Check if the requested day/time is within driveway availability
+    const requestedDate = new Date(date);
+    const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const dayAvailability = driveway.availability.find(av => av.dayOfWeek === dayOfWeek);
+
+    const isAvailable = dayAvailability && dayAvailability.isAvailable && 
+      startTime >= dayAvailability.startTime && 
+      endTime <= dayAvailability.endTime;
+
+    res.json({
+      isAvailable,
+      conflicts: conflictingBookings,
+      dayAvailability: dayAvailability || null,
+      message: isAvailable ? 'Time slot is available' : 'Time slot is not available'
+    });
+  } catch (err) {
+    console.error('Availability Check Error:', err.message);
+    res.status(500).json({ error: 'Server error', message: 'Failed to check availability' });
   }
 });
 
