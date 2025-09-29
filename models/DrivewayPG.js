@@ -44,6 +44,17 @@ const Driveway = sequelize.define('Driveway', {
     type: DataTypes.ENUM('small', 'medium', 'large', 'extra-large'),
     defaultValue: 'medium',
     field: 'driveway_size'
+  },
+  amenities: {
+    type: DataTypes.JSON,
+    defaultValue: [],
+    allowNull: true
+  },
+  pricePerHour: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 5.00,
+    allowNull: true,
+    field: 'price_per_hour'
   }
 }, {
   timestamps: true,

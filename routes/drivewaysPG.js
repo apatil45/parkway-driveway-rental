@@ -253,7 +253,17 @@ router.get('/owner', auth, async (req, res) => {
 // @desc    Add a new driveway
 // @access  Private (Owner only)
 router.post('/', auth, validateDriveway, async (req, res) => {
-  const { address, description, images, availability, carSizeCompatibility, drivewaySize } = req.body;
+  const { 
+    address, 
+    description, 
+    images, 
+    availability, 
+    carSizeCompatibility, 
+    drivewaySize,
+    amenities,
+    pricePerHour,
+    isAvailable
+  } = req.body;
 
   console.log('POST /api/driveways - User:', req.user);
   console.log('POST /api/driveways - Body:', req.body);
@@ -266,13 +276,19 @@ router.post('/', auth, validateDriveway, async (req, res) => {
       images: images || [],
       availability: availability || [],
       carSizeCompatibility: carSizeCompatibility || ['small', 'medium'],
-      drivewaySize: drivewaySize || 'medium'
+      drivewaySize: drivewaySize || 'medium',
+      amenities: amenities || [],
+      pricePerHour: pricePerHour || 5,
+      isAvailable: isAvailable !== undefined ? isAvailable : true
     });
 
     res.json(driveway);
   } catch (err) {
     console.error('Add Driveway Error:', err.message);
-    res.status(500).send('Server error');
+    res.status(500).json({ 
+      error: 'Server error', 
+      message: 'Failed to create driveway' 
+    });
   }
 });
 

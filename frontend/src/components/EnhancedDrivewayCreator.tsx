@@ -238,7 +238,7 @@ const EnhancedDrivewayCreator: React.FC<{
         }
 
         const result = await response.json();
-        return result.url;
+        return result.imageUrl;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);

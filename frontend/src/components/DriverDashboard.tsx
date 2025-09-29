@@ -684,18 +684,47 @@ const DriverDashboard: React.FC = () => {
     try {
       const bookingRequest = {
         driveway: driveway.id,
-        driver: user.id,
         startTime: startTimeString,
         endTime: endTimeString,
-        totalPrice,
+        totalAmount: totalPrice,
         driverLocation: driverLocation
       };
 
-      // Create booking using robust service
-      const pendingBooking = await robustBookingService.createBooking(bookingRequest);
+      // Create booking directly
+      const bookingResponse = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(bookingRequest)
+      });
 
-      // Create payment intent using robust service
-      const paymentIntent = await robustBookingService.createPaymentIntent(pendingBooking.id);
+      if (!bookingResponse.ok) {
+        const errorData = await bookingResponse.json();
+        throw new Error(errorData.message || 'Failed to create booking');
+      }
+
+      const pendingBooking = await bookingResponse.json();
+
+      // Create payment intent
+      const paymentResponse = await fetch('/api/payments/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          bookingId: pendingBooking.id,
+          amount: totalPrice * 100 // Convert to cents
+        })
+      });
+
+      if (!paymentResponse.ok) {
+        throw new Error('Failed to create payment intent');
+      }
+
+      const paymentIntent = await paymentResponse.json();
       
       setClientSecret(paymentIntent.clientSecret);
       setBookingToConfirm(pendingBooking);
@@ -729,9 +758,24 @@ const DriverDashboard: React.FC = () => {
 
   const handlePaymentSuccess = async (paymentIntentId: string, bookingId: string) => {
     try {
-      // Confirm booking using robust service
-      await robustBookingService.confirmBooking(bookingId, paymentIntentId);
+      // Confirm payment
+      const response = await fetch('/api/payments/confirm-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          bookingId,
+          paymentIntentId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to confirm payment');
+      }
       
+      showSuccess('Payment successful! Your booking has been confirmed.');
       setShowPaymentForm(false);
       setClientSecret(null);
       setBookingToConfirm(null);
