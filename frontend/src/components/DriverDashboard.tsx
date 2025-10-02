@@ -201,7 +201,7 @@ const DriverDashboard: React.FC = () => {
   const [bookingToConfirm, setBookingToConfirm] = useState<Booking | null>(null);
   const [selectedSlotDetails, setSelectedSlotDetails] = useState<any>(null);
   const [showCustomBooking, setShowCustomBooking] = useState(false);
-  const [currentSection, setCurrentSection] = useState<'search' | 'results' | 'booking' | 'payment' | 'confirmation'>('search');
+  const [currentSection, setCurrentSection] = useState<'search' | 'results' | 'booking' | 'payment' | 'confirmation' | 'map' | 'bookings'>('search');
   
   // New streamlined booking flow state
   const [showBookingModal, setShowBookingModal] = useState(false);
