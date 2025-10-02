@@ -1,6 +1,6 @@
 /* Professional Navigation - Mobile-First Responsive Design */
 
-.improved-nav {
+.nav {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -586,7 +586,7 @@
 
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
-  .improved-nav {
+  .nav {
     background: white;
     border-bottom: 2px solid #000;
   }

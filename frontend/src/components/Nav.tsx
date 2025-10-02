@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './ImprovedNav.css';
+import './Nav.css';
 
-const ImprovedNav: React.FC = () => {
+const Nav: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,7 +67,7 @@ const ImprovedNav: React.FC = () => {
 
   return (
     <>
-      <nav className="improved-nav">
+      <nav className="nav">
         <div className="nav-container">
           {/* Brand */}
           <div className="nav-brand">
@@ -400,4 +400,4 @@ const ImprovedNav: React.FC = () => {
   );
 };
 
-export default ImprovedNav;
+export default Nav;
