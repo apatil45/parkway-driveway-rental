@@ -125,7 +125,7 @@ const Register: React.FC = () => {
     e.preventDefault();
     
     if (!validateForm()) {
-      notificationService.showError('Please fix the errors below');
+      notificationService.showSystemWarning('Please fix the errors below');
       return;
     }
 
@@ -135,7 +135,7 @@ const Register: React.FC = () => {
       const userRole = await register(formData.name, formData.email, formData.password, formData.roles);
       
       // Success notification
-      notificationService.showSuccess('Account created successfully! Redirecting to your dashboard...');
+      notificationService.showAuthSuccess('Account created successfully! Redirecting to your dashboard...');
       
       // Redirect based on user role
       const redirectTo = userRole === 'driver' ? '/driver-dashboard' : '/owner-dashboard';
@@ -148,7 +148,7 @@ const Register: React.FC = () => {
       console.error('Registration error:', error);
       
       const errorMessage = error.response?.data?.msg || error.message || 'Registration failed. Please try again.';
-      notificationService.showError(errorMessage);
+      notificationService.showAuthError(errorMessage);
       
       // Set form errors for specific fields
       if (errorMessage.toLowerCase().includes('email')) {

@@ -379,12 +379,12 @@ const EnhancedDrivewayCreator: React.FC<{
     e.preventDefault();
     
     if (!validateForm()) {
-      notificationService.showError('Please fix the errors below');
+      notificationService.showSystemWarning('Please fix the errors below');
       return;
     }
 
     if (!user) {
-      notificationService.showError('You must be logged in to create a driveway');
+      notificationService.showAuthError('You must be logged in to create a driveway');
       return;
     }
 
@@ -419,14 +419,14 @@ const EnhancedDrivewayCreator: React.FC<{
       }
 
       const result = await response.json();
-      notificationService.showSuccess('Driveway created successfully!');
+      notificationService.showSystemInfo('Driveway created successfully!');
       
       if (onSuccess) {
         onSuccess();
       }
     } catch (error: any) {
       console.error('Driveway creation error:', error);
-      notificationService.showError(error.message || 'Failed to create driveway. Please try again.');
+      notificationService.showSystemWarning(error.message || 'Failed to create driveway. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

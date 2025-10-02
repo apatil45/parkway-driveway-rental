@@ -320,12 +320,12 @@ const EnhancedBookingSystem: React.FC<EnhancedBookingSystemProps> = ({
     e.preventDefault();
 
     if (!validation.isValid) {
-      notificationService.showError('Please fix the errors before proceeding');
+      notificationService.showSystemWarning('Please fix the errors before proceeding');
       return;
     }
 
     if (!user) {
-      notificationService.showError('You must be logged in to make a booking');
+      notificationService.showAuthError('You must be logged in to make a booking');
       return;
     }
 
@@ -356,14 +356,14 @@ const EnhancedBookingSystem: React.FC<EnhancedBookingSystemProps> = ({
       }
 
       const result = await response.json();
-      notificationService.showSuccess('Booking created successfully!');
+      notificationService.showBookingSuccess('Booking created successfully!');
       
       if (onBookingSuccess) {
         onBookingSuccess(result.id);
       }
     } catch (error: any) {
       console.error('Booking error:', error);
-      notificationService.showError(error.message || 'Failed to create booking. Please try again.');
+      notificationService.showBookingError(error.message || 'Failed to create booking. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
