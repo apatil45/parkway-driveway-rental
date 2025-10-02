@@ -146,6 +146,27 @@ const EnhancedDrivewayCreator: React.FC<{
         }
         return null;
 
+      case 'specificSlots':
+        // Validate specific slots if any exist
+        if (value && value.length > 0) {
+          for (let i = 0; i < value.length; i++) {
+            const slot = value[i];
+            if (!slot.date) {
+              return `Date is required for time slot ${i + 1}`;
+            }
+            if (!slot.startTime || !slot.endTime) {
+              return `Start and end times are required for time slot ${i + 1}`;
+            }
+            if (slot.startTime >= slot.endTime) {
+              return `End time must be after start time for time slot ${i + 1}`;
+            }
+            if (!slot.pricePerHour || slot.pricePerHour <= 0) {
+              return `Valid price is required for time slot ${i + 1}`;
+            }
+          }
+        }
+        return null;
+
       default:
         return null;
     }
@@ -231,6 +252,7 @@ const EnhancedDrivewayCreator: React.FC<{
     console.log('Starting image upload with files:', files.length);
     console.log('User authenticated:', !!user);
     console.log('Token available:', !!localStorage.getItem('token'));
+    console.log('Files received:', Array.from(files).map(f => ({ name: f.name, size: f.size, type: f.type })));
     
     setIsUploading(true);
     try {
@@ -271,10 +293,10 @@ const EnhancedDrivewayCreator: React.FC<{
         images: [...prev.images, ...uploadedUrls]
       }));
 
-      notificationService.showSuccess(`${uploadedUrls.length} image(s) uploaded successfully`);
+      notificationService.showUploadSuccess(uploadedUrls.length);
     } catch (error: any) {
       console.error('Image upload error:', error);
-      notificationService.showError(error.message || 'Failed to upload images. Please try again.');
+      notificationService.showUploadError(error.message || 'Failed to upload images. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -289,8 +311,10 @@ const EnhancedDrivewayCreator: React.FC<{
     e.preventDefault();
     e.stopPropagation();
     
+    console.log('Files dropped:', e.dataTransfer.files.length);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
+      console.log('Processing dropped files');
       handleImageUpload(files);
     }
   };
@@ -624,7 +648,13 @@ const EnhancedDrivewayCreator: React.FC<{
             type="file"
             accept="image/*"
             multiple
-            onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+            onChange={(e) => {
+              console.log('File input changed:', e.target.files?.length || 0);
+              if (e.target.files && e.target.files.length > 0) {
+                console.log('Processing file input files');
+                handleImageUpload(e.target.files);
+              }
+            }}
             className="file-input"
             disabled={isUploading}
             id="image-upload-input"

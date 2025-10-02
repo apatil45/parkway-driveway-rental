@@ -298,7 +298,7 @@ router.post('/', auth, validateDriveway, async (req, res) => {
 // @desc    Update a driveway
 // @access  Private (Owner only)
 router.put('/:id', auth, async (req, res) => {
-  const { address, description, images, availability, carSizeCompatibility, drivewaySize, isAvailable } = req.body;
+  const { address, description, images, availability, carSizeCompatibility, drivewaySize, isAvailable, specificSlots, amenities, pricePerHour } = req.body;
 
   console.log('PUT /api/driveways/:id - User:', req.user);
   console.log('PUT /api/driveways/:id - Params:', req.params);
@@ -401,6 +401,36 @@ router.put('/:id', auth, async (req, res) => {
 
     if (isAvailable !== undefined) {
       updateData.isAvailable = Boolean(isAvailable);
+    }
+
+    if (specificSlots !== undefined) {
+      if (!Array.isArray(specificSlots)) {
+        return res.status(400).json({
+          error: 'Invalid specific slots',
+          message: 'Specific slots must be an array'
+        });
+      }
+      updateData.specificSlots = specificSlots;
+    }
+
+    if (amenities !== undefined) {
+      if (!Array.isArray(amenities)) {
+        return res.status(400).json({
+          error: 'Invalid amenities',
+          message: 'Amenities must be an array'
+        });
+      }
+      updateData.amenities = amenities;
+    }
+
+    if (pricePerHour !== undefined) {
+      if (typeof pricePerHour !== 'number' || pricePerHour <= 0) {
+        return res.status(400).json({
+          error: 'Invalid price per hour',
+          message: 'Price per hour must be a positive number'
+        });
+      }
+      updateData.pricePerHour = pricePerHour;
     }
 
     console.log('Updating driveway with data:', updateData);
