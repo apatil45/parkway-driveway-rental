@@ -2,8 +2,16 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 module.exports = function(req, res, next) {
-  // Get token from header
-  const token = req.header('x-auth-token');
+  // Get token from header - check both x-auth-token and Authorization Bearer
+  let token = req.header('x-auth-token');
+  
+  // If no x-auth-token, check Authorization header
+  if (!token) {
+    const authHeader = req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    }
+  }
 
   console.log('Auth middleware - Token received:', !!token);
   console.log('Auth middleware - Request URL:', req.url);

@@ -11,7 +11,7 @@ const ConnectionTest: React.FC = () => {
       const response = await axios.get('/api/auth/user', { 
         timeout: 5000,
         headers: {
-          'x-auth-token': localStorage.getItem('token') || ''
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         }
       });
       setBackendStatus('✅ Connected & Authenticated');

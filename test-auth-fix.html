@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 300px;
+        }
+        .login-form input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Authentication Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Login Test</h2>
+        <p>Test login functionality:</p>
+        
+        <div class="login-form">
+            <input type="email" id="email" placeholder="Email" value="test@example.com">
+            <input type="password" id="password" placeholder="Password" value="password123">
+            <button class="test-button" onclick="testLogin()">Test Login</button>
+        </div>
+        
+        <div id="login-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Token Test</h2>
+        <p>Test token-based authentication:</p>
+        
+        <button class="test-button" onclick="testTokenAuth()">Test Token Authentication</button>
+        <button class="test-button" onclick="testUploadWithToken()">Test Upload with Token</button>
+        <button class="test-button" onclick="testDrivewayWithToken()">Test Driveway with Token</button>
+        
+        <div id="token-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Current Token Status</h2>
+        <p>Current authentication status:</p>
+        
+        <button class="test-button" onclick="checkTokenStatus()">Check Token Status</button>
+        <button class="test-button" onclick="clearToken()">Clear Token</button>
+        
+        <div id="status-result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('login-result');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Attempting login...';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `Login successful! Token: ${data.token.substring(0, 20)}...`;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `Login failed: ${errorData.msg || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Login error: ${error.message}`;
+            }
+        }
+
+        async function testTokenAuth() {
+            const resultDiv = document.getElementById('token-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Testing token authentication...';
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'No token found. Please login first.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/user', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `Token authentication successful! User: ${userData.name} (${userData.email})`;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `Token authentication failed: ${errorData.msg || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Token authentication error: ${error.message}`;
+            }
+        }
+
+        async function testUploadWithToken() {
+            const resultDiv = document.getElementById('token-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Testing upload endpoint with token...';
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'No token found. Please login first.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/upload/test', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `Upload endpoint accessible! Cloudinary configured: ${data.config.cloudinary.configured}`;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `Upload endpoint failed: ${errorData.msg || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Upload endpoint error: ${error.message}`;
+            }
+        }
+
+        async function testDrivewayWithToken() {
+            const resultDiv = document.getElementById('token-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Testing driveway endpoint with token...';
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'No token found. Please login first.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/driveways', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `Driveway endpoint accessible! Found ${data.length} driveways.`;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `Driveway endpoint failed: ${errorData.msg || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Driveway endpoint error: ${error.message}`;
+            }
+        }
+
+        function checkTokenStatus() {
+            const resultDiv = document.getElementById('status-result');
+            resultDiv.style.display = 'block';
+            
+            const token = localStorage.getItem('token');
+            if (token) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `Token exists: ${token.substring(0, 20)}...`;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'No token found in localStorage.';
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('token');
+            const resultDiv = document.getElementById('status-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Token cleared from localStorage.';
+        }
+
+        // Check initial token status
+        checkTokenStatus();
+    </script>
+</body>
+</html>

@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthContext - Loading initial user, token exists:', !!token);
       
       if (token) {
-        axios.defaults.headers.common['x-auth-token'] = token;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         try {
           const res = await axios.get('/api/auth/user');
           console.log('AuthContext - User loaded successfully:', res.data);
@@ -144,7 +144,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('AuthContext - Clearing auth data');
     localStorage.removeItem('token');
     localStorage.removeItem('rememberMe');
-    delete axios.defaults.headers.common['x-auth-token'];
+    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
 
@@ -156,7 +156,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = res.data.token;
       localStorage.setItem('token', token);
       localStorage.setItem('rememberMe', rememberMe.toString());
-      axios.defaults.headers.common['x-auth-token'] = token;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
       const userRes = await axios.get('/api/auth/user');
       console.log('AuthContext - Login successful, user:', userRes.data);
@@ -191,7 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = res.data.token;
       localStorage.setItem('token', token);
       localStorage.setItem('rememberMe', 'true'); // Auto-remember on registration
-      axios.defaults.headers.common['x-auth-token'] = token;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
       const userRes = await axios.get('/api/auth/user');
       setUser(userRes.data);
@@ -231,7 +231,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const res = await axios.post('/api/auth/refresh');
       const token = res.data.token;
       localStorage.setItem('token', token);
-      axios.defaults.headers.common['x-auth-token'] = token;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       return true;
     } catch (err) {
       console.error("Token refresh failed:", err);
@@ -272,7 +272,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     const token = localStorage.getItem('token');
     if (token) {
-      axios.defaults.headers.common['x-auth-token'] = token;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       const success = await validateUserCached();
       if (success) {
         console.log('AuthContext - Manual retry successful');
