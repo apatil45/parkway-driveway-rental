@@ -4,6 +4,12 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(229, 231, 235, 0.5);
 }
 
 .creator-header {
@@ -98,6 +104,63 @@
 /* Step Content */
 .step-content {
   padding: 2rem 0;
+}
+
+/* Form Fields - Override ResponsiveForm styles for better integration */
+.enhanced-driveway-creator .form-field {
+  margin-bottom: 1.5rem;
+}
+
+.enhanced-driveway-creator .form-label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.enhanced-driveway-creator .form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid rgba(209, 213, 219, 0.8);
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: white;
+  color: #1f2937;
+}
+
+.enhanced-driveway-creator .form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.enhanced-driveway-creator .form-input.error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.enhanced-driveway-creator .form-input.error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.enhanced-driveway-creator .form-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.enhanced-driveway-creator .form-help {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
 }
 
 .step-title {
@@ -338,6 +401,11 @@
   cursor: pointer;
   transition: all 0.3s ease;
   background: #f9fafb;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .upload-area:hover {
@@ -373,6 +441,15 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.field-help {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  line-height: 1.5;
 }
 
 .add-slot-button {
@@ -529,6 +606,10 @@
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 .uploaded-image {
@@ -640,6 +721,8 @@
 @media (max-width: 480px) {
   .enhanced-driveway-creator {
     padding: 1rem;
+    margin: 0.5rem;
+    border-radius: 16px;
   }
 
   .creator-title {
