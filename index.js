@@ -105,9 +105,12 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve static files in production
+// Serve static files
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static('public'));
+} else {
+  // In development, serve frontend from frontend/dist
+  app.use(express.static('frontend/dist'));
 }
 
 // Define Routes - PostgreSQL only
@@ -130,11 +133,16 @@ app.use((err, req, res, next) => {
 
 // 404 handler for API routes (handled by individual route modules)
 
-// Serve frontend for all non-API routes in production
+// Serve frontend for all non-API routes
+const path = require('path');
 if (process.env.NODE_ENV === 'production') {
-  const path = require('path');
   app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
+  });
+} else {
+  // In development, serve frontend from frontend/dist
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'));
   });
 }
 

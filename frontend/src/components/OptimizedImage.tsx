@@ -61,14 +61,17 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
     };
 
     // If it's a Cloudinary URL, we can optimize it
-    if (originalSrc.includes('cloudinary.com')) {
-      const baseUrl = originalSrc.split('/upload/')[0];
-      const path = originalSrc.split('/upload/')[1];
+    if (originalSrc && originalSrc.includes('cloudinary.com')) {
+      const uploadParts = originalSrc.split('/upload/');
+      if (uploadParts.length >= 2) {
+        const baseUrl = uploadParts[0];
+        const path = uploadParts[1];
       
-      if (supportsWebP()) {
-        return `${baseUrl}/upload/f_webp,q_auto,w_${width || 'auto'},h_${height || 'auto'}/${path}`;
-      } else {
-        return `${baseUrl}/upload/f_auto,q_auto,w_${width || 'auto'},h_${height || 'auto'}/${path}`;
+        if (supportsWebP()) {
+          return `${baseUrl}/upload/f_webp,q_auto,w_${width || 'auto'},h_${height || 'auto'}/${path}`;
+        } else {
+          return `${baseUrl}/upload/f_auto,q_auto,w_${width || 'auto'},h_${height || 'auto'}/${path}`;
+        }
       }
     }
 

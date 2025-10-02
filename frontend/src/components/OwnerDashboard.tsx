@@ -462,7 +462,7 @@ const OwnerDashboard: React.FC = () => {
                 {driveway.availability.map((slot, idx) => (
                   <div key={idx} className="availability-item">
                     <div className="availability-detail">
-                      <strong>Date:</strong> {slot.date.split('T')[0]}
+                      <strong>Date:</strong> {slot.date ? slot.date.split('T')[0] : 'N/A'}
                     </div>
                     <div className="availability-detail">
                       <strong>Time:</strong> {slot.startTime} - {slot.endTime}

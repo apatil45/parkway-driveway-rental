@@ -552,7 +552,7 @@ const DriverDashboard: React.FC = () => {
 
     const pricePerHour = matchingAvailability.pricePerHour;
 
-    const dateOnly = selectedDate.split('T')[0];
+    const dateOnly = selectedDate ? selectedDate.split('T')[0] : new Date().toISOString().split('T')[0];
     const startTimeString = `${dateOnly}T${selectedStartTime}:00Z`;
     const endTimeString = `${dateOnly}T${selectedEndTime}:00Z`;
 
@@ -661,7 +661,7 @@ const DriverDashboard: React.FC = () => {
       return;
     }
 
-    const dateOnly = selectedDate.split('T')[0];
+    const dateOnly = selectedDate ? selectedDate.split('T')[0] : new Date().toISOString().split('T')[0];
     const startTimeString = `${dateOnly}T${selectedStartTime}:00Z`;
     const endTimeString = `${dateOnly}T${selectedEndTime}:00Z`;
 
@@ -1303,7 +1303,7 @@ const DriverDashboard: React.FC = () => {
               <strong>Driveway Address:</strong> {selectedSlotDetails.driveway.address}
             </div>
             <div className="confirmation-detail">
-              <strong>Date:</strong> {selectedSlotDetails.selectedDate.split('T')[0]}
+              <strong>Date:</strong> {selectedSlotDetails.selectedDate ? selectedSlotDetails.selectedDate.split('T')[0] : 'N/A'}
             </div>
             <div className="confirmation-detail">
               <strong>Start Time:</strong> {selectedSlotDetails.selectedStartTime}

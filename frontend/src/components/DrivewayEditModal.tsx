@@ -93,7 +93,7 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
       setImages(driveway.images || []);
       
       setAvailabilitySlots(driveway.availability.map(slot => ({
-        date: slot.date.split('T')[0],
+        date: slot.date ? slot.date.split('T')[0] : new Date().toISOString().split('T')[0],
         startTime: slot.startTime.substring(0, 5),
         endTime: slot.endTime.substring(0, 5),
         pricePerHour: slot.pricePerHour || 0

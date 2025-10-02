@@ -81,6 +81,7 @@ const BookingDurationModal: React.FC<BookingDurationModalProps> = ({
   };
 
   const calculateEndTime = (startTime: string, duration: number): string => {
+    if (!startTime) return '';
     const [hours, minutes] = startTime.split(':').map(Number);
     const startDate = new Date();
     startDate.setHours(hours, minutes, 0, 0);
