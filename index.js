@@ -106,12 +106,9 @@ app.get('/health', async (req, res) => {
 });
 
 // Serve static files
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('public'));
-} else {
-  // In development, serve frontend from frontend/dist
-  app.use(express.static('frontend/dist'));
-}
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('Serving from frontend/dist directory');
+app.use(express.static('frontend/dist'));
 
 // Define Routes - PostgreSQL only
 app.use('/api/driveways', require('./routes/drivewaysPG'));
@@ -135,16 +132,11 @@ app.use((err, req, res, next) => {
 
 // Serve frontend for all non-API routes
 const path = require('path');
-if (process.env.NODE_ENV === 'production') {
-  app.get(/^(?!\/api).*/, (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
-  });
-} else {
-  // In development, serve frontend from frontend/dist
-  app.get(/^(?!\/api).*/, (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'));
-  });
-}
+console.log('Setting up frontend routes');
+app.get(/^(?!\/api).*/, (req, res) => {
+  console.log('Serving frontend for route:', req.path);
+  res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'));
+});
 
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {

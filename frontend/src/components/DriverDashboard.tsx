@@ -1312,14 +1312,14 @@ const DriverDashboard: React.FC = () => {
               <strong>End Time:</strong> {selectedSlotDetails.selectedEndTime}
             </div>
             <div className="confirmation-detail">
-              <strong>Duration:</strong> {selectedSlotDetails.durationHours.toFixed(2)} hours
+              <strong>Duration:</strong> {selectedSlotDetails.durationHours ? selectedSlotDetails.durationHours.toFixed(2) : '0.00'} hours
             </div>
             <div className="confirmation-detail">
-              <strong>Price Per Hour:</strong> ${selectedSlotDetails.pricePerHour.toFixed(2)}
+              <strong>Price Per Hour:</strong> ${selectedSlotDetails.pricePerHour ? selectedSlotDetails.pricePerHour.toFixed(2) : '0.00'}
             </div>
           </div>
           <div className="confirmation-total">
-            Total Price: ${selectedSlotDetails.totalPrice.toFixed(2)}
+            Total Price: ${selectedSlotDetails.totalPrice ? selectedSlotDetails.totalPrice.toFixed(2) : '0.00'}
           </div>
           <div className="confirmation-actions">
             <Button
@@ -1423,7 +1423,7 @@ const DriverDashboard: React.FC = () => {
                 <span>{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
               </div>
               <div className="booking-price">
-                Total: ${booking.totalPrice.toFixed(2)}
+                Total: ${booking.totalPrice ? booking.totalPrice.toFixed(2) : '0.00'}
               </div>
               {booking.status === 'pending' && (
                 <Button 
