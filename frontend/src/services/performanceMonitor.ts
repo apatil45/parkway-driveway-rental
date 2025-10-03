@@ -141,7 +141,7 @@ class PerformanceMonitor {
           networkLatency: navigation.responseEnd - navigation.requestStart
         });
 
-        console.log(`📊 Page load time: ${loadTime.toFixed(2)}ms`);
+        console.log(`📊 Page load time: ${(loadTime || 0).toFixed(2)}ms`);
       }
     });
   }
@@ -157,7 +157,7 @@ class PerformanceMonitor {
         const totalMB = memory.totalJSHeapSize / 1024 / 1024;
         
         if (usedMB > 50) { // Warn if using more than 50MB
-          console.warn(`🧠 High memory usage: ${usedMB.toFixed(2)}MB / ${totalMB.toFixed(2)}MB`);
+          console.warn(`🧠 High memory usage: ${(usedMB || 0).toFixed(2)}MB / ${(totalMB || 0).toFixed(2)}MB`);
         }
       }, 30000); // Check every 30 seconds
     }
@@ -184,7 +184,7 @@ class PerformanceMonitor {
    */
   private trackRenderTime(componentName: string, duration: number): void {
     if (duration > 16) { // Warn if render takes more than 16ms (60fps threshold)
-      console.warn(`🎨 Slow render: ${componentName} took ${duration.toFixed(2)}ms`);
+      console.warn(`🎨 Slow render: ${componentName} took ${(duration || 0).toFixed(2)}ms`);
     }
   }
 

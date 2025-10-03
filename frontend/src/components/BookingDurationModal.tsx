@@ -49,23 +49,24 @@ const BookingDurationModal: React.FC<BookingDurationModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   // Predefined duration options (in hours)
+  const pricePerHour = selectedTimeSlot.pricePerHour || 0;
   const durationOptions = [
-    { value: 0.5, label: '30 minutes', price: selectedTimeSlot.pricePerHour * 0.5 },
-    { value: 1, label: '1 hour', price: selectedTimeSlot.pricePerHour * 1 },
-    { value: 2, label: '2 hours', price: selectedTimeSlot.pricePerHour * 2 },
-    { value: 4, label: '4 hours', price: selectedTimeSlot.pricePerHour * 4 },
-    { value: 8, label: '8 hours', price: selectedTimeSlot.pricePerHour * 8 },
-    { value: 12, label: '12 hours', price: selectedTimeSlot.pricePerHour * 12 },
-    { value: 24, label: '24 hours', price: selectedTimeSlot.pricePerHour * 24 }
+    { value: 0.5, label: '30 minutes', price: pricePerHour * 0.5 },
+    { value: 1, label: '1 hour', price: pricePerHour * 1 },
+    { value: 2, label: '2 hours', price: pricePerHour * 2 },
+    { value: 4, label: '4 hours', price: pricePerHour * 4 },
+    { value: 8, label: '8 hours', price: pricePerHour * 8 },
+    { value: 12, label: '12 hours', price: pricePerHour * 12 },
+    { value: 24, label: '24 hours', price: pricePerHour * 24 }
   ];
 
-  const [totalPrice, setTotalPrice] = useState(selectedTimeSlot.pricePerHour);
+  const [totalPrice, setTotalPrice] = useState(pricePerHour);
 
   useEffect(() => {
     if (selectedDuration > 0) {
-      setTotalPrice(selectedTimeSlot.pricePerHour * selectedDuration);
+      setTotalPrice(pricePerHour * selectedDuration);
     }
-  }, [selectedDuration, selectedTimeSlot.pricePerHour]);
+  }, [selectedDuration, pricePerHour]);
 
   const handleDurationSelect = (duration: number) => {
     setSelectedDuration(duration);
@@ -156,7 +157,7 @@ const BookingDurationModal: React.FC<BookingDurationModalProps> = ({
             </div>
             <div className="summary-item">
               <span className="label">Price per Hour:</span>
-              <span className="value">${selectedTimeSlot.pricePerHour.toFixed(2)}</span>
+              <span className="value">${pricePerHour.toFixed(2)}</span>
             </div>
             {driverLocation && (
               <div className="summary-item">
@@ -178,7 +179,7 @@ const BookingDurationModal: React.FC<BookingDurationModalProps> = ({
                   onClick={() => handleDurationSelect(option.value)}
                 >
                   <div className="duration-label">{option.label}</div>
-                  <div className="duration-price">${option.price.toFixed(2)}</div>
+                  <div className="duration-price">${(option.price || 0).toFixed(2)}</div>
                 </button>
               ))}
             </div>
@@ -208,11 +209,11 @@ const BookingDurationModal: React.FC<BookingDurationModalProps> = ({
               </div>
               <div className="price-item">
                 <span>Rate:</span>
-                <span>${selectedTimeSlot.pricePerHour.toFixed(2)}/hour</span>
+                <span>${pricePerHour.toFixed(2)}/hour</span>
               </div>
               <div className="price-total">
                 <span>Total:</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>${(totalPrice || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -232,7 +233,7 @@ const BookingDurationModal: React.FC<BookingDurationModalProps> = ({
               loading={isLoading}
               disabled={selectedDuration <= 0}
             >
-              {isLoading ? 'Processing...' : `Book for $${totalPrice.toFixed(2)}`}
+              {isLoading ? 'Processing...' : `Book for $${(totalPrice || 0).toFixed(2)}`}
             </Button>
           </div>
         </div>

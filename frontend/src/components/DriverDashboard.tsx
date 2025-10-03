@@ -150,7 +150,7 @@ const DriverDashboard: React.FC = () => {
               longitude 
             });
             
-            const address = geocodeRes.data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            const address = geocodeRes.data.address || `${(latitude || 0).toFixed(4)}, ${(longitude || 0).toFixed(4)}`;
             
             resolve({
               latitude,
@@ -162,7 +162,7 @@ const DriverDashboard: React.FC = () => {
             resolve({
               latitude,
               longitude,
-              address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+              address: `${(latitude || 0).toFixed(4)}, ${(longitude || 0).toFixed(4)}`
             });
           }
         },
@@ -1312,14 +1312,14 @@ const DriverDashboard: React.FC = () => {
               <strong>End Time:</strong> {selectedSlotDetails.selectedEndTime}
             </div>
             <div className="confirmation-detail">
-              <strong>Duration:</strong> {selectedSlotDetails.durationHours ? selectedSlotDetails.durationHours.toFixed(2) : '0.00'} hours
+              <strong>Duration:</strong> {selectedSlotDetails.durationHours ? (selectedSlotDetails.durationHours || 0).toFixed(2) : '0.00'} hours
             </div>
             <div className="confirmation-detail">
-              <strong>Price Per Hour:</strong> ${selectedSlotDetails.pricePerHour ? selectedSlotDetails.pricePerHour.toFixed(2) : '0.00'}
+              <strong>Price Per Hour:</strong> ${selectedSlotDetails.pricePerHour ? (selectedSlotDetails.pricePerHour || 0).toFixed(2) : '0.00'}
             </div>
           </div>
           <div className="confirmation-total">
-            Total Price: ${selectedSlotDetails.totalPrice ? selectedSlotDetails.totalPrice.toFixed(2) : '0.00'}
+            Total Price: ${selectedSlotDetails.totalPrice ? (selectedSlotDetails.totalPrice || 0).toFixed(2) : '0.00'}
           </div>
           <div className="confirmation-actions">
             <Button
@@ -1423,7 +1423,7 @@ const DriverDashboard: React.FC = () => {
                 <span>{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
               </div>
               <div className="booking-price">
-                Total: ${booking.totalPrice ? booking.totalPrice.toFixed(2) : '0.00'}
+                Total: ${booking.totalPrice ? (booking.totalPrice || 0).toFixed(2) : '0.00'}
               </div>
               {booking.status === 'pending' && (
                 <Button 

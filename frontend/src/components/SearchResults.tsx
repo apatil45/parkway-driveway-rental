@@ -46,19 +46,21 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [selectedDriveway, setSelectedDriveway] = useState<Driveway | null>(null);
 
   const formatPrice = (price: number) => {
+    const safePrice = price || 0;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
-    }).format(price);
+    }).format(safePrice);
   };
 
   const formatDistance = (distance: number) => {
-    if (distance < 1) {
-      return `${Math.round(distance * 1000)}m`;
+    const safeDistance = distance || 0;
+    if (safeDistance < 1) {
+      return `${Math.round(safeDistance * 1000)}m`;
     }
-    return `${distance.toFixed(1)}km`;
+    return `${safeDistance.toFixed(1)}km`;
   };
 
   const renderStars = (rating: number) => {

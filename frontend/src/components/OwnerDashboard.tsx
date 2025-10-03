@@ -468,7 +468,7 @@ const OwnerDashboard: React.FC = () => {
                       <strong>Time:</strong> {slot.startTime} - {slot.endTime}
                     </div>
                     <div className="availability-detail">
-                      <strong>Price:</strong> <span className="availability-price">${slot.pricePerHour.toFixed(2)}/hour</span>
+                      <strong>Price:</strong> <span className="availability-price">${(slot.pricePerHour || 0).toFixed(2)}/hour</span>
                     </div>
                   </div>
                 ))}

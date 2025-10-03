@@ -95,7 +95,7 @@ const PerformanceOptimizer: React.FC = () => {
               <div style={{ marginBottom: '12px' }}>
                 <strong style={{ color: '#059669' }}>📄 Page Load:</strong>
                 <div style={{ marginLeft: '8px' }}>
-                  <div>Average: {metrics.averagePageLoad.toFixed(2)}ms</div>
+                  <div>Average: {(metrics.averagePageLoad || 0).toFixed(2)}ms</div>
                 </div>
               </div>
 
@@ -104,7 +104,7 @@ const PerformanceOptimizer: React.FC = () => {
                 <strong style={{ color: '#3b82f6' }}>🌐 API Calls:</strong>
                 <div style={{ marginLeft: '8px' }}>
                   <div>Total: {metrics.totalAPICalls}</div>
-                  <div>Average Response: {metrics.averageAPIResponse.toFixed(2)}ms</div>
+                  <div>Average Response: {(metrics.averageAPIResponse || 0).toFixed(2)}ms</div>
                 </div>
               </div>
 
@@ -112,7 +112,7 @@ const PerformanceOptimizer: React.FC = () => {
               <div style={{ marginBottom: '12px' }}>
                 <strong style={{ color: '#dc2626' }}>🧠 Memory:</strong>
                 <div style={{ marginLeft: '8px' }}>
-                  <div>Usage: {metrics.memoryUsage.toFixed(2)}MB</div>
+                  <div>Usage: {(metrics.memoryUsage || 0).toFixed(2)}MB</div>
                 </div>
               </div>
 
@@ -132,7 +132,7 @@ const PerformanceOptimizer: React.FC = () => {
                   <div style={{ marginLeft: '8px' }}>
                     {metrics.slowestAPIs.slice(0, 3).map((api: any, index: number) => (
                       <div key={index} style={{ fontSize: '11px' }}>
-                        {api.endpoint}: {api.responseTime.toFixed(2)}ms
+                        {api.endpoint}: {(api.responseTime || 0).toFixed(2)}ms
                       </div>
                     ))}
                   </div>

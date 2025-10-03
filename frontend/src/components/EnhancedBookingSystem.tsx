@@ -109,7 +109,7 @@ const EnhancedBookingSystem: React.FC<EnhancedBookingSystemProps> = ({
         driverLocation: {
           latitude,
           longitude,
-          address: data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+          address: data.address || `${(latitude || 0).toFixed(4)}, ${(longitude || 0).toFixed(4)}`
         }
       }));
 
@@ -465,7 +465,7 @@ const EnhancedBookingSystem: React.FC<EnhancedBookingSystemProps> = ({
                       const start = new Date(`2000-01-01T${formData.startTime}`);
                       const end = new Date(`2000-01-01T${formData.endTime}`);
                       const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                      return `${hours.toFixed(1)} hours`;
+                      return `${(hours || 0).toFixed(1)} hours`;
                     })()
                   ) : '0 hours'}
                 </span>
@@ -476,7 +476,7 @@ const EnhancedBookingSystem: React.FC<EnhancedBookingSystemProps> = ({
               </div>
               <div className="price-total">
                 <span>Total:</span>
-                <span>${formData.totalPrice.toFixed(2)}</span>
+                <span>${(formData.totalPrice || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>

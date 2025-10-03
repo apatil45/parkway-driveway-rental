@@ -139,7 +139,7 @@ const EnhancedMapDisplay: React.FC<EnhancedMapDisplayProps> = ({
                 <strong style="font-size: 12px; color: #374151;">Available Slots:</strong>
                 ${availableSlots.map(slot => `
                   <div style="font-size: 12px; color: #6b7280; margin: 4px 0;">
-                    ${slot.startTime} - ${slot.endTime} | $${slot.pricePerHour.toFixed(2)}/hr
+                    ${slot.startTime} - ${slot.endTime} | $${(slot.pricePerHour || 0).toFixed(2)}/hr
                   </div>
                 `).join('')}
               </div>

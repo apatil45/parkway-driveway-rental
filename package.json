@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "node index.js",
+    "dev": "set NODE_ENV=development && node index.js",
     "start": "node index.js",
     "build": "cd frontend && npm ci && npm run build && cd .. && node -e \"const fs=require('fs');const path=require('path');if(fs.existsSync('public'))fs.rmSync('public',{recursive:true});fs.cpSync('frontend/dist','public',{recursive:true});\"",
     "migrate": "node scripts/migrate.js",
