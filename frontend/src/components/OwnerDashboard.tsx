@@ -22,6 +22,15 @@ interface Driveway {
   isAvailable: boolean;
   carSizeCompatibility: string[]; // Array of compatible car sizes
   drivewaySize: string;
+  images?: string[];
+  amenities?: string[];
+  pricePerHour?: number;
+  specificSlots?: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    pricePerHour: number;
+  }>;
 }
 
 const OwnerDashboard: React.FC = () => {

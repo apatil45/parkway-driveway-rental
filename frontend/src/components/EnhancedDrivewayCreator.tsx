@@ -499,6 +499,65 @@ const EnhancedDrivewayCreator: React.FC<{
         required
         helpText="Set a competitive price based on your location and amenities"
       />
+
+      {/* Image Upload Section - Available in all steps */}
+      <div className="form-field">
+        <label className="form-label">Photos (Optional)</label>
+        <div className="image-upload-section">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => {
+              console.log('File input changed:', e.target.files?.length || 0);
+              if (e.target.files && e.target.files.length > 0) {
+                console.log('Processing file input files');
+                handleImageUpload(e.target.files);
+              }
+            }}
+            className="file-input"
+            disabled={isUploading}
+            id="image-upload-input-step1"
+          />
+          <label 
+            htmlFor="image-upload-input-step1" 
+            className="upload-area"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => console.log('Upload area clicked')}
+          >
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17,8 12,3 7,8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>Click to upload photos or drag and drop</p>
+            <p className="upload-hint">Up to 5 images, max 5MB each</p>
+            {isUploading && <p className="uploading-text">Uploading...</p>}
+          </label>
+        </div>
+        
+        {formData.images.length > 0 && (
+          <div className="uploaded-images">
+            {formData.images.map((url, index) => (
+              <div key={index} className="uploaded-image">
+                <img src={url} alt={`Driveway ${index + 1}`} />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="remove-image-btn"
+                  aria-label="Remove image"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -582,12 +641,71 @@ const EnhancedDrivewayCreator: React.FC<{
           ))}
         </div>
       </div>
+
+      {/* Image Upload Section - Available in all steps */}
+      <div className="form-field">
+        <label className="form-label">Photos (Optional)</label>
+        <div className="image-upload-section">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => {
+              console.log('File input changed:', e.target.files?.length || 0);
+              if (e.target.files && e.target.files.length > 0) {
+                console.log('Processing file input files');
+                handleImageUpload(e.target.files);
+              }
+            }}
+            className="file-input"
+            disabled={isUploading}
+            id="image-upload-input-step2"
+          />
+          <label 
+            htmlFor="image-upload-input-step2" 
+            className="upload-area"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => console.log('Upload area clicked')}
+          >
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17,8 12,3 7,8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>Click to upload photos or drag and drop</p>
+            <p className="upload-hint">Up to 5 images, max 5MB each</p>
+            {isUploading && <p className="uploading-text">Uploading...</p>}
+          </label>
+        </div>
+        
+        {formData.images.length > 0 && (
+          <div className="uploaded-images">
+            {formData.images.map((url, index) => (
+              <div key={index} className="uploaded-image">
+                <img src={url} alt={`Driveway ${index + 1}`} />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="remove-image-btn"
+                  aria-label="Remove image"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 
   const renderStep3 = () => (
     <div className="step-content">
-      <h3 className="step-title">Availability & Images</h3>
+      <h3 className="step-title">Availability Schedule</h3>
       
       <div className="form-field">
         <label className="form-label">

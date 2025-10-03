@@ -15,6 +15,14 @@ interface Driveway {
   carSizeCompatibility: string[];
   drivewaySize: string;
   images?: string[];
+  amenities?: string[];
+  pricePerHour?: number;
+  specificSlots?: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    pricePerHour: number;
+  }>;
 }
 
 interface DrivewayEditModalProps {
@@ -83,23 +91,38 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
 
   useEffect(() => {
     if (driveway && isOpen) {
+      console.log('Loading driveway data for edit:', driveway);
+      
       setFormData({
-        address: driveway.address,
-        description: driveway.description,
+        address: driveway.address || '',
+        description: driveway.description || '',
         drivewaySize: driveway.drivewaySize || 'medium',
         carSizeCompatibility: driveway.carSizeCompatibility || ['small', 'medium']
       });
       
       setImages(driveway.images || []);
       
-      setAvailabilitySlots(driveway.availability.map(slot => ({
-        date: slot.date ? slot.date.split('T')[0] : new Date().toISOString().split('T')[0],
-        startTime: slot.startTime.substring(0, 5),
-        endTime: slot.endTime.substring(0, 5),
-        pricePerHour: slot.pricePerHour || 0
-      })));
+      // Load amenities properly
+      setSelectedAmenities(driveway.amenities || []);
       
-      setSelectedAmenities([]); // Reset amenities for now
+      // Load availability slots with proper error handling
+      if (driveway.availability && Array.isArray(driveway.availability)) {
+        setAvailabilitySlots(driveway.availability.map(slot => ({
+          date: slot.date ? slot.date.split('T')[0] : new Date().toISOString().split('T')[0],
+          startTime: slot.startTime ? slot.startTime.substring(0, 5) : '09:00',
+          endTime: slot.endTime ? slot.endTime.substring(0, 5) : '17:00',
+          pricePerHour: slot.pricePerHour || 0
+        })));
+      } else {
+        // Default availability if none exists
+        setAvailabilitySlots([{
+          date: new Date().toISOString().split('T')[0],
+          startTime: '09:00',
+          endTime: '17:00',
+          pricePerHour: driveway.pricePerHour || 5
+        }]);
+      }
+      
       setCurrentStep(1);
     } else if (!driveway && isOpen) {
       // Reset form for new driveway
@@ -116,6 +139,7 @@ const DrivewayEditModal: React.FC<DrivewayEditModalProps> = ({
         pricePerHour: 5
       }]);
       setSelectedAmenities([]);
+      setImages([]);
       setCurrentStep(1);
     }
   }, [driveway, isOpen, setFormData]);
