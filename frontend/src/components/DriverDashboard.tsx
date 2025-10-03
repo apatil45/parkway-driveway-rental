@@ -712,8 +712,7 @@ const DriverDashboard: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          bookingId: pendingBooking.id,
-          amount: totalPrice * 100 // Convert to cents
+          bookingId: pendingBooking.id
         })
       });
 
@@ -1452,7 +1451,7 @@ const DriverDashboard: React.FC = () => {
           onConfirm={handleStreamlinedBooking}
           driveway={{
             id: selectedDriveway.id,
-            address: selectedDriveway.location,
+            address: selectedDriveway.address,
             description: selectedDriveway.description,
             pricePerHour: selectedTimeSlot.pricePerHour,
             availability: [{
