@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { sequelize } = require('../models/database');
 const { setupAssociations } = require('../models/associations');
 
@@ -5,9 +6,15 @@ const { setupAssociations } = require('../models/associations');
 const migrate = async () => {
   try {
     console.log('🔄 Starting database migration...');
+    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
     
-    // Test connection
-    await sequelize.authenticate();
+    // Test connection with timeout
+    await Promise.race([
+      sequelize.authenticate(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout')), 30000)
+      )
+    ]);
     console.log('✅ Database connection established');
     
     // Setup associations

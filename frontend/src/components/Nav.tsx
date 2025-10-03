@@ -100,31 +100,35 @@ const Nav: React.FC = () => {
                   Dashboard
                 </Link>
 
-                {/* Role-specific Navigation */}
-                {user?.roles?.includes('driver') && (
-                  <Link 
-                    to="/driver-dashboard" 
-                    className={`nav-link ${isActiveRoute('/driver-dashboard') ? 'active' : ''}`}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="11" cy="11" r="8"/>
-                      <path d="m21 21-4.35-4.35"/>
-                    </svg>
-                    Find Parking
-                  </Link>
-                )}
+                {/* Role-specific Navigation - Only show if user has multiple roles */}
+                {user?.roles?.length > 1 && (
+                  <>
+                    {user?.roles?.includes('driver') && (
+                      <Link 
+                        to="/driver-dashboard" 
+                        className={`nav-link ${isActiveRoute('/driver-dashboard') ? 'active' : ''}`}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="11" cy="11" r="8"/>
+                          <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        Find Parking
+                      </Link>
+                    )}
 
-                {user?.roles?.includes('owner') && (
-                  <Link 
-                    to="/owner-dashboard" 
-                    className={`nav-link ${isActiveRoute('/owner-dashboard') ? 'active' : ''}`}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                      <path d="M8 21v-4a2 2 0 012-2h4a2 2 0 012 2v4"/>
-                    </svg>
-                    My Driveways
-                  </Link>
+                    {user?.roles?.includes('owner') && (
+                      <Link 
+                        to="/owner-dashboard" 
+                        className={`nav-link ${isActiveRoute('/owner-dashboard') ? 'active' : ''}`}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                          <path d="M8 21v-4a2 2 0 012-2h4a2 2 0 012 2v4"/>
+                        </svg>
+                        My Driveways
+                      </Link>
+                    )}
+                  </>
                 )}
               </>
             ) : (

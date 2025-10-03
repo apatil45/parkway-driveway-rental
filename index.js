@@ -31,13 +31,13 @@ const startServer = async () => {
       // Setup model associations
       setupAssociations();
       
-      // Sync database models - force recreate to fix schema issues
+      // Sync database models with better error handling
       console.log('📋 Synchronizing database models...');
       await sequelize.sync({ 
-        force: true, // Force recreate to fix column mapping issues
+        force: false, // Changed from true to false to prevent data loss
         alter: false
       });
-      console.log('✅ Database models synchronized with correct schema');
+      console.log('✅ Database models synchronized');
       
     } else {
       console.log('⚠️  No database connection configured. Please set DATABASE_URL.');
@@ -46,7 +46,10 @@ const startServer = async () => {
 
   } catch (error) {
     console.error('❌ Server startup failed:', error.message);
-    process.exit(1);
+    // Don't exit on database errors in development
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
   }
 };
 

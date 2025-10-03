@@ -135,14 +135,11 @@ const Register: React.FC = () => {
       const userRole = await register(formData.name, formData.email, formData.password, formData.roles);
       
       // Success notification
-      notificationService.showAuthSuccess('Account created successfully! Redirecting to your dashboard...');
+      notificationService.showAuthSuccess('Account created successfully!');
       
-      // Redirect based on user role
+      // Redirect immediately based on user role
       const redirectTo = userRole === 'driver' ? '/driver-dashboard' : '/owner-dashboard';
-      
-      setTimeout(() => {
-        navigate(redirectTo, { replace: true });
-      }, 1500);
+      navigate(redirectTo, { replace: true });
 
     } catch (error: any) {
       console.error('Registration error:', error);

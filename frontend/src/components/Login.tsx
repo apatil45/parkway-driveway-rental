@@ -69,13 +69,30 @@ const Login: React.FC = () => {
         [name]: undefined
       }));
     }
+
+    // Real-time validation for better UX
+    if (name === 'email' && value.trim()) {
+      if (!/\S+@\S+\.\S+/.test(value)) {
+        setErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
+      } else {
+        setErrors(prev => ({ ...prev, email: undefined }));
+      }
+    }
+
+    if (name === 'password' && value) {
+      if (value.length < 6) {
+        setErrors(prev => ({ ...prev, password: 'Password must be at least 6 characters' }));
+      } else {
+        setErrors(prev => ({ ...prev, password: undefined }));
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      notificationService.showAuthError('Please fix the errors below');
+      // Don't show notification for validation errors - they're already shown inline
       return;
     }
 
@@ -85,14 +102,11 @@ const Login: React.FC = () => {
       const userRole = await login(formData.email, formData.password, formData.rememberMe);
       
       // Success notification
-      notificationService.showAuthSuccess('Welcome back! Redirecting to your dashboard...');
+      notificationService.showAuthSuccess('Welcome back!');
       
-      // Redirect based on user role or intended destination
+      // Redirect immediately based on user role or intended destination
       const redirectTo = state?.from || (userRole === 'driver' ? '/driver-dashboard' : '/owner-dashboard');
-      
-      setTimeout(() => {
-        navigate(redirectTo, { replace: true });
-      }, 1000);
+      navigate(redirectTo, { replace: true });
 
     } catch (error: any) {
       console.error('Login error:', error);

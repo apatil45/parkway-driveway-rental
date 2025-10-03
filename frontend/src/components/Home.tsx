@@ -10,12 +10,8 @@ const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Quick loading for better UX
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-
-    return () => clearTimeout(timer);
+    // Remove artificial loading delay for better UX
+    setIsLoading(false);
   }, []);
 
   const handleGetStarted = () => {

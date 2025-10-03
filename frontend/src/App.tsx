@@ -6,7 +6,7 @@ import DriverDashboard from './components/DriverDashboard';
 import Home from './components/Home'; // Import the Home component
 import Profile from './components/Profile'; // Import the Profile component
 import ErrorBoundary from './components/ErrorBoundary'; // Import the ErrorBoundary component
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PrivateRoute from './components/PrivateRoute';
 import Nav from "./components/Nav"; // Import the navigation component
 // Debug components - only imported when needed
@@ -45,6 +45,8 @@ const App: React.FC = () => {
               <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
               <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><DriverDashboard /></PrivateRoute>} />
               <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
+              {/* Catch-all route for 404 */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </Router>

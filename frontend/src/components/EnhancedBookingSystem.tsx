@@ -320,7 +320,7 @@ const EnhancedBookingSystem: React.FC<EnhancedBookingSystemProps> = ({
     e.preventDefault();
 
     if (!validation.isValid) {
-      notificationService.showSystemWarning('Please fix the errors before proceeding');
+      // Don't show notification - errors are already displayed inline
       return;
     }
 

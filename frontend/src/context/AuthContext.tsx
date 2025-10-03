@@ -78,44 +78,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = localStorage.getItem('token');
       const rememberMe = localStorage.getItem('rememberMe') === 'true';
       
-      console.log('AuthContext - Loading initial user, token exists:', !!token);
-      
       if (token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         try {
           const res = await axios.get('/api/auth/user');
-          console.log('AuthContext - User loaded successfully:', res.data);
           setUser(res.data);
-          setLastUserValidation(Date.now()); // Update validation timestamp
+          setLastUserValidation(Date.now());
           
           // Set up token refresh if remember me is enabled
           if (rememberMe) {
             setupTokenRefresh();
           }
         } catch (err: any) {
-          console.error("AuthContext - Error loading initial user:", err);
-          console.error("AuthContext - Error details:", err.response?.data || err.message);
-          console.error("AuthContext - Token was:", token);
           // Only clear auth data if the token is invalid (401), not for network errors
           if (err.response?.status === 401) {
-            console.log("AuthContext - Token is invalid, clearing auth data");
             clearAuthData();
           } else {
-            console.log("AuthContext - Network or server error, keeping token for retry");
-            // Keep the token but don't set user data
+            // Keep the token but don't set user data for network errors
             setUser(null);
-            // Retry after a delay if we haven't exceeded max retries
-            if (retryCount < MAX_RETRY_COUNT) {
-              console.log(`AuthContext - Scheduling retry ${retryCount + 1}/${MAX_RETRY_COUNT}`);
-              setTimeout(() => {
-                setRetryCount(prev => prev + 1);
-                loadInitialUser();
-              }, 2000 * (retryCount + 1)); // Exponential backoff
-            }
           }
         }
-      } else {
-        console.log('AuthContext - No token found, user not authenticated');
       }
       setIsLoading(false);
     };

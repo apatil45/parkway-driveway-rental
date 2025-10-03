@@ -8,25 +8,25 @@ if (!process.env.DATABASE_URL) {
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
-  logging: console.log,
+  logging: false, // Disable logging for better performance
   pool: {
-    max: 3,
+    max: 5,
     min: 0,
     acquire: 30000,
     idle: 10000,
     evict: 1000
   },
   retry: {
-    max: 3
+    max: 5
   },
   dialectOptions: {
-    ssl: {
+    ssl: process.env.NODE_ENV === 'production' ? {
       require: true,
       rejectUnauthorized: false
-    },
-    connectTimeout: 60000,
-    acquireTimeout: 60000,
-    timeout: 60000
+    } : false,
+    connectTimeout: 30000,
+    acquireTimeout: 30000,
+    timeout: 30000
   },
   define: {
     timestamps: true,
@@ -44,7 +44,7 @@ console.log('🗄️  Using PostgreSQL database');
 
 // Test connection with retry logic
 const testConnection = async () => {
-  let retries = 3;
+  let retries = 5;
   while (retries > 0) {
     try {
       await sequelize.authenticate();
@@ -55,8 +55,9 @@ const testConnection = async () => {
       console.error('Error:', error.message);
       retries--;
       if (retries > 0) {
-        console.log('🔄 Retrying in 5 seconds...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        const delay = Math.min(2000 * (6 - retries), 10000); // Exponential backoff, max 10s
+        console.log(`🔄 Retrying in ${delay/1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
