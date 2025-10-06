@@ -10,14 +10,32 @@ const router = express.Router();
 // @route   POST /api/auth/register
 // @desc    Register user
 // @access  Public
-router.post('/register', validateUserRegistration, async (req, res) => {
-  const { name, email, password, roles, carSize, drivewaySize } = req.body;
+router.post('/register', async (req, res) => {
+  const { name, email, password, roles } = req.body;
 
   try {
+    // Basic validation
+    if (!name || !email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        msg: 'Name, email, and password are required' 
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        success: false,
+        msg: 'Password must be at least 6 characters' 
+      });
+    }
+
     // Check if user exists
     let user = await User.findOne({ where: { email } });
     if (user) {
-      return res.status(400).json({ msg: 'User already exists' });
+      return res.status(400).json({ 
+        success: false,
+        msg: 'User already exists' 
+      });
     }
 
     // Ensure roles is an array
@@ -28,51 +46,99 @@ router.post('/register', validateUserRegistration, async (req, res) => {
       name,
       email,
       password: await bcrypt.hash(password, 10),
-      roles: userRoles,
-      carSize: userRoles.includes('driver') ? carSize : null,
-      drivewaySize: userRoles.includes('owner') ? drivewaySize : null
+      roles: userRoles
     });
 
     // Create JWT token
     const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-      if (err) throw err;
-      res.json({ token, user: { id: user.id, name: user.name, email: user.email, roles: user.roles } });
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+      if (err) {
+        console.error('JWT Error:', err);
+        return res.status(500).json({ 
+          success: false,
+          msg: 'Server error creating token' 
+        });
+      }
+      res.json({ 
+        success: true,
+        token, 
+        user: { 
+          id: user.id, 
+          name: user.name, 
+          email: user.email, 
+          roles: user.roles 
+        } 
+      });
     });
   } catch (err) {
     console.error('Register Route Error:', err.message);
-    res.status(500).send('Server error');
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error during registration' 
+    });
   }
 });
 
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
-router.post('/login', validateUserLogin, async (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Basic validation
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        msg: 'Email and password are required' 
+      });
+    }
+
     // Check if user exists
     let user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(400).json({ msg: 'Invalid credentials' });
+      return res.status(400).json({ 
+        success: false,
+        msg: 'Invalid credentials' 
+      });
     }
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Invalid credentials' });
+      return res.status(400).json({ 
+        success: false,
+        msg: 'Invalid credentials' 
+      });
     }
 
     // Create JWT token
     const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-      if (err) throw err;
-      res.json({ token, user: { id: user.id, name: user.name, email: user.email, roles: user.roles } });
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+      if (err) {
+        console.error('JWT Error:', err);
+        return res.status(500).json({ 
+          success: false,
+          msg: 'Server error creating token' 
+        });
+      }
+      res.json({ 
+        success: true,
+        token, 
+        user: { 
+          id: user.id, 
+          name: user.name, 
+          email: user.email, 
+          roles: user.roles 
+        } 
+      });
     });
   } catch (err) {
     console.error('Login Route Error:', err.message);
-    res.status(500).send('Server error');
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error during login' 
+    });
   }
 });
 
@@ -87,14 +153,27 @@ router.get('/user', auth, async (req, res) => {
     });
     
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ 
+        success: false,
+        msg: 'User not found' 
+      });
     }
     
-    res.json(user);
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        roles: user.roles
+      }
+    });
   } catch (err) {
     console.error('Get User Route Error:', err.message);
-    console.error('Error details:', err);
-    res.status(500).json({ error: 'Server error', message: 'Failed to fetch user data' });
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error fetching user data' 
+    });
   }
 });
 
