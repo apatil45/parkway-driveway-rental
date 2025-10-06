@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 const Driveway = require('../models/DrivewayPG');
 const User = require('../models/UserPG');
 const { authenticateToken: auth } = require('../middleware/auth');
-const { validateDriveway } = require('../middleware/validation');
+// const { validateDriveway } = require('../middleware/validation'); // Not used anymore
 
 const router = express.Router();
 
