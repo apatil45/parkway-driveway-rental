@@ -210,9 +210,9 @@ const DriverDashboard: React.FC = () => {
   // Debounced search to prevent rapid-fire searches
   const debouncedSearch = useCallback((searchFunction: () => void) => {
     if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+      window.clearTimeout(searchTimeoutRef.current);
     }
-    searchTimeoutRef.current = setTimeout(() => {
+    searchTimeoutRef.current = window.setTimeout(() => {
       searchFunction();
     }, 300); // 300ms debounce
   }, []);
@@ -243,7 +243,7 @@ const DriverDashboard: React.FC = () => {
     // Cleanup function to clear timeouts
     return () => {
       if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+        window.clearTimeout(searchTimeoutRef.current);
       }
     };
   }, [isAuthenticated, user]);
@@ -252,13 +252,13 @@ const DriverDashboard: React.FC = () => {
   useEffect(() => {
     if (currentLocation && addressSearch && !isSearching) {
       // Debounce the auto-search to prevent multiple rapid calls
-      const timeoutId = setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         if (!isSearching) {
           handleSearch(new Event('submit') as any);
         }
       }, 500);
       
-      return () => clearTimeout(timeoutId);
+      return () => window.clearTimeout(timeoutId);
     }
   }, [currentLocation, addressSearch, isSearching]);
 
@@ -544,7 +544,7 @@ const DriverDashboard: React.FC = () => {
       setCurrentSection('payment');
       
       // Scroll to payment section after a short delay
-      setTimeout(() => {
+      window.setTimeout(() => {
         scrollToSection('payment-section');
       }, 300);
     } catch (err: any) {
@@ -757,7 +757,7 @@ const DriverDashboard: React.FC = () => {
       setCurrentSection('payment');
       
       // Scroll to payment section after a short delay
-      setTimeout(() => {
+      window.setTimeout(() => {
         scrollToSection('payment-section');
       }, 300);
     } catch (err: any) {
@@ -1226,7 +1226,7 @@ const DriverDashboard: React.FC = () => {
                 setSearchParams(newParams);
                 
                 // Auto-trigger search with new parameters
-                setTimeout(() => {
+                window.setTimeout(() => {
                   handleSearch(new Event('submit') as any);
                 }, 100);
               }}
@@ -1248,7 +1248,7 @@ const DriverDashboard: React.FC = () => {
                 setSearchParams(newParams);
                 
                 // Auto-trigger search with new parameters
-                setTimeout(() => {
+                window.setTimeout(() => {
                   handleSearch(new Event('submit') as any);
                 }, 100);
               }}
@@ -1268,7 +1268,7 @@ const DriverDashboard: React.FC = () => {
                 setSearchParams(newParams);
                 
                 // Auto-trigger search with new parameters
-                setTimeout(() => {
+                window.setTimeout(() => {
                   handleSearch(new Event('submit') as any);
                 }, 100);
               }}
