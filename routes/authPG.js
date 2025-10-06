@@ -50,7 +50,7 @@ router.post('/register', async (req, res) => {
     });
 
     // Create JWT token
-    const payload = { user: { id: user.id } };
+    const payload = { userId: user.id };
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
       if (err) {
         console.error('JWT Error:', err);
@@ -113,7 +113,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Create JWT token
-    const payload = { user: { id: user.id } };
+    const payload = { userId: user.id };
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
       if (err) {
         console.error('JWT Error:', err);
