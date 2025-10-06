@@ -3,7 +3,7 @@ const router = express.Router();
 const Booking = require('../models/BookingPG');
 const Driveway = require('../models/DrivewayPG');
 const User = require('../models/UserPG');
-const auth = require('../middleware/auth');
+const { authenticateToken: auth } = require('../middleware/auth');
 
 // Middleware to check if user is a driver
 const isDriver = (req, res, next) => {
