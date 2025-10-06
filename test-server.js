@@ -124,7 +124,7 @@ app.post('/api/bookings', (req, res) => {
 });
 
 // Serve React app for all other routes
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.resolve(__dirname, 'frontend/dist/index.html'));
 });
 

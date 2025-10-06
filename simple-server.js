@@ -18,6 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use(express.static('frontend/dist'));
+app.use(express.static('public'));
 
 // Simple auth middleware
 const authenticateToken = (req, res, next) => {
@@ -44,6 +45,15 @@ app.get('/health', (req, res) => {
     message: 'Simple server is running',
     timestamp: new Date().toISOString()
   });
+});
+
+// PWA files
+app.get('/sw.js', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'public/sw.js'));
+});
+
+app.get('/manifest.json', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'public/manifest.json'));
 });
 
 // Auth routes
@@ -228,7 +238,7 @@ app.post('/api/bookings', authenticateToken, (req, res) => {
 });
 
 // Serve React app for all other routes
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.resolve(__dirname, 'frontend/dist/index.html'));
 });
 
