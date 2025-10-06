@@ -95,7 +95,11 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'public')));
   
   // Catch-all handler for React Router (must be last)
-  app.get('/*', (req, res) => {
+  app.use((req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   });
 }
