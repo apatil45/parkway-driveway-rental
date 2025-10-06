@@ -94,12 +94,19 @@ app.get('/api/performance', async (req, res) => {
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'public')));
   
-  // Catch-all handler for React Router (must be last)
+  // Handle React Router routes - serve index.html for all non-API routes
   app.use((req, res, next) => {
     // Skip API routes
     if (req.path.startsWith('/api/')) {
       return next();
     }
+    
+    // Skip static file requests (they should be handled by express.static)
+    if (req.path.includes('.')) {
+      return next();
+    }
+    
+    // Serve index.html for all other routes (React Router will handle routing)
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   });
 }
