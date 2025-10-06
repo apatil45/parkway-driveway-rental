@@ -1,36 +1,84 @@
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const { User } = require('../models');
 
-module.exports = function(req, res, next) {
-  // Get token from header - check both x-auth-token and Authorization Bearer
-  let token = req.header('x-auth-token');
-  
-  // If no x-auth-token, check Authorization header
-  if (!token) {
-    const authHeader = req.header('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    }
-  }
-
-  console.log('Auth middleware - Token received:', !!token);
-  console.log('Auth middleware - Request URL:', req.url);
-  console.log('Auth middleware - Request method:', req.method);
-
-  // Check if not token
-  if (!token) {
-    console.log('Auth middleware - No token provided');
-    return res.status(401).json({ msg: 'No token, authorization denied' });
-  }
-
-  // Verify token
+const authenticateToken = async (req, res, next) => {
   try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access token required'
+      });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded.user;
-    console.log('Auth middleware - Token verified, user:', req.user);
+    const user = await User.findByPk(decoded.userId);
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
+    }
+
+    req.user = user;
     next();
-  } catch (err) {
-    console.log('Auth middleware - Token verification failed:', err.message);
-    res.status(401).json({ msg: 'Token is not valid' });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired'
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: 'Authentication error'
+    });
   }
+};
+
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions'
+      });
+    }
+
+    next();
+  };
+};
+
+const generateToken = (user) => {
+  return jwt.sign(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+};
+
+module.exports = {
+  authenticateToken,
+  authorize,
+  generateToken
 };
