@@ -108,10 +108,14 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve static files
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('Serving from frontend/dist directory');
-app.use(express.static('frontend/dist'));
+// Serve static files - production vs development
+if (process.env.NODE_ENV === 'production') {
+  console.log('Production: Serving from public directory');
+  app.use(express.static('public'));
+} else {
+  console.log('Development: Serving from frontend/dist directory');
+  app.use(express.static('frontend/dist'));
+}
 
 // Define Routes - PostgreSQL only
 app.use('/api/driveways', require('./routes/drivewaysPG'));
@@ -149,7 +153,10 @@ app.use((req, res, next) => {
   }
   
   console.log('Serving frontend for route:', req.path);
-  res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'));
+  const indexPath = process.env.NODE_ENV === 'production' 
+    ? path.resolve(__dirname, 'public', 'index.html')
+    : path.resolve(__dirname, 'frontend', 'dist', 'index.html');
+  res.sendFile(indexPath);
 });
 
 // Graceful shutdown handling
