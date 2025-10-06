@@ -129,8 +129,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler - handle any remaining routes
+app.use((req, res) => {
   res.status(404).json({
     message: 'Route not found',
     path: req.originalUrl

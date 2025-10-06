@@ -136,7 +136,18 @@ app.use((err, req, res, next) => {
 // Serve frontend for all non-API routes
 const path = require('path');
 console.log('Setting up frontend routes');
-app.get(/^(?!\/api).*/, (req, res) => {
+// Serve frontend for all non-API routes
+app.use((req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Skip static file requests
+  if (req.path.includes('.')) {
+    return next();
+  }
+  
   console.log('Serving frontend for route:', req.path);
   res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'));
 });
