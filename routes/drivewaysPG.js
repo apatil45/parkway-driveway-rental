@@ -252,7 +252,7 @@ router.get('/owner', auth, async (req, res) => {
 // @route   POST /api/driveways
 // @desc    Add a new driveway
 // @access  Private (Owner only)
-router.post('/', auth, validateDriveway, async (req, res) => {
+router.post('/', auth, async (req, res) => {
   const { 
     address, 
     description, 
@@ -270,10 +270,18 @@ router.post('/', auth, validateDriveway, async (req, res) => {
   console.log('POST /api/driveways - Body:', req.body);
 
   try {
+    // Basic validation
+    if (!address) {
+      return res.status(400).json({ 
+        success: false,
+        msg: 'Address is required' 
+      });
+    }
+
     const driveway = await Driveway.create({
       owner: req.user.id,
       address,
-      description,
+      description: description || '',
       images: images || [],
       availability: availability || [],
       carSizeCompatibility: carSizeCompatibility || ['small', 'medium'],
@@ -284,12 +292,28 @@ router.post('/', auth, validateDriveway, async (req, res) => {
       specificSlots: specificSlots || []
     });
 
-    res.json(driveway);
+    res.json({
+      success: true,
+      driveway: {
+        id: driveway.id,
+        address: driveway.address,
+        description: driveway.description,
+        images: driveway.images,
+        availability: driveway.availability,
+        carSizeCompatibility: driveway.carSizeCompatibility,
+        drivewaySize: driveway.drivewaySize,
+        amenities: driveway.amenities,
+        pricePerHour: driveway.pricePerHour,
+        isAvailable: driveway.isAvailable,
+        specificSlots: driveway.specificSlots,
+        owner: driveway.owner
+      }
+    });
   } catch (err) {
     console.error('Add Driveway Error:', err.message);
     res.status(500).json({ 
-      error: 'Server error', 
-      message: 'Failed to create driveway' 
+      success: false,
+      msg: 'Failed to create driveway' 
     });
   }
 });

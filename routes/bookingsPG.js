@@ -162,10 +162,28 @@ router.post('/', auth, isDriver, async (req, res) => {
       });
     }
 
-    res.status(201).json(newBooking);
+    res.status(201).json({
+      success: true,
+      booking: {
+        id: newBooking.id,
+        driver: newBooking.driver,
+        driveway: newBooking.driveway,
+        startDate: newBooking.startDate,
+        endDate: newBooking.endDate,
+        startTime: newBooking.startTime,
+        endTime: newBooking.endTime,
+        totalAmount: newBooking.totalAmount,
+        status: newBooking.status,
+        driverLocation: newBooking.driverLocation,
+        specialRequests: newBooking.specialRequests
+      }
+    });
   } catch (err) {
     console.error('Create Booking Error:', err.message);
-    res.status(500).json({ error: 'Server error', message: 'Failed to create booking' });
+    res.status(500).json({ 
+      success: false,
+      msg: 'Failed to create booking' 
+    });
   }
 });
 
