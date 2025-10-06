@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "set NODE_ENV=development && node index.js",
-    "start": "node index.js",
+    "start": "node production-server-simple.js",
     "build": "cd frontend && npm ci && npm run build && cd .. && node -e \"const fs=require('fs');const path=require('path');if(fs.existsSync('public'))fs.rmSync('public',{recursive:true});fs.cpSync('frontend/dist','public',{recursive:true});\"",
     "migrate": "node scripts/migrate.js",
     "migrate:prod": "NODE_ENV=production node scripts/migrate.js",
@@ -39,10 +39,15 @@
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.4.1",
     "express-validator": "^7.2.1",
+    "helmet": "^8.0.0",
+    "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "node-geocoder": "^4.4.1",
     "pg": "^8.16.3",
@@ -51,7 +56,9 @@
     "sequelize": "^6.37.7",
     "sharp": "^0.34.4",
     "socket.io": "^4.8.1",
-    "stripe": "^18.5.0"
+    "stripe": "^18.5.0",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "eslint": "^9.36.0",

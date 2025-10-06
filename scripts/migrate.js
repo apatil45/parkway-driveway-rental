@@ -230,7 +230,7 @@ async function rollbackMigrations(count = 1) {
 
 // Main function
 async function main() {
-  const command = process.argv[2];
+  const command = process.argv[2] || 'up'; // Default to 'up' if no command provided
   const count = parseInt(process.argv[3]) || 1;
   
   try {
@@ -255,7 +255,7 @@ async function main() {
         break;
       default:
         console.log('Usage: node scripts/migrate.js [up|down|status] [count]');
-        console.log('  up     - Run pending migrations');
+        console.log('  up     - Run pending migrations (default)');
         console.log('  down   - Rollback migrations (default: 1)');
         console.log('  status - Show migration status');
     }
