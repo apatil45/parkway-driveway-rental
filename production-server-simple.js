@@ -137,13 +137,24 @@ async function startServer() {
       process.exit(1);
     }
 
-    // Sync database
+    // Sync database (this will create tables if they don't exist)
     console.log('🔄 Syncing database...');
     const dbSynced = await syncDatabase();
     
     if (!dbSynced) {
       console.error('❌ Database sync failed. Exiting...');
       process.exit(1);
+    }
+
+    // Run migrations if needed
+    console.log('🔄 Running database migrations...');
+    try {
+      const { runMigrations } = require('./scripts/migrate-simple');
+      await runMigrations();
+      console.log('✅ Database migrations completed');
+    } catch (migrationError) {
+      console.warn('⚠️  Migration failed, but continuing with deployment:', migrationError.message);
+      // Don't exit on migration failure, let the app start
     }
 
     // Start the server
