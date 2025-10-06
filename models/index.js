@@ -1,15 +1,21 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-// Create Sequelize instance
+// Create Sequelize instance with enhanced configuration
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
+    max: parseInt(process.env.DB_POOL_MAX) || 20,
+    min: parseInt(process.env.DB_POOL_MIN) || 5,
+    acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 30000,
+    idle: parseInt(process.env.DB_POOL_IDLE) || 10000
+  },
+  dialectOptions: {
+    ssl: process.env.DB_SSL === 'true' ? {
+      require: true,
+      rejectUnauthorized: false
+    } : false
   },
   retry: {
     match: [
@@ -42,8 +48,8 @@ const Booking = require('./Booking')(sequelize);
 User.hasMany(Driveway, { foreignKey: 'ownerId', as: 'driveways' });
 Driveway.belongsTo(User, { foreignKey: 'ownerId', as: 'owner' });
 
-User.hasMany(Booking, { foreignKey: 'userId', as: 'bookings' });
-Booking.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(Booking, { foreignKey: 'driverId', as: 'bookings' });
+Booking.belongsTo(User, { foreignKey: 'driverId', as: 'user' });
 
 Driveway.hasMany(Booking, { foreignKey: 'drivewayId', as: 'bookings' });
 Booking.belongsTo(Driveway, { foreignKey: 'drivewayId', as: 'driveway' });

@@ -2,17 +2,29 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import apiCache from './apiCache';
 import { performanceMonitor } from './performanceMonitor';
+import errorHandler, { ErrorContext } from './errorHandler';
 
 interface CachedRequestConfig extends AxiosRequestConfig {
   cache?: boolean;
   cacheTTL?: number;
   cacheKey?: string;
+  context?: ErrorContext;
+  retry?: boolean;
+  maxRetries?: number;
 }
 
 class CachedAPIService {
-  // GET request with caching
+  // GET request with caching and enhanced error handling
   async get<T>(url: string, config?: CachedRequestConfig): Promise<AxiosResponse<T>> {
-    const { cache = true, cacheTTL, cacheKey, ...axiosConfig } = config || {};
+    const { 
+      cache = true, 
+      cacheTTL, 
+      cacheKey, 
+      context = { operation: 'GET', component: 'API' },
+      retry = true,
+      maxRetries = 3,
+      ...axiosConfig 
+    } = config || {};
     
     // Generate cache key
     const key = cacheKey || apiCache.generateKey('GET', url, axiosConfig.params);
@@ -33,66 +45,95 @@ class CachedAPIService {
       }
     }
     
-    // Make actual API call
-    const startTime = performance.now();
-    try {
-      const response = await axios.get<T>(url, axiosConfig);
-      const endTime = performance.now();
-      const responseTime = endTime - startTime;
-      
-      // Track API performance
-      performanceMonitor.trackAPICall(url, responseTime, response.status, JSON.stringify(response.data).length);
-      
-      // Cache successful responses
-      if (cache && response.status === 200) {
-        apiCache.set(key, response.data, cacheTTL);
+    // Make actual API call with retry logic
+    const makeRequest = async (): Promise<AxiosResponse<T>> => {
+      const startTime = performance.now();
+      try {
+        const response = await axios.get<T>(url, axiosConfig);
+        const endTime = performance.now();
+        const responseTime = endTime - startTime;
+        
+        // Track API performance
+        performanceMonitor.trackAPICall(url, responseTime, response.status, JSON.stringify(response.data).length);
+        
+        // Cache successful responses
+        if (cache && response.status === 200) {
+          apiCache.set(key, response.data, cacheTTL);
+        }
+        
+        return response;
+      } catch (error: any) {
+        const endTime = performance.now();
+        const responseTime = endTime - startTime;
+        
+        // Track failed API calls
+        performanceMonitor.trackAPICall(url, responseTime, error.response?.status || 0, 0);
+        
+        throw error;
       }
-      
-      return response;
-    } catch (error: any) {
-      const endTime = performance.now();
-      const responseTime = endTime - startTime;
-      
-      // Track failed API calls
-      performanceMonitor.trackAPICall(url, responseTime, error.response?.status || 0, 0);
-      
-      console.error(`API GET Error for ${url}:`, error);
-      throw error;
+    };
+
+    if (retry) {
+      return await errorHandler.withRetry(makeRequest, context, maxRetries);
+    } else {
+      try {
+        return await makeRequest();
+      } catch (error) {
+        throw errorHandler.handleAPIError(error, context);
+      }
     }
   }
 
-  // POST request (no caching by default)
+  // POST request with enhanced error handling
   async post<T>(url: string, data?: any, config?: CachedRequestConfig): Promise<AxiosResponse<T>> {
-    const { cache = false, cacheKey, ...axiosConfig } = config || {};
+    const { 
+      cache = false, 
+      cacheKey, 
+      context = { operation: 'POST', component: 'API' },
+      retry = false, // Don't retry POST by default
+      maxRetries = 1,
+      ...axiosConfig 
+    } = config || {};
     
-    const startTime = performance.now();
-    try {
-      const response = await axios.post<T>(url, data, axiosConfig);
-      const endTime = performance.now();
-      const responseTime = endTime - startTime;
-      
-      // Track API performance
-      performanceMonitor.trackAPICall(url, responseTime, response.status, JSON.stringify(response.data).length);
-      
-      // Cache successful responses if requested
-      if (cache && response.status === 200) {
-        const key = cacheKey || apiCache.generateKey('POST', url);
-        apiCache.set(key, response.data, config?.cacheTTL);
+    const makeRequest = async (): Promise<AxiosResponse<T>> => {
+      const startTime = performance.now();
+      try {
+        const response = await axios.post<T>(url, data, axiosConfig);
+        const endTime = performance.now();
+        const responseTime = endTime - startTime;
+        
+        // Track API performance
+        performanceMonitor.trackAPICall(url, responseTime, response.status, JSON.stringify(response.data).length);
+        
+        // Cache successful responses if requested
+        if (cache && response.status === 200) {
+          const key = cacheKey || apiCache.generateKey('POST', url);
+          apiCache.set(key, response.data, config?.cacheTTL);
+        }
+        
+        // Invalidate related cache entries for POST requests
+        this.invalidateRelatedCache(url);
+        
+        return response;
+      } catch (error: any) {
+        const endTime = performance.now();
+        const responseTime = endTime - startTime;
+        
+        // Track failed API calls
+        performanceMonitor.trackAPICall(url, responseTime, error.response?.status || 0, 0);
+        
+        throw error;
       }
-      
-      // Invalidate related cache entries for POST requests
-      this.invalidateRelatedCache(url);
-      
-      return response;
-    } catch (error: any) {
-      const endTime = performance.now();
-      const responseTime = endTime - startTime;
-      
-      // Track failed API calls
-      performanceMonitor.trackAPICall(url, responseTime, error.response?.status || 0, 0);
-      
-      console.error(`API POST Error for ${url}:`, error);
-      throw error;
+    };
+
+    if (retry) {
+      return await errorHandler.withRetry(makeRequest, context, maxRetries);
+    } else {
+      try {
+        return await makeRequest();
+      } catch (error) {
+        throw errorHandler.handleAPIError(error, context);
+      }
     }
   }
 

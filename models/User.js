@@ -39,42 +39,38 @@ module.exports = (sequelize) => {
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: {
-        is: /^[\+]?[1-9][\d]{0,15}$/
+        len: [10, 20]
       }
     },
     role: {
-      type: DataTypes.ENUM('driver', 'owner', 'admin'),
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'driver'
     },
-    isActive: {
+    isVerified: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true
+      defaultValue: false
     },
-    profileImage: {
+    verificationToken: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    lastLogin: {
-      type: DataTypes.DATE,
+    resetPasswordToken: {
+      type: DataTypes.STRING,
       allowNull: true
     },
-    emailVerified: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
-    phoneVerified: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
+    resetPasswordExpires: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   }, {
     timestamps: true,
     indexes: [
       { fields: ['email'] },
       { fields: ['role'] },
-      { fields: ['isActive'] }
+      { fields: ['isVerified'] }
     ],
     hooks: {
       beforeCreate: async (user) => {

@@ -16,6 +16,8 @@ import BreadcrumbNav from './BreadcrumbNav';
 import cachedApi from '../services/cachedApi';
 import { offlineService } from '../services/offlineService';
 import Button from './Button';
+import useLoadingState from '../hooks/useLoadingState';
+import EnhancedLoadingSpinner from './EnhancedLoadingSpinner';
 import './DriverDashboard.css';
 
 const stripePromise = loadStripe((import.meta as any).env?.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51SAemo2MWNtZFiP8XnJ30lVvWp7e3D0bXnZ8jE8V2xL5n3d1oY9tS7pA5jY4t4oY0w0c0j0d0j0f0');
@@ -111,7 +113,6 @@ const DriverDashboard: React.FC = () => {
     }
   ]);
   const [searchResults, setSearchResults] = useState<Driveway[]>([]);
-  const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [searchParams, setSearchParams] = useState({
     date: new Date().toISOString().split('T')[0],
     startTime: new Date().toTimeString().slice(0, 5),
@@ -120,10 +121,31 @@ const DriverDashboard: React.FC = () => {
     carSize: 'medium', // Default car size
   });
   const [addressSearch, setAddressSearch] = useState<string>('');
+  const searchTimeoutRef = useRef<number | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | undefined>(undefined);
+  
+  // Legacy loading states (for backward compatibility)
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingDriveways, setIsLoadingDriveways] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | undefined>(undefined);
+  
+  // Enhanced loading states
+  const [searchLoadingState, searchLoadingActions] = useLoadingState({
+    initialMessage: 'Searching for driveways...',
+    estimatedDuration: 3000,
+    showProgress: true
+  });
+  
+  const [drivewayLoadingState, drivewayLoadingActions] = useLoadingState({
+    initialMessage: 'Loading driveways...',
+    estimatedDuration: 2000,
+    showProgress: true
+  });
+  
+  const [bookingLoadingState, bookingLoadingActions] = useLoadingState({
+    initialMessage: 'Processing booking...',
+    estimatedDuration: 5000,
+    showProgress: true
+  });
   
   // Clear existing toasts to prevent duplicates
   const clearExistingToasts = useCallback(() => {
@@ -271,12 +293,13 @@ const DriverDashboard: React.FC = () => {
     e.preventDefault();
 
     // Prevent multiple simultaneous searches
-    if (isSearching) {
+    if (searchLoadingState.isLoading || isSearching) {
       return;
     }
 
+    // Start both legacy and enhanced loading states
     setIsSearching(true);
-    setIsLoadingResults(true);
+    searchLoadingActions.start('Searching for driveways...');
 
     // Clear any existing toasts before starting new search
     clearExistingToasts();
@@ -353,11 +376,11 @@ const DriverDashboard: React.FC = () => {
         showSuccess(`${filteredResults.length} compatible driveways found!`);
       }
     } catch (err: any) {
-      showError(`Failed to search driveways: ${err.response?.data?.msg || 'Server Error'}`);
+      searchLoadingActions.error(`Failed to search driveways: ${err.response?.data?.msg || 'Server Error'}`);
     } finally {
+      // Complete both legacy and enhanced loading states
       setIsSearching(false);
-      setIsLoadingResults(false);
-      setIsLoadingDriveways(false);
+      searchLoadingActions.complete('Search completed!');
     }
   };
 
@@ -368,14 +391,16 @@ const DriverDashboard: React.FC = () => {
     }
 
     // Prevent multiple simultaneous searches
-    if (isSearching) {
+    if (isSearching || searchLoadingState.isLoading) {
       return;
     }
 
     // Clear any existing toasts before starting new search
     clearExistingToasts();
     
+    // Start both legacy and enhanced loading states
     setIsSearching(true);
+    searchLoadingActions.start('Performing advanced search...');
     
     try {
       let latitude: number | undefined;
@@ -447,8 +472,11 @@ const DriverDashboard: React.FC = () => {
     } catch (err: any) {
       console.error('Advanced search error:', err);
       showError(`Search failed: ${err.response?.data?.msg || 'Server Error'}`);
+      searchLoadingActions.error(`Advanced search failed: ${err.response?.data?.msg || 'Server Error'}`);
     } finally {
+      // Complete both legacy and enhanced loading states
       setIsSearching(false);
+      searchLoadingActions.complete('Advanced search completed!');
     }
   };
 
@@ -1253,10 +1281,16 @@ const DriverDashboard: React.FC = () => {
 
       {(searchResults.length > 0 || currentSection === 'results') && (
         <div id="results-section">
-          {isLoadingDriveways ? (
+          {searchLoadingState.isLoading ? (
             <div className="search-results-loading">
-              <h3>Finding driveways...</h3>
-              <SkeletonSearchResults count={3} />
+              <EnhancedLoadingSpinner 
+                loadingState={searchLoadingState}
+                variant="progress"
+                size="large"
+                showMessage={true}
+                showProgress={true}
+                showTime={true}
+              />
             </div>
           ) : (
             <SearchResults

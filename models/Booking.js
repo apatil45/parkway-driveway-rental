@@ -23,38 +23,18 @@ module.exports = (sequelize) => {
       }
     },
     status: {
-      type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'completed', 'expired'),
+      type: DataTypes.STRING,
       defaultValue: 'pending'
     },
-    specialInstructions: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
     paymentStatus: {
-      type: DataTypes.ENUM('pending', 'paid', 'refunded', 'failed'),
+      type: DataTypes.STRING,
       defaultValue: 'pending'
     },
     paymentIntentId: {
       type: DataTypes.STRING,
       allowNull: true
     },
-    stripeSessionId: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    cancellationReason: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    cancelledAt: {
-      type: DataTypes.DATE,
-      allowNull: true
-    },
-    completedAt: {
-      type: DataTypes.DATE,
-      allowNull: true
-    },
-    userId: {
+    driverId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -73,12 +53,10 @@ module.exports = (sequelize) => {
   }, {
     timestamps: true,
     indexes: [
-      { fields: ['userId'] },
+      { fields: ['driverId'] },
       { fields: ['drivewayId'] },
       { fields: ['status'] },
-      { fields: ['paymentStatus'] },
-      { fields: ['startTime', 'endTime'] },
-      { fields: ['paymentIntentId'] }
+      { fields: ['startTime', 'endTime'] }
     ]
   });
 

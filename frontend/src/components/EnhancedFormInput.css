@@ -1,0 +1,271 @@
+/* Enhanced Form Input Styles for Parkway.com */
+
+.enhanced-form-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.enhanced-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.required-asterisk {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.enhanced-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background-color: #ffffff;
+  color: #111827;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.enhanced-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.enhanced-input:hover:not(:focus):not(.disabled) {
+  border-color: #9ca3af;
+}
+
+.enhanced-input.disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.enhanced-input.error {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.enhanced-input.error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* Input prefixes and suffixes */
+.input-prefix,
+.input-suffix {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.input-prefix {
+  left: 12px;
+}
+
+.input-suffix {
+  right: 12px;
+}
+
+.enhanced-input:has(+ .input-suffix) {
+  padding-right: 40px;
+}
+
+.input-container:has(.input-prefix) .enhanced-input {
+  padding-left: 40px;
+}
+
+/* Textarea specific styles */
+.enhanced-input[type="textarea"] {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* Select specific styles */
+.enhanced-input[type="select"] {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+  appearance: none;
+}
+
+/* Number input specific styles */
+.enhanced-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.enhanced-input[type="number"]::-webkit-outer-spin-button,
+.enhanced-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Date and time input specific styles */
+.enhanced-input[type="date"],
+.enhanced-input[type="time"] {
+  cursor: pointer;
+}
+
+/* Help text */
+.help-text {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Error message */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.error-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Form input states */
+.enhanced-form-input.has-error .enhanced-label {
+  color: #dc2626;
+}
+
+/* Focus states */
+.enhanced-form-input:focus-within .enhanced-label {
+  color: #3b82f6;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .enhanced-input {
+    padding: 10px 12px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .input-prefix,
+  .input-suffix {
+    font-size: 12px;
+  }
+  
+  .enhanced-label {
+    font-size: 13px;
+  }
+  
+  .help-text,
+  .error-message {
+    font-size: 11px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .enhanced-label {
+    color: #d1d5db;
+  }
+  
+  .enhanced-input {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .enhanced-input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  }
+  
+  .enhanced-input:hover:not(:focus):not(.disabled) {
+    border-color: #4b5563;
+  }
+  
+  .enhanced-input.disabled {
+    background-color: #111827;
+    color: #6b7280;
+  }
+  
+  .enhanced-input.error {
+    border-color: #f87171;
+    background-color: #1f1f1f;
+  }
+  
+  .enhanced-input.error:focus {
+    border-color: #f87171;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.1);
+  }
+  
+  .input-prefix,
+  .input-suffix {
+    color: #9ca3af;
+  }
+  
+  .help-text {
+    color: #9ca3af;
+  }
+  
+  .error-message {
+    color: #f87171;
+  }
+  
+  .enhanced-form-input.has-error .enhanced-label {
+    color: #f87171;
+  }
+  
+  .enhanced-form-input:focus-within .enhanced-label {
+    color: #60a5fa;
+  }
+}
+
+/* Animation for error states */
+.enhanced-form-input.has-error {
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Loading state */
+.enhanced-form-input.loading .enhanced-input {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3e%3ccircle cx='12' cy='12' r='10' stroke='%23e5e7eb' stroke-width='4'/%3e%3cpath fill='%233b82f6' d='m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

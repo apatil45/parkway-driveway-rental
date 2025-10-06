@@ -1,14 +1,30 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
 const morgan = require('morgan');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 require('dotenv').config();
 
+// Import enhanced security middleware
+const {
+  helmetConfig,
+  corsConfig,
+  securityHeaders,
+  validateRequest,
+  securityMonitor,
+  authLimiter,
+  apiLimiter,
+  strictLimiter,
+  uploadLimiter
+} = require('./backend/src/middleware/security');
+
 // Import database and models
 const { sequelize, testConnection, syncDatabase } = require('./models');
+
+// Import optimization utilities
+const queryOptimizer = require('./backend/src/utils/queryOptimizer');
+const databaseIndexManager = require('./backend/src/utils/databaseIndexes');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -26,26 +42,18 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-  crossOriginEmbedderPolicy: false
-}));
+// Enhanced security middleware
+app.use(helmetConfig);
+app.use(cors(corsConfig));
+app.use(securityHeaders);
+app.use(securityMonitor);
+app.use(validateRequest);
 
-// CORS
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Rate limiting
+app.use('/api/', apiLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/upload', uploadLimiter);
+app.use('/api/admin', strictLimiter);
 
 // Logging
 app.use(morgan('combined'));
@@ -80,6 +88,36 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({
       status: 'ERROR',
       message: 'Server health check failed',
+      error: error.message
+    });
+  }
+});
+
+// Performance monitoring endpoint
+app.get('/api/performance', async (req, res) => {
+  try {
+    const [queryStats, dbPerformance] = await Promise.all([
+      queryOptimizer.getPerformanceStats(),
+      databaseIndexManager.getPerformanceSummary()
+    ]);
+
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      queryPerformance: queryStats,
+      databasePerformance: dbPerformance,
+      systemInfo: {
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        cpu: process.cpuUsage(),
+        platform: process.platform,
+        nodeVersion: process.version
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Performance monitoring failed',
       error: error.message
     });
   }
@@ -143,9 +181,17 @@ const startServer = async () => {
       console.error('❌ Database connection failed. Server will start in limited mode.');
     }
 
-    // Sync database
+    // Sync database and optimize
     if (dbConnected) {
       await syncDatabase();
+      
+      // Optimize database performance
+      console.log('🚀 Optimizing database performance...');
+      await databaseIndexManager.createAllIndexes();
+      await databaseIndexManager.analyzeTables();
+      await databaseIndexManager.optimizeDatabaseSettings();
+      await queryOptimizer.optimizeConnectionPool();
+      console.log('✅ Database optimization complete');
     }
 
     // Start HTTP server

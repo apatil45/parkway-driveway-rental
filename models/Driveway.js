@@ -7,19 +7,9 @@ module.exports = (sequelize) => {
       primaryKey: true,
       autoIncrement: true
     },
-    title: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        len: [1, 100]
-      }
-    },
     description: {
       type: DataTypes.TEXT,
-      allowNull: false,
-      validate: {
-        len: [10, 1000]
-      }
+      allowNull: true
     },
     address: {
       type: DataTypes.STRING,
@@ -30,11 +20,11 @@ module.exports = (sequelize) => {
     },
     latitude: {
       type: DataTypes.DECIMAL(10, 8),
-      allowNull: true
+      allowNull: false
     },
     longitude: {
       type: DataTypes.DECIMAL(11, 8),
-      allowNull: true
+      allowNull: false
     },
     price: {
       type: DataTypes.DECIMAL(10, 2),
@@ -43,41 +33,21 @@ module.exports = (sequelize) => {
         min: 0
       }
     },
-    capacity: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      validate: {
-        min: 1
-      }
-    },
     amenities: {
-      type: DataTypes.JSON,
+      type: DataTypes.ARRAY(DataTypes.TEXT),
       defaultValue: []
     },
     images: {
-      type: DataTypes.JSON,
+      type: DataTypes.ARRAY(DataTypes.TEXT),
       defaultValue: []
-    },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
     },
     isAvailable: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
     },
     carSize: {
-      type: DataTypes.ENUM('small', 'medium', 'large', 'xl'),
-      allowNull: false,
-      defaultValue: 'medium'
-    },
-    accessInstructions: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    restrictions: {
-      type: DataTypes.TEXT,
-      allowNull: true
+      type: DataTypes.STRING,
+      allowNull: false
     },
     ownerId: {
       type: DataTypes.INTEGER,
@@ -91,7 +61,6 @@ module.exports = (sequelize) => {
     timestamps: true,
     indexes: [
       { fields: ['ownerId'] },
-      { fields: ['isActive'] },
       { fields: ['isAvailable'] },
       { fields: ['price'] },
       { fields: ['latitude', 'longitude'] },
