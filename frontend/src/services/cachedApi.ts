@@ -2,7 +2,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import apiCache from './apiCache';
 import { performanceMonitor } from './performanceMonitor';
-import errorHandler, { ErrorContext } from './errorHandler';
+import errorHandler, { ErrorContext } from './errorHandler-simple';
 
 interface CachedRequestConfig extends AxiosRequestConfig {
   cache?: boolean;
