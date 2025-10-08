@@ -2,14 +2,14 @@
 
 .home {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--color-bg-primary);
 }
 
 /* Hero Section */
 .hero {
-  padding: 80px 0 120px;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  color: white;
+  padding: var(--space-20) 0 var(--space-24);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   position: relative;
   overflow: hidden;
 }
@@ -28,10 +28,10 @@
 .hero-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 var(--space-5);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  gap: var(--space-16);
   align-items: center;
   position: relative;
   z-index: 1;
@@ -42,24 +42,24 @@
 }
 
 .hero-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 24px;
-  color: #ffffff;
+  font-size: var(--text-5xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-6);
+  color: var(--color-text-inverse);
 }
 
 .hero-subtitle {
-  font-size: 1.25rem;
-  line-height: 1.6;
-  margin-bottom: 40px;
+  font-size: var(--text-xl);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-10);
   opacity: 0.9;
   max-width: 500px;
 }
 
 .hero-actions {
   display: flex;
-  gap: 16px;
+  gap: var(--space-4);
   flex-wrap: wrap;
 }
 
@@ -207,7 +207,7 @@
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 var(--space-5);
 }
 
 .section-title {
@@ -215,7 +215,7 @@
   font-weight: 700;
   text-align: center;
   margin-bottom: 60px;
-  color: #1f2937;
+  color: var(--color-text-primary);
 }
 
 /* How It Works */
@@ -258,11 +258,11 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #1f2937;
+  color: var(--color-text-primary);
 }
 
 .step-content p {
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
@@ -301,26 +301,26 @@
   align-items: center;
   justify-content: center;
   margin: 0 auto 24px;
-  color: #000000;
-  border: 2px solid #e5e7eb;
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border-primary);
   transition: all 0.3s ease;
 }
 
 .feature:hover .feature-icon {
-  background: #000000;
-  color: white;
-  border-color: #000000;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
 }
 
 .feature h3 {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #1f2937;
+  color: var(--color-text-primary);
 }
 
 .feature p {
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 

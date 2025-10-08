@@ -1,0 +1,449 @@
+/* Parkway Search Results Styles */
+.parkway-search-results {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Results Header */
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border-primary);
+  background: var(--color-bg-secondary);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.results-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.view-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.view-controls button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-controls button:hover {
+  border-color: var(--color-border-focus);
+  color: var(--color-text-primary);
+}
+
+.view-controls button.active {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: var(--color-text-inverse);
+}
+
+.sort-controls select {
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Results Content */
+.results-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* List Panel */
+.list-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  max-height: 70vh;
+}
+
+.parking-spots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 0.5rem;
+}
+
+/* Custom scrollbar for parking list */
+.parking-spots-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.parking-spots-list::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+  border-radius: 3px;
+}
+
+.parking-spots-list::-webkit-scrollbar-thumb {
+  background: var(--color-border-primary);
+  border-radius: 3px;
+}
+
+.parking-spots-list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Scroll indicator */
+.scroll-indicator {
+  padding: 1rem;
+  text-align: center;
+  background: var(--color-bg-secondary);
+  border: 1px dashed var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  margin-top: 1rem;
+}
+
+.scroll-indicator span {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* Parking Spot Card */
+.parking-spot-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.parking-spot-card:hover {
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.parking-spot-card.selected {
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(39, 110, 241, 0.1);
+}
+
+/* Spot Image */
+.spot-image {
+  width: 120px;
+  height: 80px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.spot-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+/* Spot Info */
+.spot-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.spot-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.spot-address {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.spot-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.rating-text {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-left: 0.25rem;
+}
+
+.spot-description {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.spot-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.feature-tag {
+  padding: 0.25rem 0.5rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.spot-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: auto;
+}
+
+.spot-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.distance {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.availability {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.spot-price {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.price {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.book-button {
+  padding: 0.5rem 1rem;
+  background: var(--color-secondary);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.book-button:hover {
+  background: var(--color-secondary-dark);
+}
+
+/* Map Panel */
+.map-panel {
+  flex: 1;
+  min-height: 300px;
+  max-height: 70vh;
+  transition: height 0.3s ease;
+}
+
+/* View Modes */
+.parkway-search-results.list-view .map-panel {
+  display: none;
+}
+
+.parkway-search-results.map-view .list-panel {
+  display: none;
+}
+
+.parkway-search-results.split-view .results-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Loading and Error States */
+.parkway-search-loading,
+.parkway-search-error,
+.parkway-search-no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  height: 100%;
+}
+
+.parkway-search-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border-primary);
+  border-top: 3px solid var(--color-secondary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.parkway-search-loading p {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.parkway-search-error {
+  color: var(--color-error);
+  font-size: 1rem;
+}
+
+.parkway-search-no-results {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .parkway-search-results.split-view .results-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 300px;
+  }
+  
+  .results-header {
+    padding: 1rem;
+  }
+  
+  .list-panel {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .results-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .view-controls {
+    justify-content: center;
+  }
+  
+  .sort-controls {
+    align-self: center;
+  }
+  
+  .parking-spot-card {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .spot-image {
+    width: 100%;
+    height: 120px;
+  }
+  
+  .spot-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .spot-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .spot-price {
+    justify-content: space-between;
+  }
+  
+  .book-button {
+    flex: 1;
+    padding: 0.75rem;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .parking-spot-card,
+  .view-controls button,
+  .book-button {
+    transition: none;
+  }
+  
+  .parking-spot-card:hover {
+    transform: none;
+  }
+  
+  .parkway-search-loading .loading-spinner {
+    animation: none;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .parking-spot-card,
+  .view-controls button,
+  .sort-controls select {
+    border-width: 2px;
+  }
+  
+  .parking-spot-card.selected {
+    border-width: 3px;
+  }
+}
+
+/* Focus Management */
+.parking-spot-card:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.view-controls button:focus,
+.sort-controls select:focus,
+.book-button:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

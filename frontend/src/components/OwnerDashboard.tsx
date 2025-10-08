@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
+import PaymentStatus from './PaymentStatus';
+import QuickActions from './QuickActions';
 import './OwnerDashboard.css';
 
 interface Driveway {
@@ -607,6 +609,13 @@ const OwnerDashboard: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Payment Status */}
+                    <PaymentStatus 
+                      bookingId={booking.id} 
+                      className="booking-payment-status"
+                      showDetails={true}
+                    />
+
                     {booking.status === 'pending' && (
                       <div className="booking-actions">
                         <button 
@@ -1199,6 +1208,9 @@ const OwnerDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Quick Actions */}
+      <QuickActions />
     </div>
   );
 };

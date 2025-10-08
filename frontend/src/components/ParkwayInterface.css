@@ -1,0 +1,172 @@
+/* Parkway Interface Styles */
+.parkway-interface {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  font-family: var(--font-family-primary);
+  padding: 1rem;
+}
+
+/* Main Content */
+.parkway-main {
+  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 120px);
+  gap: 1rem;
+}
+
+/* Search Panel */
+.search-panel {
+  width: 400px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  padding: 2rem;
+  overflow-y: auto;
+  height: fit-content;
+}
+
+/* Results Panel */
+.results-panel {
+  flex: 1;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  overflow-y: auto;
+  min-height: 600px;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border-primary);
+  border-top: 3px solid var(--color-secondary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Error State */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.error-state p {
+  color: var(--color-error);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.error-state button {
+  padding: 0.75rem 1.5rem;
+  background: var(--color-secondary);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.error-state button:hover {
+  background: var(--color-secondary-dark);
+}
+
+/* No Results */
+.no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.no-results p {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  margin: 0.5rem 0;
+}
+
+/* Welcome State */
+.welcome-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  height: 100%;
+}
+
+.welcome-state h2 {
+  color: var(--color-text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.welcome-state p {
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .parkway-main {
+    flex-direction: column;
+  }
+  
+  .search-panel {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .parkway-interface {
+    padding: 0.5rem;
+  }
+  
+  .search-panel {
+    padding: 1rem;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .error-state button {
+    transition: none;
+  }
+}

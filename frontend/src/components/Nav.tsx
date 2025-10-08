@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationCenter from './NotificationCenter';
 import './Nav.css';
 
 const Nav: React.FC = () => {
@@ -9,7 +10,9 @@ const Nav: React.FC = () => {
   const location = useLocation();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [focusedElement, setFocusedElement] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -32,6 +35,41 @@ const Nav: React.FC = () => {
     setShowProfileDropdown(false);
   }, [location.pathname]);
 
+  // Keyboard navigation handler
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Close dropdowns on Escape
+      if (event.key === 'Escape') {
+        setShowProfileDropdown(false);
+        setShowMobileMenu(false);
+        setFocusedElement(null);
+      }
+      
+      // Handle Tab navigation for mobile menu
+      if (showMobileMenu && event.key === 'Tab') {
+        const mobileMenu = mobileMenuRef.current;
+        if (mobileMenu) {
+          const focusableElements = mobileMenu.querySelectorAll(
+            'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          const firstElement = focusableElements[0] as HTMLElement;
+          const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+          
+          if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement?.focus();
+          } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement?.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showMobileMenu]);
+
   const handleLogout = () => {
     logout();
     setShowProfileDropdown(false);
@@ -52,10 +90,32 @@ const Nav: React.FC = () => {
   };
 
   return (
-    <nav className="nav">
-      <div className="nav-container">
-        {/* Brand */}
-        <Link to="/" className="brand">
+    <>
+      {/* Skip Links for Accessibility */}
+      <div className="skip-links">
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <a href="#navigation" className="skip-link">
+          Skip to navigation
+        </a>
+        {isAuthenticated && (
+          <a href="#user-menu" className="skip-link">
+            Skip to user menu
+          </a>
+        )}
+      </div>
+
+      <nav className="nav" id="navigation" role="navigation" aria-label="Main navigation">
+        <div className="nav-container">
+          {/* Brand */}
+          <Link 
+            to="/" 
+            className="brand"
+            aria-label="Parkway - Go to homepage"
+            onFocus={() => setFocusedElement('brand')}
+            onBlur={() => setFocusedElement(null)}
+          >
           <div className="brand-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
@@ -67,13 +127,17 @@ const Nav: React.FC = () => {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="nav-links">
+        <div className="nav-links" role="menubar">
           {isAuthenticated ? (
             <>
               {user?.roles?.includes('driver') && (
                 <Link 
                   to="/driver-dashboard" 
                   className={`nav-link ${isActiveRoute('/driver-dashboard') ? 'active' : ''}`}
+                  role="menuitem"
+                  aria-current={isActiveRoute('/driver-dashboard') ? 'page' : undefined}
+                  onFocus={() => setFocusedElement('find-parking')}
+                  onBlur={() => setFocusedElement(null)}
                 >
                   Find Parking
                 </Link>
@@ -83,6 +147,10 @@ const Nav: React.FC = () => {
                 <Link 
                   to="/owner-dashboard" 
                   className={`nav-link ${isActiveRoute('/owner-dashboard') ? 'active' : ''}`}
+                  role="menuitem"
+                  aria-current={isActiveRoute('/owner-dashboard') ? 'page' : undefined}
+                  onFocus={() => setFocusedElement('my-driveways')}
+                  onBlur={() => setFocusedElement(null)}
                 >
                   My Driveways
                 </Link>
@@ -92,19 +160,40 @@ const Nav: React.FC = () => {
             <Link 
               to="/" 
               className={`nav-link ${isActiveRoute('/') ? 'active' : ''}`}
+              role="menuitem"
+              aria-current={isActiveRoute('/') ? 'page' : undefined}
+              onFocus={() => setFocusedElement('home')}
+              onBlur={() => setFocusedElement(null)}
             >
               Home
             </Link>
           )}
+          
+          <Link 
+            to="/help" 
+            className={`nav-link ${isActiveRoute('/help') ? 'active' : ''}`}
+            role="menuitem"
+            aria-current={isActiveRoute('/help') ? 'page' : undefined}
+            onFocus={() => setFocusedElement('help')}
+            onBlur={() => setFocusedElement(null)}
+          >
+            Help
+          </Link>
         </div>
 
         {/* User Actions */}
-        <div className="nav-actions">
+        <div className="nav-actions" id="user-menu">
+          {isAuthenticated && <NotificationCenter />}
           {isAuthenticated ? (
             <div className="profile-section" ref={dropdownRef}>
               <button 
                 className="profile-button"
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                aria-expanded={showProfileDropdown}
+                aria-haspopup="true"
+                aria-label={`User menu for ${user?.name || 'User'}. ${showProfileDropdown ? 'Close' : 'Open'} menu`}
+                onFocus={() => setFocusedElement('profile-button')}
+                onBlur={() => setFocusedElement(null)}
               >
                 <div className="user-avatar">
                   {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
@@ -124,20 +213,30 @@ const Nav: React.FC = () => {
               </button>
 
               {showProfileDropdown && (
-                <div className="profile-dropdown">
+                <div 
+                  className="profile-dropdown"
+                  role="menu"
+                  aria-label="User menu"
+                >
                   <Link
                     to="/profile"
                     className="dropdown-item"
+                    role="menuitem"
                     onClick={() => setShowProfileDropdown(false)}
+                    onFocus={() => setFocusedElement('profile-link')}
+                    onBlur={() => setFocusedElement(null)}
                   >
                     Profile
                   </Link>
                   
-                  <div className="dropdown-divider"></div>
+                  <div className="dropdown-divider" role="separator"></div>
                   
                   <button
                     className="dropdown-item logout"
+                    role="menuitem"
                     onClick={handleLogout}
+                    onFocus={() => setFocusedElement('logout-button')}
+                    onBlur={() => setFocusedElement(null)}
                   >
                     Sign Out
                   </button>
@@ -159,6 +258,11 @@ const Nav: React.FC = () => {
           <button 
             className="mobile-menu-toggle"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
+            aria-expanded={showMobileMenu}
+            aria-controls="mobile-menu"
+            aria-label={`${showMobileMenu ? 'Close' : 'Open'} mobile menu`}
+            onFocus={() => setFocusedElement('mobile-menu-toggle')}
+            onBlur={() => setFocusedElement(null)}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {showMobileMenu ? (
@@ -180,8 +284,16 @@ const Nav: React.FC = () => {
 
       {/* Mobile Menu */}
       {showMobileMenu && (
-        <div className="mobile-menu">
+        <div 
+          className="mobile-menu"
+          id="mobile-menu"
+          ref={mobileMenuRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobile-menu-title"
+        >
           <div className="mobile-menu-content">
+            <h2 id="mobile-menu-title" className="sr-only">Mobile Navigation Menu</h2>
             {isAuthenticated ? (
               <>
                 <div className="mobile-user-info">
@@ -194,11 +306,14 @@ const Nav: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mobile-nav-links">
+                <div className="mobile-nav-links" role="menu">
                   {user?.roles?.includes('driver') && (
                     <Link 
                       to="/driver-dashboard" 
                       className={`mobile-nav-link ${isActiveRoute('/driver-dashboard') ? 'active' : ''}`}
+                      role="menuitem"
+                      aria-current={isActiveRoute('/driver-dashboard') ? 'page' : undefined}
+                      onClick={() => setShowMobileMenu(false)}
                     >
                       Find Parking
                     </Link>
@@ -208,6 +323,9 @@ const Nav: React.FC = () => {
                     <Link 
                       to="/owner-dashboard" 
                       className={`mobile-nav-link ${isActiveRoute('/owner-dashboard') ? 'active' : ''}`}
+                      role="menuitem"
+                      aria-current={isActiveRoute('/owner-dashboard') ? 'page' : undefined}
+                      onClick={() => setShowMobileMenu(false)}
                     >
                       My Driveways
                     </Link>
@@ -216,32 +334,77 @@ const Nav: React.FC = () => {
                   <Link 
                     to="/profile" 
                     className={`mobile-nav-link ${isActiveRoute('/profile') ? 'active' : ''}`}
+                    role="menuitem"
+                    aria-current={isActiveRoute('/profile') ? 'page' : undefined}
+                    onClick={() => setShowMobileMenu(false)}
                   >
                     Profile
                   </Link>
                   
-                  <button className="mobile-logout-button" onClick={handleLogout}>
+                  <Link 
+                    to="/help" 
+                    className={`mobile-nav-link ${isActiveRoute('/help') ? 'active' : ''}`}
+                    role="menuitem"
+                    aria-current={isActiveRoute('/help') ? 'page' : undefined}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    Help
+                  </Link>
+                  
+                  <button 
+                    className="mobile-logout-button" 
+                    role="menuitem"
+                    onClick={handleLogout}
+                  >
                     Sign Out
                   </button>
                 </div>
               </>
             ) : (
-              <div className="mobile-auth-links">
-                <Link to="/" className={`mobile-nav-link ${isActiveRoute('/') ? 'active' : ''}`}>
+              <div className="mobile-auth-links" role="menu">
+                <Link 
+                  to="/" 
+                  className={`mobile-nav-link ${isActiveRoute('/') ? 'active' : ''}`}
+                  role="menuitem"
+                  aria-current={isActiveRoute('/') ? 'page' : undefined}
+                  onClick={() => setShowMobileMenu(false)}
+                >
                   Home
                 </Link>
-                <Link to="/login" className={`mobile-nav-link ${isActiveRoute('/login') ? 'active' : ''}`}>
+                <Link 
+                  to="/login" 
+                  className={`mobile-nav-link ${isActiveRoute('/login') ? 'active' : ''}`}
+                  role="menuitem"
+                  aria-current={isActiveRoute('/login') ? 'page' : undefined}
+                  onClick={() => setShowMobileMenu(false)}
+                >
                   Sign In
                 </Link>
-                <Link to="/register" className={`mobile-nav-link ${isActiveRoute('/register') ? 'active' : ''}`}>
+                <Link 
+                  to="/register" 
+                  className={`mobile-nav-link ${isActiveRoute('/register') ? 'active' : ''}`}
+                  role="menuitem"
+                  aria-current={isActiveRoute('/register') ? 'page' : undefined}
+                  onClick={() => setShowMobileMenu(false)}
+                >
                   Sign Up
+                </Link>
+                <Link 
+                  to="/help" 
+                  className={`mobile-nav-link ${isActiveRoute('/help') ? 'active' : ''}`}
+                  role="menuitem"
+                  aria-current={isActiveRoute('/help') ? 'page' : undefined}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Help
                 </Link>
               </div>
             )}
           </div>
         </div>
       )}
-    </nav>
+      </nav>
+    </>
   );
 };
 

@@ -2,9 +2,11 @@ import './App.css'
 import Register from './components/Register';
 import Login from './components/Login';
 import OwnerDashboard from './components/OwnerDashboard';
-import DriverDashboard from './components/DriverDashboard';
+import DriverDashboardNew from './components/DriverDashboardNew';
+import ParkwayInterface from './components/ParkwayInterface';
 import Home from './components/Home'; // Import the Home component
 import Profile from './components/Profile'; // Import the Profile component
+import HelpCenter from './components/HelpCenter'; // Import the HelpCenter component
 import ErrorBoundary from './components/ErrorBoundary'; // Import the ErrorBoundary component
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PrivateRoute from './components/PrivateRoute';
@@ -37,18 +39,19 @@ const App: React.FC = () => {
               <AuthDebug />
             </>
           ) */}
-          <div className="app-content">
+          <main id="main-content" className="app-content" role="main" aria-label="Main content">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/help" element={<HelpCenter />} />
               <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
-              <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><DriverDashboard /></PrivateRoute>} />
+                       <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><ParkwayInterface /></PrivateRoute>} />
               <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
               {/* Catch-all route for 404 */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </div>
+          </main>
         </Router>
           {/* ToastContainer removed - using ProfessionalNotificationSystem instead */}
           <PWAInstallPrompt />

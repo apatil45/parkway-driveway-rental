@@ -21,39 +21,30 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return distance;
 }
 
-// Helper function to geocode an address (mock implementation - in production use a real geocoding service)
+// Helper function to geocode an address using OpenCage API
 async function geocodeAddress(address) {
-  // For now, return mock coordinates for Jersey City area
-  // In production, you'd use Google Maps API, OpenCage, or similar
-  const normalizedAddress = address.toLowerCase();
-  
-  // Handle Lincoln Street addresses with slight variations
-  if (normalizedAddress.includes('lincoln street') || normalizedAddress.includes('lincoln st')) {
-    // Extract house number if possible
-    const match = normalizedAddress.match(/(\d+)/);
-    const houseNumber = match ? parseInt(match[1]) : 70;
+  try {
+    // Use the existing geocoding service
+    const geocoder = require('../utils/geocoder');
     
-    // Generate coordinates based on house number (slight variations)
-    const baseLat = 40.7178;
-    const baseLng = -74.0431;
-    const latOffset = (houseNumber - 70) * 0.0001; // Small offset per house number
-    const lngOffset = (houseNumber - 70) * 0.00005;
+    if (!geocoder) {
+      console.warn('Geocoding service not available, using fallback coordinates');
+      return { lat: 40.7178, lng: -74.0431 }; // Default to Jersey City
+    }
     
-    return { 
-      lat: baseLat + latOffset, 
-      lng: baseLng + lngOffset 
-    };
+    const results = await geocoder.geocode(address);
+    
+    if (results && results.length > 0) {
+      const { latitude, longitude } = results[0];
+      return { lat: latitude, lng: longitude };
+    } else {
+      console.warn(`No geocoding results for address: ${address}`);
+      return { lat: 40.7178, lng: -74.0431 }; // Default fallback
+    }
+  } catch (error) {
+    console.error('Geocoding error:', error.message);
+    return { lat: 40.7178, lng: -74.0431 }; // Default fallback
   }
-  
-  // Handle other known addresses
-  const mockCoordinates = {
-    '70 lincoln street jersey city': { lat: 40.7178, lng: -74.0431 },
-    '68 lincoln street jersey city': { lat: 40.7176, lng: -74.0430 },
-    '123 test street': { lat: 40.7282, lng: -74.0776 },
-    'jersey city': { lat: 40.7178, lng: -74.0431 }
-  };
-  
-  return mockCoordinates[normalizedAddress] || { lat: 40.7178, lng: -74.0431 };
 }
 
 // @route   GET /api/driveways
@@ -139,7 +130,7 @@ router.get('/search', async (req, res) => {
   const {
     latitude,
     longitude,
-    radius = 10000, // Increased from 5000 to 10000 meters (10km)
+    radius = 1000, // 1km radius - very local parking
     date,
     startTime,
     endTime
@@ -170,6 +161,12 @@ router.get('/search', async (req, res) => {
       raw: false
     });
 
+    // Filter out driveways that don't have valid coordinates or are too far
+    driveways = driveways.filter(driveway => {
+      // Only include driveways with valid addresses
+      return driveway.address && driveway.address.trim().length > 0;
+    });
+
     // Add coordinates and distance to each driveway
     for (let driveway of driveways) {
       const coordinates = await geocodeAddress(driveway.address);
@@ -193,17 +190,34 @@ router.get('/search', async (req, res) => {
 
     // Filter by radius if location is provided
     if (userLatitude && userLongitude && radius) {
-      const radiusInKm = parseFloat(radius) / 1000; // Convert meters to kilometers
+      const radiusInMeters = parseFloat(radius);
       const beforeFilter = driveways.length;
       driveways = driveways.filter(driveway => {
-        return driveway.distance <= (radiusInKm * 1000); // Convert back to meters for comparison
+        // Only include driveways within the specified radius and with valid distance
+        return driveway.distance && driveway.distance <= radiusInMeters;
       });
       console.log(`Filtered driveways: ${beforeFilter} -> ${driveways.length} (radius: ${radius}m)`);
     }
 
+    // Additional filter: Only show driveways that are actually available for booking
+    const beforeAvailabilityFilter = driveways.length;
+    driveways = driveways.filter(driveway => {
+      // Check if driveway has availability or is generally available
+      return driveway.isAvailable === true && 
+             (driveway.availability || driveway.availability === null);
+    });
+    console.log(`Availability filtered: ${beforeAvailabilityFilter} -> ${driveways.length}`);
+
     // Sort by distance if location is provided
     if (userLatitude && userLongitude) {
       driveways.sort((a, b) => a.distance - b.distance);
+    }
+
+    // Limit results to prevent overwhelming the user
+    const maxResults = 20;
+    if (driveways.length > maxResults) {
+      driveways = driveways.slice(0, maxResults);
+      console.log(`Limited results to ${maxResults} driveways`);
     }
 
     // Filter by date and time if provided

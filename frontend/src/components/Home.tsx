@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import QuickActions from './QuickActions';
 import './Home.css';
 
 const Home: React.FC = () => {
@@ -80,6 +81,9 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Quick Actions */}
+      <QuickActions />
 
       {/* How It Works */}
       <section className="how-it-works">

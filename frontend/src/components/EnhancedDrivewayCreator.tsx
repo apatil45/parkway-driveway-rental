@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
 import ResponsiveForm, { FormField, FormButton, FormCheckbox } from './ResponsiveForm';
+import GeocodingInput from './GeocodingInput';
 import './EnhancedDrivewayCreator.css';
 
 interface DrivewayFormData {
@@ -25,6 +26,10 @@ interface DrivewayFormData {
   amenities: string[];
   images: string[];
   isAvailable: boolean;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 interface FormErrors {
@@ -215,6 +220,22 @@ const EnhancedDrivewayCreator: React.FC<{
       setErrors(prev => ({
         ...prev,
         [name]: error
+      }));
+    }
+  };
+
+  const handleAddressChange = (address: string, coordinates?: { latitude: number; longitude: number }) => {
+    setFormData(prev => ({
+      ...prev,
+      address,
+      coordinates
+    }));
+
+    // Clear address error when user starts typing
+    if (errors.address) {
+      setErrors(prev => ({
+        ...prev,
+        address: ''
       }));
     }
   };
@@ -448,17 +469,29 @@ const EnhancedDrivewayCreator: React.FC<{
     <div className="step-content">
       <h3 className="step-title">Basic Information</h3>
       
-      <FormField
+      <GeocodingInput
         label="Address"
-        name="address"
-        type="text"
         value={formData.address}
-        onChange={handleInputChange}
-        error={errors.address}
+        onChange={handleAddressChange}
         placeholder="Enter the complete address of your driveway"
         required
-        helpText="Include street number, street name, city, and state"
+        onError={(error) => {
+          setErrors(prev => ({ ...prev, address: error }));
+        }}
+        onSuccess={(coordinates) => {
+          console.log('Address geocoded successfully:', coordinates);
+        }}
       />
+      {errors.address && (
+        <div className="form-error">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          {errors.address}
+        </div>
+      )}
 
       <div className="form-field">
         <label className="form-label">

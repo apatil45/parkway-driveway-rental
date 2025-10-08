@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Button from './Button';
+import ProfileRoleSwitcher from './ProfileRoleSwitcher';
 import './Profile.css';
 
 const Profile: React.FC = () => {
@@ -139,9 +140,16 @@ const Profile: React.FC = () => {
                 <div className="form-group">
                   <label className="form-label">Role</label>
                   <div className="info-value role-badge">
-                    {user?.roles.includes('driver') ? 'Driver' : 'Property Owner'}
+                    {user?.roles.includes('driver') && user?.roles.includes('owner') 
+                      ? 'Driver & Owner' 
+                      : user?.roles.includes('driver') 
+                        ? 'Driver' 
+                        : 'Property Owner'}
                   </div>
                 </div>
+
+                {/* Role Switcher for users with multiple roles */}
+                <ProfileRoleSwitcher />
 
                 {user?.roles.includes('driver') && (
                   <div className="form-group">

@@ -5,8 +5,12 @@
  * This script populates the database with initial data for development and testing
  */
 
+require('dotenv').config();
 const bcrypt = require('bcryptjs');
-const { sequelize, User, Driveway, Booking } = require('../models');
+const { sequelize } = require('../models/database');
+const User = require('../models/UserPG');
+const Driveway = require('../models/DrivewayPG');
+const Booking = require('../models/BookingPG');
 
 // Seed data
 const seedData = {
@@ -14,101 +18,96 @@ const seedData = {
     {
       email: 'admin@parkway.com',
       password: 'admin123',
-      firstName: 'Admin',
-      lastName: 'User',
-      phone: '555-000-0001',
-      role: 'admin'
+      name: 'Admin User',
+      phoneNumber: '555-000-0001',
+      roles: ['admin']
     },
     {
       email: 'driver@parkway.com',
       password: 'driver123',
-      firstName: 'John',
-      lastName: 'Driver',
-      phone: '555-010-0001',
-      role: 'driver'
+      name: 'John Driver',
+      phoneNumber: '555-010-0001',
+      roles: ['driver']
     },
     {
       email: 'owner@parkway.com',
       password: 'owner123',
-      firstName: 'Jane',
-      lastName: 'Owner',
-      phone: '555-010-0002',
-      role: 'owner'
+      name: 'Jane Owner',
+      phoneNumber: '555-010-0002',
+      roles: ['owner']
     },
     {
       email: 'test@parkway.com',
       password: 'test123',
-      firstName: 'Test',
-      lastName: 'User',
-      phone: '555-999-9999',
-      role: 'driver'
+      name: 'Test User',
+      phoneNumber: '555-999-9999',
+      roles: ['driver']
     }
   ],
   driveways: [
     {
       address: '123 Main St, New York, NY 10001',
-      latitude: 40.7128,
-      longitude: -74.0060,
-      price: 15.00,
-      carSize: 'medium',
+      pricePerHour: 15.00,
+      drivewaySize: 'medium',
       description: 'Convenient downtown parking spot near financial district. Covered parking with security cameras.',
       isAvailable: true,
-      amenities: ['Covered', 'Security Cameras', 'Well Lit']
+      amenities: ['Covered', 'Security Cameras', 'Well Lit'],
+      carSizeCompatibility: ['small', 'medium']
     },
     {
       address: '456 Park Ave, New York, NY 10002',
-      latitude: 40.7589,
-      longitude: -73.9851,
-      price: 20.00,
-      carSize: 'large',
+      pricePerHour: 20.00,
+      drivewaySize: 'large',
       description: 'Premium parking in Midtown Manhattan. Perfect for business meetings and shopping.',
       isAvailable: true,
-      amenities: ['Covered', 'Security Cameras', 'EV Charging', 'Valet Service']
+      amenities: ['Covered', 'Security Cameras', 'EV Charging', 'Valet Service'],
+      carSizeCompatibility: ['medium', 'large', 'extra-large']
     },
     {
       address: '789 Broadway, New York, NY 10003',
-      latitude: 40.7282,
-      longitude: -73.9942,
-      price: 12.00,
-      carSize: 'small',
+      pricePerHour: 12.00,
+      drivewaySize: 'small',
       description: 'Affordable parking in SoHo. Great for shopping and dining in the area.',
       isAvailable: true,
-      amenities: ['Security Cameras', 'Well Lit']
+      amenities: ['Security Cameras', 'Well Lit'],
+      carSizeCompatibility: ['small']
     },
     {
       address: '321 5th Ave, New York, NY 10016',
-      latitude: 40.7505,
-      longitude: -73.9934,
-      price: 18.00,
-      carSize: 'medium',
+      pricePerHour: 18.00,
+      drivewaySize: 'medium',
       description: 'Central location near Empire State Building. Easy access to major attractions.',
       isAvailable: true,
-      amenities: ['Covered', 'Security Cameras', 'Well Lit', '24/7 Access']
+      amenities: ['Covered', 'Security Cameras', 'Well Lit', '24/7 Access'],
+      carSizeCompatibility: ['small', 'medium']
     },
     {
       address: '654 West 42nd St, New York, NY 10036',
-      latitude: 40.7589,
-      longitude: -73.9851,
-      price: 25.00,
-      carSize: 'large',
+      pricePerHour: 25.00,
+      drivewaySize: 'large',
       description: 'Times Square area parking. Premium location with full amenities.',
       isAvailable: true,
-      amenities: ['Covered', 'Security Cameras', 'EV Charging', 'Valet Service', '24/7 Access']
+      amenities: ['Covered', 'Security Cameras', 'EV Charging', 'Valet Service', '24/7 Access'],
+      carSizeCompatibility: ['medium', 'large', 'extra-large']
     }
   ],
   bookings: [
     {
-      startTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-      endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // Tomorrow + 2 hours
+      startDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      endDate: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // Tomorrow + 2 hours
+      startTime: '10:00',
+      endTime: '12:00',
       status: 'confirmed',
-      totalPrice: 30.00,
+      totalAmount: 30.00,
       paymentStatus: 'paid'
     },
     {
-      startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
-      endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000), // Day after tomorrow + 4 hours
+      startDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
+      endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000), // Day after tomorrow + 4 hours
+      startTime: '14:00',
+      endTime: '18:00',
       status: 'pending',
-      totalPrice: 60.00,
+      totalAmount: 60.00,
       paymentStatus: 'pending'
     }
   ]
@@ -148,7 +147,7 @@ async function createUsers() {
 async function createDriveways(users) {
   console.log('🏠 Creating driveways...');
   
-  const owner = users.find(user => user.role === 'owner');
+  const owner = users.find(user => user.roles && user.roles.includes('owner'));
   if (!owner) {
     throw new Error('No owner user found for creating driveways');
   }
@@ -158,11 +157,11 @@ async function createDriveways(users) {
     const [driveway, created] = await Driveway.findOrCreate({
       where: { 
         address: drivewayData.address,
-        ownerId: owner.id 
+        owner: owner.id 
       },
       defaults: {
         ...drivewayData,
-        ownerId: owner.id
+        owner: owner.id
       }
     });
     
@@ -182,7 +181,7 @@ async function createDriveways(users) {
 async function createBookings(users, driveways) {
   console.log('📅 Creating bookings...');
   
-  const driver = users.find(user => user.role === 'driver');
+  const driver = users.find(user => user.roles && user.roles.includes('driver'));
   if (!driver) {
     console.log('   ⏭️  No driver user found, skipping bookings');
     return;
@@ -195,14 +194,14 @@ async function createBookings(users, driveways) {
     
     const [booking, created] = await Booking.findOrCreate({
       where: {
-        driverId: driver.id,
-        drivewayId: driveway.id,
+        driver: driver.id,
+        driveway: driveway.id,
         startTime: bookingData.startTime
       },
       defaults: {
         ...bookingData,
-        driverId: driver.id,
-        drivewayId: driveway.id
+        driver: driver.id,
+        driveway: driveway.id
       }
     });
     

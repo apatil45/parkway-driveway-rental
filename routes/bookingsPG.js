@@ -24,7 +24,8 @@ router.post('/', auth, isDriver, async (req, res) => {
     endTime, 
     totalAmount, 
     driverLocation, 
-    specialRequests 
+    specialRequests,
+    stripePaymentId 
   } = req.body;
 
   console.log('Booking request body:', req.body);
@@ -138,6 +139,10 @@ router.post('/', auth, isDriver, async (req, res) => {
       });
     }
 
+    // Determine booking status based on payment
+    const bookingStatus = stripePaymentId ? 'confirmed' : 'pending';
+    const paymentStatus = stripePaymentId ? 'paid' : 'pending';
+
     const newBooking = await Booking.create({
       driver: driverId,
       driveway: driveway,
@@ -146,24 +151,31 @@ router.post('/', auth, isDriver, async (req, res) => {
       startTime: startTimeStr,
       endTime: endTimeStr,
       totalAmount: totalAmount,
-      status: 'pending',
+      status: bookingStatus,
+      paymentStatus: paymentStatus,
+      stripePaymentId: stripePaymentId || null,
       driverLocation: driverLocation || null,
       specialRequests: specialRequests || null
     });
 
     // Send real-time notification to driveway owner
     if (global.socketService) {
+      const notificationTitle = stripePaymentId ? 'New Confirmed Booking' : 'New Booking Request';
+      const notificationMessage = stripePaymentId 
+        ? `You have a new confirmed booking for your driveway at ${drivewayFound.address} - Payment received!`
+        : `You have a new booking request for your driveway at ${drivewayFound.address}`;
+
       global.socketService.sendNotification(drivewayFound.owner, {
         type: 'booking_created',
-        title: 'New Booking Request',
-        message: `You have a new booking request for your driveway at ${drivewayFound.address}`,
+        title: notificationTitle,
+        message: notificationMessage,
         data: { bookingId: newBooking.id, drivewayId: driveway }
       });
 
       // Send booking update to booking room
       global.socketService.sendBookingUpdate(newBooking.id, {
         type: 'status_change',
-        status: 'pending'
+        status: bookingStatus
       });
     }
 
@@ -179,6 +191,8 @@ router.post('/', auth, isDriver, async (req, res) => {
         endTime: newBooking.endTime,
         totalAmount: newBooking.totalAmount,
         status: newBooking.status,
+        paymentStatus: newBooking.paymentStatus,
+        stripePaymentId: newBooking.stripePaymentId,
         driverLocation: newBooking.driverLocation,
         specialRequests: newBooking.specialRequests
       }
