@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { Op } = require('sequelize');
 const Booking = require('../models/BookingPG');
 const Driveway = require('../models/DrivewayPG');
 const User = require('../models/UserPG');
@@ -25,11 +26,16 @@ router.post('/', auth, isDriver, async (req, res) => {
     driverLocation, 
     specialRequests 
   } = req.body;
+
+  console.log('Booking request body:', req.body);
   const driverId = req.user.id;
 
   try {
+    console.log('Validating booking data:', { driveway, startTime, endTime, totalAmount });
+    
     // Validate required fields
     if (!driveway || !startTime || !endTime || !totalAmount) {
+      console.log('Missing required fields:', { driveway, startTime, endTime, totalAmount });
       return res.status(400).json({ 
         error: 'Missing required fields',
         message: 'Driveway, start time, end time, and total amount are required'
@@ -80,7 +86,7 @@ router.post('/', auth, isDriver, async (req, res) => {
 
     // Check driveway availability for the requested day/time
     const requestedDate = new Date(startTime);
-    const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const dayAvailability = drivewayFound.availability.find(av => av.dayOfWeek === dayOfWeek);
 
     if (!dayAvailability || !dayAvailability.isAvailable) {
@@ -102,7 +108,6 @@ router.post('/', auth, isDriver, async (req, res) => {
     }
 
     // Check for conflicts with existing bookings
-    const { Op } = require('sequelize');
     const existingBookings = await Booking.findAll({
       where: {
         driveway: driveway,
@@ -179,10 +184,12 @@ router.post('/', auth, isDriver, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Create Booking Error:', err.message);
+    console.error('Create Booking Error:', err);
+    console.error('Error stack:', err.stack);
     res.status(500).json({ 
       success: false,
-      msg: 'Failed to create booking' 
+      msg: 'Failed to create booking',
+      error: err.message 
     });
   }
 });
@@ -476,6 +483,231 @@ router.get('/stats', auth, async (req, res) => {
   } catch (err) {
     console.error('Get Booking Stats Error:', err.message);
     res.status(500).json({ error: 'Server error', message: 'Failed to fetch booking statistics' });
+  }
+});
+
+// @route   DELETE /api/bookings/:id
+// @desc    Cancel a booking (Driver only)
+// @access  Private
+router.delete('/:id', auth, isDriver, async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const driverId = req.user.id;
+
+    // Find the booking and verify ownership
+    const booking = await Booking.findOne({
+      where: { 
+        id: bookingId, 
+        driver: driverId 
+      },
+      include: [
+        {
+          model: Driveway,
+          as: 'drivewayInfo',
+          attributes: ['id', 'address', 'owner']
+        }
+      ]
+    });
+
+    if (!booking) {
+      return res.status(404).json({ 
+        error: 'Booking not found',
+        message: 'Booking not found or you do not have permission to cancel it'
+      });
+    }
+
+    // Check if booking can be cancelled (only pending bookings can be cancelled)
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ 
+        error: 'Cannot cancel booking',
+        message: 'Only pending bookings can be cancelled'
+      });
+    }
+
+    // Update booking status to cancelled
+    await booking.update({ 
+      status: 'cancelled',
+      updated_at: new Date()
+    });
+
+    // Send notification to owner via socket
+    const io = req.app.get('io');
+    if (io) {
+      io.to(booking.drivewayInfo.owner).emit('booking_update', {
+        type: 'booking_cancelled',
+        bookingId: booking.id,
+        driverId: driverId,
+        drivewayId: booking.driveway,
+        message: 'A booking has been cancelled'
+      });
+    }
+
+    res.json({ 
+      message: 'Booking cancelled successfully',
+      booking: {
+        id: booking.id,
+        status: booking.status
+      }
+    });
+
+  } catch (err) {
+    console.error('Cancel Booking Error:', err.message);
+    res.status(500).json({ 
+      error: 'Server error', 
+      message: 'Failed to cancel booking' 
+    });
+  }
+});
+
+// @route   PUT /api/bookings/:id/confirm
+// @desc    Confirm a booking (Owner only)
+// @access  Private
+router.put('/:id/confirm', auth, async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const ownerId = req.user.id;
+
+    // Find the booking and verify ownership of the driveway
+    const booking = await Booking.findOne({
+      where: { id: bookingId },
+      include: [
+        {
+          model: Driveway,
+          as: 'drivewayInfo',
+          where: { owner: ownerId },
+          attributes: ['id', 'address', 'owner']
+        },
+        {
+          model: User,
+          as: 'driverInfo',
+          attributes: ['id', 'name', 'email']
+        }
+      ]
+    });
+
+    if (!booking) {
+      return res.status(404).json({ 
+        error: 'Booking not found',
+        message: 'Booking not found or you do not have permission to confirm it'
+      });
+    }
+
+    // Check if booking can be confirmed (only pending bookings can be confirmed)
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ 
+        error: 'Cannot confirm booking',
+        message: 'Only pending bookings can be confirmed'
+      });
+    }
+
+    // Update booking status to confirmed
+    await booking.update({ 
+      status: 'confirmed',
+      updated_at: new Date()
+    });
+
+    // Send notification to driver via socket
+    const io = req.app.get('io');
+    if (io) {
+      io.to(booking.driver).emit('booking_update', {
+        type: 'booking_confirmed',
+        bookingId: booking.id,
+        ownerId: ownerId,
+        drivewayId: booking.driveway,
+        message: 'Your booking has been confirmed'
+      });
+    }
+
+    res.json({ 
+      message: 'Booking confirmed successfully',
+      booking: {
+        id: booking.id,
+        status: booking.status
+      }
+    });
+
+  } catch (err) {
+    console.error('Confirm Booking Error:', err.message);
+    res.status(500).json({ 
+      error: 'Server error', 
+      message: 'Failed to confirm booking' 
+    });
+  }
+});
+
+// @route   PUT /api/bookings/:id/reject
+// @desc    Reject a booking (Owner only)
+// @access  Private
+router.put('/:id/reject', auth, async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const ownerId = req.user.id;
+
+    // Find the booking and verify ownership of the driveway
+    const booking = await Booking.findOne({
+      where: { id: bookingId },
+      include: [
+        {
+          model: Driveway,
+          as: 'drivewayInfo',
+          where: { owner: ownerId },
+          attributes: ['id', 'address', 'owner']
+        },
+        {
+          model: User,
+          as: 'driverInfo',
+          attributes: ['id', 'name', 'email']
+        }
+      ]
+    });
+
+    if (!booking) {
+      return res.status(404).json({ 
+        error: 'Booking not found',
+        message: 'Booking not found or you do not have permission to reject it'
+      });
+    }
+
+    // Check if booking can be rejected (only pending bookings can be rejected)
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ 
+        error: 'Cannot reject booking',
+        message: 'Only pending bookings can be rejected'
+      });
+    }
+
+    // Update booking status to rejected
+    await booking.update({ 
+      status: 'rejected',
+      updated_at: new Date()
+    });
+
+    // Send notification to driver via socket
+    const io = req.app.get('io');
+    if (io) {
+      io.to(booking.driver).emit('booking_update', {
+        type: 'booking_rejected',
+        bookingId: booking.id,
+        ownerId: ownerId,
+        drivewayId: booking.driveway,
+        message: 'Your booking has been rejected'
+      });
+    }
+
+    res.json({ 
+      message: 'Booking rejected successfully',
+      booking: {
+        id: booking.id,
+        status: booking.status
+      }
+    });
+
+  } catch (err) {
+    console.error('Reject Booking Error:', err.message);
+    res.status(500).json({ 
+      error: 'Server error', 
+      message: 'Failed to reject booking' 
+    });
   }
 });
 

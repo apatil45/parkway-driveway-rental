@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('./database');
+const bcrypt = require('bcryptjs');
 
 const User = sequelize.define('User', {
   id: {
@@ -59,7 +60,34 @@ const User = sequelize.define('User', {
   tableName: 'users',
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  underscored: true
+  underscored: true,
+  hooks: {
+    beforeCreate: async (user) => {
+      if (user.password) {
+        const saltRounds = 12;
+        user.password = await bcrypt.hash(user.password, saltRounds);
+      }
+    },
+    beforeUpdate: async (user) => {
+      if (user.changed('password')) {
+        const saltRounds = 12;
+        user.password = await bcrypt.hash(user.password, saltRounds);
+      }
+    }
+  }
 });
+
+// Instance methods
+User.prototype.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+User.prototype.toJSON = function() {
+  const values = Object.assign({}, this.get());
+  delete values.password;
+  return values;
+};
+
+// Associations are set up in models/associations.js
 
 module.exports = User;

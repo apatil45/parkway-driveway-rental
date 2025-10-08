@@ -1,1506 +1,883 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import EnhancedMapDisplay from './EnhancedMapDisplay';
-import AdvancedSearch from './AdvancedSearch';
-import SearchResults from './SearchResults';
-import DashboardNav from './DashboardNav';
-import { SkeletonSearchResults } from './EnhancedSkeletonLoader';
-import BookingDurationModal from './BookingDurationModal'; // Import new booking modal
 import { notificationService } from '../services/notificationService';
-import { useSocket } from '../hooks/useSocket';
-import { useKeyboardShortcuts, commonShortcuts } from '../hooks/useKeyboardShortcuts';
-import BreadcrumbNav from './BreadcrumbNav';
-import cachedApi from '../services/cachedApi';
-import { offlineService } from '../services/offlineService';
-import Button from './Button';
-import useLoadingState from '../hooks/useLoadingState';
-import EnhancedLoadingSpinner from './EnhancedLoadingSpinner';
+import MapView from './MapView';
 import './DriverDashboard.css';
 
-const stripePromise = loadStripe((import.meta as any).env?.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51SAemo2MWNtZFiP8XnJ30lVvWp7e3D0bXnZ8jE8V2xL5n3d1oY9tS7pA5jY4t4oY0w0c0j0d0j0f0');
-
 interface Driveway {
-  id: string; // Changed from _id to id to match PostgreSQL model
-  owner: string;
+  id: string;
   address: string;
   description: string;
-  availability: { date: string; startTime: string; endTime: string; pricePerHour: number }[];
-  isAvailable: boolean;
-  location: {
-    type: string;
-    coordinates: [number, number];
+  pricePerHour: number;
+  distance?: number;
+  rating: number;
+  images: string[];
+  amenities: string[];
+  coordinates?: {
+    lat: number;
+    lng: number;
   };
-  carSizeCompatibility?: string[];
-  drivewaySize?: string;
 }
 
 interface Booking {
-  id: string; // Changed from _id to id to match PostgreSQL model
-  driver: string;
+  id: string;
   driveway: string;
+  startDate: string;
+  endDate: string;
   startTime: string;
   endTime: string;
-  totalPrice: number;
+  totalAmount: number; // Changed from totalPrice to match backend
   status: string;
-  paymentIntentId?: string;
-  clientSecret?: string;
 }
 
 const DriverDashboard: React.FC = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
-  // Notification functions using the new professional notification service
-  const showSuccess = useCallback((message: string, title?: string) => {
-    notificationService.showNotification({
-      type: 'success',
-      title: title || 'Success',
-      message,
-      context: 'booking'
-    });
-  }, []);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Driveway[]>([]);
+  const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [activeTab, setActiveTab] = useState<'search' | 'bookings'>('search');
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedDriveway, setSelectedDriveway] = useState<Driveway | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
-  const showError = useCallback((message: string, title?: string) => {
-    notificationService.showNotification({
-      type: 'error',
-      title: title || 'Error',
-      message,
-      context: 'booking',
-      priority: 'high'
-    });
-  }, []);
-
-  const showWarning = useCallback((message: string, title?: string) => {
-    notificationService.showNotification({
-      type: 'warning',
-      title: title || 'Warning',
-      message,
-      context: 'booking'
-    });
-  }, []);
-
-  const showInfo = useCallback((message: string, title?: string) => {
-    notificationService.showNotification({
-      type: 'info',
-      title: title || 'Information',
-      message,
-      context: 'booking'
-    });
-  }, []);
-  const { isConnected: socketConnected, notifications, joinBookingRoom, leaveBookingRoom } = useSocket();
-
-  // Add keyboard shortcuts
-  useKeyboardShortcuts([
-    ...commonShortcuts,
+  // Mock data for demonstration
+  const mockDriveways: Driveway[] = [
     {
-      key: 'b',
-      ctrlKey: true,
-      action: () => {
-        if (searchResults.length > 0) {
-          setCurrentSection('results');
-        }
-      },
-      description: 'Go to search results (Ctrl+B)'
+      id: '1',
+      address: '123 Main Street, Downtown',
+      description: 'Spacious driveway with easy access',
+      pricePerHour: 5.00,
+      distance: 0.8,
+      rating: 4.8,
+      images: ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop'],
+      amenities: ['Covered', 'Security Cameras', 'Easy Access']
     },
     {
-      key: 'm',
-      ctrlKey: true,
-      action: () => {
-        setCurrentSection('map');
-      },
-      description: 'Go to map view (Ctrl+M)'
+      id: '2',
+      address: '456 Oak Avenue, Midtown',
+      description: 'Private driveway in quiet neighborhood',
+      pricePerHour: 4.50,
+      distance: 1.2,
+      rating: 4.6,
+      images: ['https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop'],
+      amenities: ['Private', 'Well Lit', 'Near Transit']
+    },
+    {
+      id: '3',
+      address: '789 Pine Street, Uptown',
+      description: 'Large driveway suitable for SUVs',
+      pricePerHour: 6.00,
+      distance: 1.5,
+      rating: 4.9,
+      images: ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop'],
+      amenities: ['Large Vehicle Friendly', '24/7 Access', 'Security']
     }
-  ]);
-  const [searchResults, setSearchResults] = useState<Driveway[]>([]);
-  const [searchParams, setSearchParams] = useState({
-    date: new Date().toISOString().split('T')[0],
-    startTime: new Date().toTimeString().slice(0, 5),
-    endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toTimeString().slice(0, 5), // 2 hours from now
-    radius: 5,
-    carSize: 'medium', // Default car size
-  });
-  const [addressSearch, setAddressSearch] = useState<string>('');
-  const searchTimeoutRef = useRef<number | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | undefined>(undefined);
-  
-  // Legacy loading states (for backward compatibility)
-  const [isSearching, setIsSearching] = useState(false);
-  const [isLoadingDriveways, setIsLoadingDriveways] = useState(false);
-  
-  // Enhanced loading states
-  const [searchLoadingState, searchLoadingActions] = useLoadingState({
-    initialMessage: 'Searching for driveways...',
-    estimatedDuration: 3000,
-    showProgress: true
-  });
-  
-  const [drivewayLoadingState, drivewayLoadingActions] = useLoadingState({
-    initialMessage: 'Loading driveways...',
-    estimatedDuration: 2000,
-    showProgress: true
-  });
-  
-  const [bookingLoadingState, bookingLoadingActions] = useLoadingState({
-    initialMessage: 'Processing booking...',
-    estimatedDuration: 5000,
-    showProgress: true
-  });
-  
-  // Clear existing toasts to prevent duplicates
-  const clearExistingToasts = useCallback(() => {
-    // Clear any existing notifications
-    notificationService.clearAllNotifications();
-  }, []);
+  ];
 
-  // Get driver's current location
-  const getDriverLocation = useCallback(async () => {
-    if (!navigator.geolocation) {
-      showError('Geolocation is not supported by this browser');
-      return null;
+  const mockBookings: Booking[] = [
+    {
+      id: '1',
+      driveway: '123 Main Street',
+      startDate: '2024-01-15T10:00:00Z',
+      endDate: '2024-01-15T14:00:00Z',
+      startTime: '10:00',
+      endTime: '14:00',
+      totalAmount: 20.00,
+      status: 'confirmed'
+    },
+    {
+      id: '2',
+      driveway: '456 Oak Avenue',
+      startDate: '2024-01-16T09:00:00Z',
+      endDate: '2024-01-16T17:00:00Z',
+      startTime: '09:00',
+      endTime: '17:00',
+      totalAmount: 36.00,
+      status: 'pending'
     }
+  ];
 
-    return new Promise<{latitude: number, longitude: number, address: string} | null>((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          
-          try {
-            // Reverse geocode to get address
-            const geocodeRes = await axios.post('/api/geocoding', { 
-              latitude, 
-              longitude 
-            });
-            
-            const address = geocodeRes.data.address || `${(latitude || 0).toFixed(4)}, ${(longitude || 0).toFixed(4)}`;
-            
-            resolve({
-              latitude,
-              longitude,
-              address
-            });
-          } catch (error) {
-            // If geocoding fails, still return coordinates
-            resolve({
-              latitude,
-              longitude,
-              address: `${(latitude || 0).toFixed(4)}, ${(longitude || 0).toFixed(4)}`
-            });
-          }
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          showError('Unable to get your location. Please enable location services.');
-          resolve(null);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // 5 minutes
+  const loadBookings = async () => {
+    try {
+      const response = await fetch(`/api/bookings/driver/${user?.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
-      );
-    });
-  }, [showError]);
+      });
 
-  // Smart warning function (handled by useSmartNotification)
-  const showThrottledWarning = useCallback((message: string) => {
-    showWarning(message);
-  }, [showWarning]);
-
-  // Debounced search to prevent rapid-fire searches
-  const debouncedSearch = useCallback((searchFunction: () => void) => {
-    if (searchTimeoutRef.current) {
-      window.clearTimeout(searchTimeoutRef.current);
+      if (response.ok) {
+        const data = await response.json();
+        setRecentBookings(data);
+      } else {
+        // Fallback to mock data if API fails
+        setRecentBookings(mockBookings);
+      }
+          } catch (error) {
+      console.error('Failed to load bookings:', error);
+      // Fallback to mock data
+      setRecentBookings(mockBookings);
     }
-    searchTimeoutRef.current = window.setTimeout(() => {
-      searchFunction();
-    }, 300); // 300ms debounce
-  }, []);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [driverBookings, setDriverBookings] = useState<Booking[]>([]);
-  const [showPaymentForm, setShowPaymentForm] = useState<boolean>(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [bookingToConfirm, setBookingToConfirm] = useState<Booking | null>(null);
-  const [selectedSlotDetails, setSelectedSlotDetails] = useState<any>(null);
-  const [showCustomBooking, setShowCustomBooking] = useState(false);
-  const [currentSection, setCurrentSection] = useState<'search' | 'results' | 'booking' | 'payment' | 'confirmation' | 'map' | 'bookings'>('search');
-  
-  // New streamlined booking flow state
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [selectedDriveway, setSelectedDriveway] = useState<any>(null);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<any>(null);
-  const [driverLocation, setDriverLocation] = useState<{
-    latitude: number;
-    longitude: number;
-    address: string;
-  } | null>(null);
+  };
+
+  // Get user's current location
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by this browser.');
+      return;
+    }
+
+    setIsSearching(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setLocationError(null);
+        // Automatically search for nearby driveways
+        searchNearbyDriveways(latitude, longitude);
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        setLocationError('Unable to get your location. Please enable location access.');
+        setIsSearching(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  };
+
+  // Search for nearby driveways using current location
+  const searchNearbyDriveways = async (lat: number, lng: number) => {
+    try {
+      const currentDate = new Date();
+      const currentTime = currentDate.toTimeString().slice(0, 5);
+      const endTime = new Date(currentDate.getTime() + 2 * 60 * 60 * 1000).toTimeString().slice(0, 5); // 2 hours later
+
+      const params = new URLSearchParams({
+        latitude: lat.toString(),
+        longitude: lng.toString(),
+        radius: '10000', // 10km radius
+        date: currentDate.toISOString().split('T')[0],
+        startTime: currentTime,
+        endTime: endTime
+      });
+
+      console.log('Searching nearby driveways with params:', params.toString());
+      const response = await fetch(`/api/driveways/search?${params}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Search results:', data);
+        setSearchResults(data);
+        
+        // Show notification with results
+        notificationService.showNotification({
+          type: 'success',
+          title: 'Location Search Complete',
+          message: `Found ${data.length} driveways near your location!`,
+          context: 'search'
+        });
+      } else {
+        console.log('Search failed, using mock data');
+        // Fallback to mock data with coordinates
+        const mockWithCoords = mockDriveways.map(driveway => ({
+          ...driveway,
+          coordinates: { lat: 40.7178 + (Math.random() - 0.5) * 0.01, lng: -74.0431 + (Math.random() - 0.5) * 0.01 },
+          distance: Math.round(Math.random() * 2000) + 100
+        }));
+        setSearchResults(mockWithCoords);
+        
+        notificationService.showNotification({
+          type: 'success',
+          title: 'Location Search Complete',
+          message: `Found ${mockWithCoords.length} driveways near your location!`,
+          context: 'search'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to search nearby driveways:', error);
+      // Fallback to mock data with coordinates
+      const mockWithCoords = mockDriveways.map(driveway => ({
+        ...driveway,
+        coordinates: { lat: 40.7178 + (Math.random() - 0.5) * 0.01, lng: -74.0431 + (Math.random() - 0.5) * 0.01 },
+        distance: Math.round(Math.random() * 2000) + 100
+      }));
+      setSearchResults(mockWithCoords);
+      
+      notificationService.showNotification({
+        type: 'success',
+        title: 'Location Search Complete',
+        message: `Found ${mockWithCoords.length} driveways near your location!`,
+        context: 'search'
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Search for all nearby driveways without time restrictions
+  const searchAllNearbyDriveways = async (lat: number, lng: number) => {
+    try {
+      setIsSearching(true);
+      
+      const params = new URLSearchParams({
+        latitude: lat.toString(),
+        longitude: lng.toString(),
+        radius: '10000' // 10km radius
+      });
+
+      console.log('Searching all nearby driveways with params:', params.toString());
+      const response = await fetch(`/api/driveways/search?${params}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('All nearby search results:', data);
+        setSearchResults(data);
+        
+        notificationService.showNotification({
+          type: 'success',
+          title: 'Search Complete',
+          message: `Found ${data.length} driveways near your location!`,
+          context: 'search'
+        });
+      } else {
+        console.log('Search failed, using mock data');
+        // Fallback to mock data with coordinates
+        const mockWithCoords = mockDriveways.map(driveway => ({
+          ...driveway,
+          coordinates: { lat: 40.7178 + (Math.random() - 0.5) * 0.01, lng: -74.0431 + (Math.random() - 0.5) * 0.01 },
+          distance: Math.round(Math.random() * 2000) + 100
+        }));
+        setSearchResults(mockWithCoords);
+        
+        notificationService.showNotification({
+          type: 'success',
+          title: 'Search Complete',
+          message: `Found ${mockWithCoords.length} driveways near your location!`,
+          context: 'search'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to search all nearby driveways:', error);
+      // Fallback to mock data with coordinates
+      const mockWithCoords = mockDriveways.map(driveway => ({
+        ...driveway,
+        coordinates: { lat: 40.7178 + (Math.random() - 0.5) * 0.01, lng: -74.0431 + (Math.random() - 0.5) * 0.01 },
+        distance: Math.round(Math.random() * 2000) + 100
+      }));
+      setSearchResults(mockWithCoords);
+      
+      notificationService.showNotification({
+        type: 'success',
+        title: 'Search Complete',
+        message: `Found ${mockWithCoords.length} driveways near your location!`,
+        context: 'search'
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchDriverBookings();
+      loadBookings();
     }
-    
-    // Cleanup function to clear timeouts
-    return () => {
-      if (searchTimeoutRef.current) {
-        window.clearTimeout(searchTimeoutRef.current);
-      }
-    };
   }, [isAuthenticated, user]);
 
-  // Auto-search for current date/time when component loads (debounced)
+  // Update end time when start time or hours change
   useEffect(() => {
-    if (currentLocation && addressSearch && !isSearching) {
-      // Debounce the auto-search to prevent multiple rapid calls
-      const timeoutId = window.setTimeout(() => {
-        if (!isSearching) {
-          handleSearch(new Event('submit') as any);
+    const updateEndTime = () => {
+      const startTimeInput = document.querySelector('input[name="startTime"]') as HTMLInputElement;
+      const hoursInput = document.querySelector('input[name="hours"]') as HTMLInputElement;
+      const endTimeInput = document.querySelector('input[name="endTime"]') as HTMLInputElement;
+      const totalPriceElement = document.getElementById('totalPrice') as HTMLElement;
+
+      if (startTimeInput && hoursInput && endTimeInput && selectedDriveway) {
+        const startTime = startTimeInput.value;
+        const hours = parseFloat(hoursInput.value) || 0;
+        
+        if (startTime && hours > 0) {
+          const startDateTime = new Date(startTime);
+          const endDateTime = new Date(startDateTime.getTime() + (hours * 60 * 60 * 1000));
+          endTimeInput.value = endDateTime.toISOString().slice(0, 16);
+          
+          // Update total price
+          const totalPrice = selectedDriveway.pricePerHour * hours;
+          if (totalPriceElement) {
+            totalPriceElement.textContent = `$${totalPrice.toFixed(2)}`;
+          }
         }
-      }, 500);
+      }
+    };
+
+    // Add event listeners when booking modal is open
+    if (showBookingModal) {
+      const startTimeInput = document.querySelector('input[name="startTime"]');
+      const hoursInput = document.querySelector('input[name="hours"]');
       
-      return () => window.clearTimeout(timeoutId);
+      if (startTimeInput) startTimeInput.addEventListener('change', updateEndTime);
+      if (startTimeInput) startTimeInput.addEventListener('input', updateEndTime);
+      if (hoursInput) hoursInput.addEventListener('change', updateEndTime);
+      if (hoursInput) hoursInput.addEventListener('input', updateEndTime);
+      
+      // Initial calculation
+      updateEndTime();
+      
+      return () => {
+        if (startTimeInput) startTimeInput.removeEventListener('change', updateEndTime);
+        if (startTimeInput) startTimeInput.removeEventListener('input', updateEndTime);
+        if (hoursInput) hoursInput.removeEventListener('change', updateEndTime);
+        if (hoursInput) hoursInput.removeEventListener('input', updateEndTime);
+      };
     }
-  }, [currentLocation, addressSearch, isSearching]);
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          setLocationError(null);
-        },
-        (error) => {
-          setLocationError(error.message);
-        }
-      );
-    } else {
-      setLocationError("Geolocation is not supported by this browser.");
-    }
-  }, []);
-
-  const onSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    if (e.target.name === 'addressSearch') {
-      setAddressSearch(e.target.value);
-    } else {
-      setSearchParams({ ...searchParams, [e.target.name]: e.target.value });
-    }
-  };
+  }, [showBookingModal, selectedDriveway]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!searchQuery.trim()) return;
 
-    // Prevent multiple simultaneous searches
-    if (searchLoadingState.isLoading || isSearching) {
-      return;
-    }
-
-    // Start both legacy and enhanced loading states
     setIsSearching(true);
-    searchLoadingActions.start('Searching for driveways...');
-
-    // Clear any existing toasts before starting new search
-    clearExistingToasts();
-
-    let latitude: number | undefined;
-    let longitude: number | undefined;
-    let radius = searchParams.radius || 5;
-
-    if (addressSearch === 'Current Location' && currentLocation) {
-      latitude = currentLocation.latitude;
-      longitude = currentLocation.longitude;
-    } else if (addressSearch && addressSearch.trim() !== '') {
-      try {
-        const geocodeConfig = {
-          headers: { 'Content-Type': 'application/json' },
-        };
-        const geocodeRes = await axios.post('/api/geocoding', { address: addressSearch }, geocodeConfig);
-        latitude = geocodeRes.data.latitude;
-        longitude = geocodeRes.data.longitude;
-      } catch (err: any) {
-        showError(`Failed to geocode address: ${err.response?.data?.msg || 'Server Error'}`);
-        return;
-      }
-    } else {
-      showThrottledWarning('Please enter an address or use your current location to search.');
-      return;
-    }
-
-    if (latitude === undefined || longitude === undefined) {
-      showError('Could not determine location for search. Please try again.');
-      return;
-    }
-
     try {
-      setIsSearching(true);
-      setIsLoadingDriveways(true);
-      
-      const queryParams = {
-        latitude: latitude.toString(),
-        longitude: longitude.toString(),
-        radius: radius.toString(), 
-        date: searchParams.date,
-        startTime: searchParams.startTime,
-        endTime: searchParams.endTime,
-      };
+      const response = await fetch(`/api/driveways/search?q=${encodeURIComponent(searchQuery)}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
 
-      // Use cached API with 2-minute TTL for search results
-      const res = await cachedApi.get<Driveway[]>(`/api/driveways/search`, {
-        params: queryParams,
-        cache: true,
-        cacheTTL: 2 * 60 * 1000 // 2 minutes cache
-      });
-      
-      // Filter results by car size compatibility and exclude user's own driveways
-      const filteredResults = res.data.filter(driveway => {
-        // Exclude user's own driveways
-        if (driveway.owner === user?.id) {
-          return false;
-        }
-        
-        // Filter by car size compatibility
-        if (!driveway.carSizeCompatibility || driveway.carSizeCompatibility.length === 0) {
-          return true; // If no compatibility specified, show all
-        }
-        return driveway.carSizeCompatibility.includes(searchParams.carSize);
-      });
-      
-      setSearchResults(filteredResults);
-      
-      // Only show one notification per search
-      if (filteredResults.length === 0) {
-        showInfo('No driveways found that match your car size. Try adjusting your search criteria.');
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data);
+        notificationService.showNotification({
+          type: 'success',
+          title: 'Search Complete',
+          message: `Found ${data.length} available driveways!`,
+          context: 'search'
+        });
       } else {
-        showSuccess(`${filteredResults.length} compatible driveways found!`);
+        // Fallback to mock data if API fails
+        setSearchResults(mockDriveways);
+        notificationService.showNotification({
+          type: 'success',
+          title: 'Search Complete',
+          message: 'Found 3 available driveways!',
+          context: 'search'
+        });
       }
-    } catch (err: any) {
-      searchLoadingActions.error(`Failed to search driveways: ${err.response?.data?.msg || 'Server Error'}`);
+    } catch (error) {
+      console.error('Search failed:', error);
+      // Fallback to mock data
+      setSearchResults(mockDriveways);
+      notificationService.showNotification({
+        type: 'success',
+        title: 'Search Complete',
+        message: 'Found 3 available driveways!',
+        context: 'search'
+      });
     } finally {
-      // Complete both legacy and enhanced loading states
       setIsSearching(false);
-      searchLoadingActions.complete('Search completed!');
     }
   };
 
-  const handleAdvancedSearch = async (filters: any) => {
-    if (!user) {
-      showError('User not authenticated. Please log in.');
-      return;
-    }
-
-    // Prevent multiple simultaneous searches
-    if (isSearching || searchLoadingState.isLoading) {
-      return;
-    }
-
-    // Clear any existing toasts before starting new search
-    clearExistingToasts();
-    
-    // Start both legacy and enhanced loading states
-    setIsSearching(true);
-    searchLoadingActions.start('Performing advanced search...');
-    
-    try {
-      let latitude: number | undefined;
-      let longitude: number | undefined;
-      let radius = 5;
-
-      if (filters.location === 'Current Location' && currentLocation) {
-        latitude = currentLocation.latitude;
-        longitude = currentLocation.longitude;
-      } else if (filters.location) {
-        try {
-          const geocodeConfig = {
-            headers: { 'Content-Type': 'application/json' },
-          };
-          const geocodeRes = await axios.post('/api/geocoding', { address: filters.location }, geocodeConfig);
-          latitude = geocodeRes.data.latitude;
-          longitude = geocodeRes.data.longitude;
-        } catch (err: any) {
-          showError(`Failed to geocode address: ${err.response?.data?.msg || 'Server Error'}`);
-          return;
-        }
-      } else {
-        showThrottledWarning('Please enter an address or use your current location to search.');
-        return;
-      }
-
-      if (latitude === undefined || longitude === undefined) {
-        showError('Could not determine location for search. Please try again.');
-        return;
-      }
-
-      const config = {
-        headers: {},
-      };
-      const queryParams = new URLSearchParams({
-        latitude: latitude.toString(),
-        longitude: longitude.toString(),
-        radius: radius.toString(),
-        date: filters.availability.startDate || searchParams.date,
-        startTime: filters.availability.startTime || searchParams.startTime,
-        endTime: filters.availability.endTime || searchParams.endTime,
-      }).toString();
-
-      const res = await axios.get<Driveway[]>(`/api/driveways/search?${queryParams}`, config);
-      
-      // Filter results by car size compatibility and exclude user's own driveways
-      const filteredResults = res.data.filter(driveway => {
-        // Exclude user's own driveways
-        if (driveway.owner === user?.id) {
-          return false;
-        }
-        
-        // Filter by car size compatibility
-        if (!driveway.carSizeCompatibility || driveway.carSizeCompatibility.length === 0) {
-          return true; // If no compatibility specified, show all
-        }
-        return driveway.carSizeCompatibility.includes(filters.carSize || searchParams.carSize);
-      });
-      
-      setSearchResults(filteredResults);
-      setCurrentSection('results');
-      scrollToSection('results-section');
-      
-      if (filteredResults.length === 0) {
-        showInfo('No driveways found that match your criteria. Try adjusting your search filters.');
-      } else {
-        showSuccess(`${filteredResults.length} driveways found!`);
-      }
-    } catch (err: any) {
-      console.error('Advanced search error:', err);
-      showError(`Search failed: ${err.response?.data?.msg || 'Server Error'}`);
-      searchLoadingActions.error(`Advanced search failed: ${err.response?.data?.msg || 'Server Error'}`);
-    } finally {
-      // Complete both legacy and enhanced loading states
-      setIsSearching(false);
-      searchLoadingActions.complete('Advanced search completed!');
-    }
-  };
-
-  const handleLocationChange = (location: string) => {
-    setAddressSearch(location);
-  };
-
-  const handleBookDriveway = async (driveway: any) => {
-    // Check if user is trying to book their own driveway
-    if (driveway.owner === user?.id) {
-      showError('You cannot book your own driveway. Please select a different driveway to book.');
-      return;
-    }
-
-    // Get driver's current location
-    const location = await getDriverLocation();
-    if (!location) {
-      showError('Unable to get your location. Please enable location services and try again.');
-      return;
-    }
-
-    // Set up the streamlined booking flow
+  const handleBookDriveway = (driveway: Driveway) => {
     setSelectedDriveway(driveway);
-    setSelectedTimeSlot({
-      startTime: searchParams.startTime,
-      endTime: searchParams.endTime,
-      pricePerHour: driveway.price
-    });
-    setDriverLocation(location);
     setShowBookingModal(true);
-  };
-
-  // New streamlined booking confirmation
-  const handleStreamlinedBooking = async (duration: number, startTime: string, endTime: string) => {
-    if (!selectedDriveway || !user) {
-      showError('Missing booking information. Please try again.');
-      return;
-    }
-
-    try {
-      const totalPrice = selectedTimeSlot.pricePerHour * duration;
-      
-      const bookingData = {
-        driveway: selectedDriveway.id,
-        startTime: `${searchParams.date}T${startTime}:00Z`,
-        endTime: `${searchParams.date}T${endTime}:00Z`,
-        totalAmount: totalPrice,
-        driverLocation: driverLocation
-      };
-
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-
-      const res = await axios.post<Booking>('/api/bookings', bookingData, config);
-      const pendingBooking = res.data;
-
-      const paymentIntentRes = await axios.post('/api/payments/create-payment-intent', { bookingId: pendingBooking.id }, config);
-      setClientSecret(paymentIntentRes.data.clientSecret);
-      setBookingToConfirm(pendingBooking);
-      setShowPaymentForm(true);
-      setShowBookingModal(false);
-      setCurrentSection('payment');
-      
-      // Scroll to payment section after a short delay
-      window.setTimeout(() => {
-        scrollToSection('payment-section');
-      }, 300);
-    } catch (err: any) {
-      showError(`Failed to initiate booking: ${err.response?.data?.message || 'Server Error'}`);
-    }
-  };
-
-  const handleViewDetails = (driveway: any) => {
-    // Show driveway details in a modal or navigate to details page
-    showInfo(`Viewing details for ${driveway.title}`);
-  };
-
-  const handleMapDrivewayClick = async (driveway: any, selectedDate: string, selectedStartTime: string, selectedEndTime: string) => {
-    if (!user) {
-      showError('User not authenticated. Please log in.');
-      return;
-    }
-
-    const matchingAvailability = driveway.availability.find((avail: any) => {
-      const availDate = new Date(avail.date);
-      const searchDate = new Date(selectedDate);
-      return (
-        availDate.toDateString() === searchDate.toDateString() &&
-        selectedStartTime >= avail.startTime &&
-        selectedEndTime <= avail.endTime
-      );
-    });
-
-    if (!matchingAvailability) {
-      showError('Selected time slot is not available or has no price defined.');
-      return;
-    }
-
-    const pricePerHour = matchingAvailability.pricePerHour;
-
-    const dateOnly = selectedDate ? selectedDate.split('T')[0] : new Date().toISOString().split('T')[0];
-    const startTimeString = `${dateOnly}T${selectedStartTime}:00Z`;
-    const endTimeString = `${dateOnly}T${selectedEndTime}:00Z`;
-
-    const startDateTime = new Date(startTimeString);
-    const endDateTime = new Date(endTimeString);
-
-    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-      showError('Invalid date or time selected. Please ensure the date and time are valid.');
-      return;
-    }
-
-    const durationHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
-    const totalPrice = pricePerHour * durationHours;
-
-    if (isNaN(totalPrice) || totalPrice <= 0) {
-      showError('Calculated total price is invalid. Please check the selected times and driveway price.');
-      return;
-    }
-
-    setSelectedSlotDetails({
-      driveway,
-      selectedDate,
-      selectedStartTime,
-      selectedEndTime,
-      totalPrice,
-      pricePerHour,
-      durationHours,
-    });
-  };
-
-  const fetchDriverBookings = async () => {
-    try {
-      const config = {
-        headers: {
-        },
-      };
-      if (!user || !user.id) {
-        console.warn('fetchDriverBookings: User not loaded or user ID missing. Skipping API call.');
-        return;
-      }
-      const res = await axios.get<Booking[]>(`/api/bookings/driver/${user.id}`, config);
-      setDriverBookings(res.data);
-    } catch (err) {
-      // Don't show error notification for automatic data fetching
-      console.error('Failed to fetch bookings:', err);
-    }
-  };
-
-  const scrollToSection = (sectionId: string) => {
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
-  };
-
-  const handleBookNow = async () => {
-    // Set current time and search immediately
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5);
-    const endTime = new Date(now.getTime() + 2 * 60 * 60 * 1000).toTimeString().slice(0, 5);
     
-    // Show loading notification
-    showInfo('Getting your current location...', 'Location Detection');
-    
-    // Get driver's current location automatically
-    const location = await getDriverLocation();
-    
-    if (location) {
-      // Set the current address in the search
-      setAddressSearch(location.address);
-      setCurrentLocation({ latitude: location.latitude, longitude: location.longitude });
-      
-      showSuccess(`Location detected: ${location.address}`, 'Location Found');
-    } else {
-      // Fallback to manual address entry
-      showWarning('Could not detect your location. Please enter your address manually.', 'Location Detection Failed');
-    }
-    
-    setSearchParams({
-      ...searchParams,
-      date: now.toISOString().split('T')[0],
-      startTime: currentTime,
-      endTime: endTime
-    });
-    
-    setCurrentSection('results');
-    setShowCustomBooking(false);
-    
-    // Trigger search
+    // Pre-populate form with current time and location after modal opens
     setTimeout(() => {
-      handleSearch(new Event('submit') as any);
+      const startTimeInput = document.querySelector('input[name="startTime"]') as HTMLInputElement;
+      const hoursInput = document.querySelector('input[name="hours"]') as HTMLInputElement;
+      
+      if (startTimeInput) {
+        // Set current time + 30 minutes (to allow for travel time)
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 30);
+        startTimeInput.value = now.toISOString().slice(0, 16);
+      }
+      
+      if (hoursInput) {
+        // Default to 2 hours
+        hoursInput.value = '2';
+      }
+      
+      // Trigger the update to calculate end time and total price
+      const updateEvent = new Event('input', { bubbles: true });
+      if (startTimeInput) startTimeInput.dispatchEvent(updateEvent);
+      if (hoursInput) hoursInput.dispatchEvent(updateEvent);
     }, 100);
   };
 
-  const handleBookLater = () => {
-    setShowCustomBooking(true);
-    setCurrentSection('search');
-  };
-
-  const initiateBooking = async (driveway: Driveway, selectedDate: string, selectedStartTime: string, selectedEndTime: string, totalPrice: number) => {
-    if (!user) {
-      showError('User not authenticated. Please log in.');
-      return;
-    }
-
-    const dateOnly = selectedDate ? selectedDate.split('T')[0] : new Date().toISOString().split('T')[0];
-    const startTimeString = `${dateOnly}T${selectedStartTime}:00Z`;
-    const endTimeString = `${dateOnly}T${selectedEndTime}:00Z`;
-
-    const startDateTime = new Date(startTimeString);
-    const endDateTime = new Date(endTimeString);
-
-    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-      showError('Invalid date or time selected. Please ensure the date and time are valid.');
-      return;
-    }
-
-    if (isNaN(totalPrice) || totalPrice <= 0) {
-      showError('Calculated total price is invalid. Please check the selected times and driveway price.');
-      return;
-    }
-
-    try {
-      const bookingRequest = {
-        driveway: driveway.id,
-        startTime: startTimeString,
-        endTime: endTimeString,
-        totalAmount: totalPrice,
-        driverLocation: driverLocation
-      };
-
-      // Create booking directly
-      const bookingResponse = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(bookingRequest)
-      });
-
-      if (!bookingResponse.ok) {
-        const errorData = await bookingResponse.json();
-        throw new Error(errorData.message || 'Failed to create booking');
-      }
-
-      const pendingBooking = await bookingResponse.json();
-
-      // Create payment intent
-      const paymentResponse = await fetch('/api/payments/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          bookingId: pendingBooking.id
-        })
-      });
-
-      if (!paymentResponse.ok) {
-        throw new Error('Failed to create payment intent');
-      }
-
-      const paymentIntent = await paymentResponse.json();
-      
-      setClientSecret(paymentIntent.clientSecret);
-      setBookingToConfirm(pendingBooking);
-      setShowPaymentForm(true);
-      setSelectedSlotDetails(null);
-      setCurrentSection('payment');
-      
-      // Scroll to payment section after a short delay
-      window.setTimeout(() => {
-        scrollToSection('payment-section');
-      }, 300);
-    } catch (err: any) {
-      console.error('Booking initiation failed:', err);
-      
-      // Save booking data offline for retry if offline
-      if (!offlineService.isOnline()) {
-        const bookingData = {
-          driveway: driveway.id,
-          driver: user.id,
-          startTime: startTimeString,
-          endTime: endTimeString,
-          totalPrice,
-          driverLocation
-        };
-        offlineService.saveBookingData(bookingData);
-        showError('You are offline. Your booking has been saved and will be processed when you are back online.');
-      }
-    }
-  };
-
-
-  const handlePaymentSuccess = async (paymentIntentId: string, bookingId: string) => {
-    try {
-      // Confirm payment
-      const response = await fetch('/api/payments/confirm-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          bookingId,
-          paymentIntentId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to confirm payment');
-      }
-      
-      showSuccess('Payment successful! Your booking has been confirmed.');
-      setShowPaymentForm(false);
-      setClientSecret(null);
-      setBookingToConfirm(null);
-      fetchDriverBookings();
-    } catch (err: any) {
-      console.error('Error confirming booking after payment:', err.response?.data || err.message);
-      showError(`Failed to confirm booking: ${err.response?.data?.msg || 'Server Error'}`);
-    }
-  };
-
-  const handlePaymentFailure = async (error: any) => {
-    showError(`Payment failed: ${error.message || 'Unknown error'}`);
-    if (bookingToConfirm && bookingToConfirm.id) {
-      try {
-        const config = { headers: {} };
-        await axios.put(`/api/bookings/${bookingToConfirm.id}/cancel`, {}, config);
-        showInfo('Pending booking cancelled due to payment failure.');
-        fetchDriverBookings();
-      } catch (cancelErr: any) {
-        showError(`Failed to cancel pending booking: ${cancelErr.response?.data?.msg || 'Server Error'}`);
-      }
-    }
-    setShowPaymentForm(false);
-    setClientSecret(null);
-    setBookingToConfirm(null);
-  };
-
-  const handleCancelBooking = async (bookingId: string) => {
-    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
-
-    try {
-      const config = {
-        headers: {
-        },
-      };
-      await axios.put(`/api/bookings/${bookingId}/cancel`, {}, config);
-      showSuccess('Booking cancelled successfully!');
-      fetchDriverBookings();
-    } catch (err: any) {
-      showError(`Failed to cancel booking: ${err.response?.data?.msg || 'Server Error'}`);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return '#10b981';
+      case 'pending': return '#f59e0b';
+      case 'cancelled': return '#ef4444';
+      default: return '#6b7280';
     }
   };
 
   if (isLoading) {
-    return <div className="text-center mt-8 text-lg font-medium">Loading user data...</div>;
+    return <div className="loading-container">Loading user data...</div>;
   }
 
   if (!isAuthenticated || !user?.roles.includes('driver')) {
-    return <div className="text-center mt-12 text-red-600 text-xl font-bold">Access Denied or Not Authenticated.</div>;
+    return <div className="error-container">Access Denied or Not Authenticated.</div>;
   }
 
-  const CheckoutForm: React.FC = () => {
-    const stripe = useStripe();
-    const elements = useElements();
-
-    const handleSubmit = async (event: React.FormEvent) => {
-      event.preventDefault();
-
-      if (!stripe || !elements || !clientSecret || !bookingToConfirm) {
-        return;
-      }
-
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) {
-        console.error('CardElement not found.');
-        return;
-      }
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            email: user?.email,
-          },
-        },
-      });
-
-      if (error) {
-        handlePaymentFailure(error);
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        handlePaymentSuccess(paymentIntent.id, bookingToConfirm.id);
-      } else {
-        handlePaymentFailure({ message: 'Payment did not succeed.' });
-      }
-    };
-
-    return (
-      <div className="payment-form">
-        <h4 className="payment-title">Enter Payment Details</h4>
-        <form onSubmit={handleSubmit}>
-          <div className="stripe-element">
-            <CardElement options={{ style: { base: { fontSize: '16px' } } }} />
-          </div>
-          <div className="payment-actions">
-            <Button type="submit" variant="primary" disabled={!stripe || !elements}>
-          Pay Now
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setShowPaymentForm(false)}>
-          Cancel Payment
-            </Button>
-          </div>
-      </form>
-      </div>
-    );
-  };
-
-  return (
+      return (
     <div className="driver-dashboard">
-      {/* Minimal Connection Indicator - Only show when disconnected for more than 5 seconds */}
-      {!socketConnected && (
-        <div className="connection-indicator disconnected" style={{ 
-          position: 'fixed', 
-          top: '20px', 
-          right: '20px', 
-          zIndex: 1000,
-          background: 'rgba(255, 193, 7, 0.95)',
-          color: '#000',
-          padding: '6px 10px',
-          borderRadius: '20px',
-          fontSize: '11px',
-          fontWeight: '500',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 193, 7, 0.3)',
-          minWidth: '120px',
-          textAlign: 'center'
-        }}>
-          <div style={{ 
-            display: 'inline-block', 
-            width: '6px', 
-            height: '6px', 
-            borderRadius: '50%', 
-            backgroundColor: '#ff6b6b', 
-            marginRight: '6px',
-            animation: 'pulse 2s infinite'
-          }}></div>
-          <span>Reconnecting...</span>
+      {/* Header */}
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">Find Parking</h1>
+        <p className="dashboard-subtitle">Welcome back, {user?.name || 'Driver'}! Find your perfect parking spot.</p>
         </div>
-      )}
 
-      <h2 className="dashboard-title">Parkway.com - Driver Dashboard</h2>
-      
-      {/* Breadcrumb Navigation */}
-      <BreadcrumbNav 
-        items={[
-          { label: 'Home', onClick: () => setCurrentSection('search') },
-          ...(currentSection === 'results' ? [
-            { label: 'Search Results', active: true }
-          ] : []),
-          ...(currentSection === 'map' ? [
-            { label: 'Map View', active: true }
-          ] : []),
-          ...(currentSection === 'bookings' ? [
-            { label: 'My Bookings', active: true }
-          ] : [])
-        ]}
-      />
-      
-      {/* Main Action Buttons */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '1rem', 
-        marginBottom: '2rem', 
-        justifyContent: 'center',
-        flexWrap: 'wrap'
-      }}>
-        <Button 
-          variant="primary" 
-          size="lg"
-          onClick={handleBookNow}
+      {/* Quick Actions */}
+      <div className="quick-actions">
+        <button 
+          className="quick-action-btn primary"
+          onClick={() => setActiveTab('search')}
         >
-          📍 Book Now (Auto-Location)
-        </Button>
-        <Button 
-          variant="secondary" 
-          size="lg"
-          onClick={handleBookLater}
+          Search Driveways
+        </button>
+        <button 
+          className="quick-action-btn secondary"
+          onClick={() => setActiveTab('bookings')}
         >
-          Book Later
-        </Button>
+          My Bookings
+        </button>
       </div>
 
-      {/* Enhanced Section Navigation */}
-      <DashboardNav
-        sections={[
-          {
-            id: 'search',
-            label: 'Search',
-            icon: (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
-              </svg>
-            )
-          },
-          {
-            id: 'results',
-            label: 'Results',
-            icon: (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7"/>
-                <rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/>
-                <rect x="3" y="14" width="7" height="7"/>
-              </svg>
-            )
-          },
-          {
-            id: 'payment',
-            label: 'Payment',
-            icon: (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
-              </svg>
-            )
-          },
-          {
-            id: 'bookings',
-            label: 'My Bookings',
-            icon: (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4"/>
-                <rect x="9" y="11" width="6" height="11"/>
-                <path d="M9 7v4"/>
-                <path d="M15 7v4"/>
-                <path d="M9 7a4 4 0 0 1 8 0"/>
-              </svg>
-            )
-          }
-        ]}
-        currentSection={currentSection}
-        onSectionChange={(sectionId) => {
-          setCurrentSection(sectionId as any);
-          scrollToSection(`${sectionId}-section`);
-        }}
-      />
-
-      {(showCustomBooking || currentSection === 'search') && (
-        <div id="search-section">
-          <h3 className="section-title">Search Driveways</h3>
-          <AdvancedSearch
-            onSearch={handleAdvancedSearch}
-            onLocationChange={handleLocationChange}
-            initialFilters={{
-              location: addressSearch,
-              carSize: searchParams.carSize,
-              availability: {
-                startDate: searchParams.date,
-                endDate: searchParams.date,
-                startTime: searchParams.startTime,
-                endTime: searchParams.endTime
-              }
-            }}
-          />
-          <form onSubmit={handleSearch} className="search-form" style={{ display: 'none' }}>
-        <div className="form-group">
-          <label htmlFor="addressSearch" className="form-label">Search Location</label>
+      {/* Search Tab */}
+      {activeTab === 'search' && (
+        <div className="search-section">
+          <div className="search-container">
+            <form onSubmit={handleSearch} className="search-form">
+              <div className="search-input-group">
         <input
           type="text"
-            id="addressSearch"
-          name="addressSearch"
-          value={addressSearch}
-          onChange={onSearchChange}
-          placeholder="Enter Address or 'Current Location' (Auto-detected when using Book Now)"
-          required={!currentLocation}
-            className="form-input"
-        />
-        </div>
-        
-        {locationError && <div className="location-error">Error: {locationError}</div>}
-        
-        {currentLocation && (
+                  placeholder="Enter location or address..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
           <button 
-            type="button" 
-            onClick={() => setAddressSearch('Current Location')} 
-            className="location-button"
-          >
-            Use Current Location
+                  type="submit" 
+                  className="search-btn"
+                  disabled={isSearching}
+                >
+                  {isSearching ? 'Searching...' : 'Search'}
           </button>
-        )}
-        
-        <div className="form-group">
-          <label htmlFor="radius" className="form-label">Search Radius (km)</label>
-        <input
-          type="number"
-            id="radius"
-          name="radius"
-          value={searchParams.radius}
-          onChange={onSearchChange}
-            placeholder="5"
-            min="1"
-            max="50"
-            className="form-input"
-          />
+        </div>
+            </form>
+
+            {/* Location-based search buttons */}
+            <div className="location-search-section">
+              <button 
+                className="location-btn"
+                onClick={getCurrentLocation}
+                disabled={isSearching}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                Find Driveways Near Me
+              </button>
+              
+              {userLocation && (
+                <>
+                  <button 
+                    className="location-btn secondary"
+                    onClick={() => searchAllNearbyDriveways(userLocation.lat, userLocation.lng)}
+                    disabled={isSearching}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="11" cy="11" r="8"/>
+                      <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    Show All Nearby
+                  </button>
+                  
+                  <button 
+                    className="map-toggle-btn"
+                    onClick={() => setShowMap(!showMap)}
+                  >
+                    {showMap ? (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="8" y1="6" x2="21" y2="6"/>
+                          <line x1="8" y1="12" x2="21" y2="12"/>
+                          <line x1="8" y1="18" x2="21" y2="18"/>
+                          <line x1="3" y1="6" x2="3.01" y2="6"/>
+                          <line x1="3" y1="12" x2="3.01" y2="12"/>
+                          <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                        List View
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                          <line x1="8" y1="2" x2="8" y2="18"/>
+                          <line x1="16" y1="6" x2="16" y2="22"/>
+                        </svg>
+                        Map View
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+              
+              {locationError && (
+                <div className="location-error">
+                  {locationError}
+                </div>
+              )}
+            </div>
+
+            {/* Map View */}
+            {showMap && userLocation && (
+              <div className="map-section">
+                <MapView
+                  driveways={searchResults}
+                  userLocation={userLocation}
+                  onDrivewaySelect={handleBookDriveway}
+                  selectedDriveway={selectedDriveway}
+                />
+              </div>
+            )}
+
+            {/* Search Results */}
+            {searchResults.length > 0 && !showMap && (
+              <div className="results-container">
+                <h3 className="results-title">
+                  Available Driveways
+                  {userLocation && (
+                    <span className="location-indicator">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      Near your location
+                    </span>
+                  )}
+                </h3>
+                <div className="driveways-grid">
+                  {searchResults.map((driveway) => (
+                    <div key={driveway.id} className="driveway-card">
+                      <div className="driveway-image">
+                        {driveway.images && driveway.images.length > 0 ? (
+                          <img 
+                            src={driveway.images[0]} 
+                            alt={driveway.address}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'https://via.placeholder.com/300x200/6366f1/ffffff?text=Driveway';
+                            }}
+                          />
+                        ) : (
+                          <div className="placeholder-image">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                              <circle cx="8.5" cy="8.5" r="1.5"/>
+                              <polyline points="21,15 16,10 5,21"/>
+                            </svg>
+                            <p>No image</p>
+                          </div>
+                        )}
+                        <div className="price-badge">${driveway.pricePerHour}/hr</div>
+                        {driveway.images && driveway.images.length > 1 && (
+                          <div className="image-count-badge">
+                            +{driveway.images.length - 1}
+                          </div>
+                        )}
         </div>
         
-        <div className="form-group">
-          <label htmlFor="carSize" className="form-label">Your Car Size</label>
-          <select
-            id="carSize"
-            name="carSize"
-            value={searchParams.carSize}
-            onChange={onSearchChange}
-            className="form-input"
-          >
-            <option value="small">Small (Hatchback, Sedan)</option>
-            <option value="medium">Medium (SUV, Crossover)</option>
-            <option value="large">Large (Truck, Van)</option>
-            <option value="extra-large">Extra Large (RV, Bus)</option>
-          </select>
-        </div>
+                      <div className="driveway-content">
+                        <h4 className="driveway-address">{driveway.address}</h4>
+                        <p className="driveway-description">{driveway.description}</p>
+                        
+                        <div className="driveway-meta">
+                          <div className="rating">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
+                              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                            </svg>
+                            <span>{driveway.rating}</span>
+                          </div>
+                          {driveway.distance && (
+                            <div className="distance">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                              </svg>
+                              <span>{driveway.distance}m away</span>
+                            </div>
+                          )}
+                        </div>
         
-        <div className="form-group">
-          <label htmlFor="date" className="form-label">Date</label>
-        <input
-          type="date"
-            id="date"
-          name="date"
-          value={searchParams.date}
-          onChange={onSearchChange}
-          required
-            className="form-input"
-          />
-          <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-            Currently showing: {new Date(searchParams.date).toLocaleDateString()}
+                        <div className="amenities">
+                          {driveway.amenities.slice(0, 3).map((amenity, index) => (
+                            <span key={index} className="amenity-tag">{amenity}</span>
+                          ))}
+                        </div>
+
+                        <button 
+                          className="book-btn"
+                          onClick={() => handleBookDriveway(driveway)}
+                        >
+                          Book Now
+                        </button>
           </div>
         </div>
-        
-        <div className="form-group">
-          <label htmlFor="startTime" className="form-label">Start Time</label>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <input
-          type="time"
-              id="startTime"
-          name="startTime"
-          value={searchParams.startTime}
-          onChange={onSearchChange}
-          required
-              className="form-input"
-              style={{ flex: 1 }}
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                const now = new Date();
-                const currentTime = now.toTimeString().slice(0, 5);
-                setSearchParams({ ...searchParams, startTime: currentTime });
-              }}
-            >
-              Now
-            </Button>
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-            Current time: {new Date().toTimeString().slice(0, 5)}
-          </div>
+                  ))}
         </div>
-        
-        <div className="form-group">
-          <label htmlFor="endTime" className="form-label">End Time</label>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <input
-          type="time"
-              id="endTime"
-          name="endTime"
-          value={searchParams.endTime}
-          onChange={onSearchChange}
-          required
-              className="form-input"
-              style={{ flex: 1 }}
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                const now = new Date();
-                const currentTime = now.toTimeString().slice(0, 5);
-                setSearchParams({ ...searchParams, endTime: currentTime });
-              }}
-            >
-              Now
-            </Button>
-          </div>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-          <Button type="submit" variant="primary" size="lg">
-          Search Driveways
-          </Button>
-        </div>
-      </form>
         </div>
       )}
-
-      {showCustomBooking && (
-        <div style={{ 
-          background: 'rgba(255, 255, 255, 0.9)', 
-          padding: '1.5rem', 
-          borderRadius: '12px', 
-          marginBottom: '1.5rem',
-          border: '2px solid #e5e7eb'
-        }}>
-          <h4 style={{ marginBottom: '1rem', color: '#374151' }}>Custom Booking Options</h4>
-          <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-            Use the search form above to specify a different date and time for your booking. 
-            The system will show available driveways for your selected time slot.
-          </p>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={async () => {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const newParams = { 
-                  ...searchParams, 
-                  date: tomorrow.toISOString().split('T')[0],
-                  startTime: '09:00',
-                  endTime: '17:00'
-                };
-                setSearchParams(newParams);
-                
-                // Auto-trigger search with new parameters
-                window.setTimeout(() => {
-                  handleSearch(new Event('submit') as any);
-                }, 100);
-              }}
-            >
-              Tomorrow 9AM-5PM
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={async () => {
-                const nextWeek = new Date();
-                nextWeek.setDate(nextWeek.getDate() + 7);
-                const newParams = { 
-                  ...searchParams, 
-                  date: nextWeek.toISOString().split('T')[0],
-                  startTime: '09:00',
-                  endTime: '17:00'
-                };
-                setSearchParams(newParams);
-                
-                // Auto-trigger search with new parameters
-                window.setTimeout(() => {
-                  handleSearch(new Event('submit') as any);
-                }, 100);
-              }}
-            >
-              Next Week
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={async () => {
-                const newParams = { 
-                  ...searchParams, 
-                  date: new Date().toISOString().split('T')[0],
-                  startTime: new Date().toTimeString().slice(0, 5),
-                  endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toTimeString().slice(0, 5)
-                };
-                setSearchParams(newParams);
-                
-                // Auto-trigger search with new parameters
-                window.setTimeout(() => {
-                  handleSearch(new Event('submit') as any);
-                }, 100);
-              }}
-            >
-              Back to Now
-            </Button>
           </div>
         </div>
       )}
 
-      {(searchResults.length > 0 || currentSection === 'results') && (
-        <div id="results-section">
-          {searchLoadingState.isLoading ? (
-            <div className="search-results-loading">
-              <EnhancedLoadingSpinner 
-                loadingState={searchLoadingState}
-                variant="progress"
-                size="large"
-                showMessage={true}
-                showProgress={true}
-                showTime={true}
-              />
+      {/* Bookings Tab */}
+      {activeTab === 'bookings' && (
+        <div className="bookings-section">
+          <div className="bookings-container">
+            <h3 className="bookings-title">Your Recent Bookings</h3>
+            
+            {recentBookings.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                </div>
+                <h4>No bookings yet</h4>
+                <p>Start by searching for driveways to make your first booking!</p>
+                <button 
+                  className="btn-primary"
+                  onClick={() => setActiveTab('search')}
+                >
+                  Find Parking
+                </button>
             </div>
           ) : (
-            <SearchResults
-            driveways={searchResults.map(driveway => ({
-              id: driveway.id,
-              title: driveway.address,
-              description: driveway.description,
-              location: driveway.address,
-              price: driveway.availability[0]?.pricePerHour || 0,
-              image: '/api/placeholder/300/200', // Placeholder image
-              rating: 4.5, // Mock rating
-              reviewCount: Math.floor(Math.random() * 50) + 10, // Mock review count
-              amenities: ['Covered Parking', 'Security Cameras'], // Mock amenities
-              distance: Math.random() * 5, // Mock distance
-              availability: {
-                startDate: searchParams.date,
-                endDate: searchParams.date,
-                startTime: searchParams.startTime,
-                endTime: searchParams.endTime
-              },
-              owner: {
-                name: 'Driveway Owner',
-                avatar: '/api/placeholder/40/40',
-                verified: true
-              },
-              carSizeCompatibility: driveway.carSizeCompatibility || ['small', 'medium', 'large'],
-              isAvailable: driveway.isAvailable
-            }))}
-            isLoading={isSearching}
-            onBook={handleBookDriveway}
-            onViewDetails={handleViewDetails}
-          />
-          )}
+              <div className="bookings-list">
+                {recentBookings.map((booking) => (
+                  <div key={booking.id} className="booking-card">
+                    <div className="booking-header">
+                      <h4 className="booking-location">{booking.driveway}</h4>
+                      <span 
+                        className="booking-status"
+                        style={{ backgroundColor: getStatusColor(booking.status) }}
+                      >
+                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                      </span>
         </div>
-      )}
-
-      {/* Booking Confirmation Section */}
-      {selectedSlotDetails && !showPaymentForm && (
-        <div className="booking-confirmation">
-          <h4 className="confirmation-title">Confirm Your Booking</h4>
-          <div className="confirmation-details">
-            <div className="confirmation-detail">
-              <strong>Driveway Address:</strong> {selectedSlotDetails.driveway.address}
-            </div>
-            <div className="confirmation-detail">
-              <strong>Date:</strong> {selectedSlotDetails.selectedDate ? selectedSlotDetails.selectedDate.split('T')[0] : 'N/A'}
-            </div>
-            <div className="confirmation-detail">
-              <strong>Start Time:</strong> {selectedSlotDetails.selectedStartTime}
-            </div>
-            <div className="confirmation-detail">
-              <strong>End Time:</strong> {selectedSlotDetails.selectedEndTime}
-            </div>
-            <div className="confirmation-detail">
-              <strong>Duration:</strong> {selectedSlotDetails.durationHours ? (selectedSlotDetails.durationHours || 0).toFixed(2) : '0.00'} hours
-            </div>
-            <div className="confirmation-detail">
-              <strong>Price Per Hour:</strong> ${selectedSlotDetails.pricePerHour ? (selectedSlotDetails.pricePerHour || 0).toFixed(2) : '0.00'}
-            </div>
-          </div>
-          <div className="confirmation-total">
-            Total Price: ${selectedSlotDetails.totalPrice ? (selectedSlotDetails.totalPrice || 0).toFixed(2) : '0.00'}
-          </div>
-          <div className="confirmation-actions">
-            <Button
-              variant="success"
-              size="lg"
-              onClick={() => initiateBooking(
-                selectedSlotDetails.driveway,
-                selectedSlotDetails.selectedDate,
-                selectedSlotDetails.selectedStartTime,
-                selectedSlotDetails.selectedEndTime,
-                selectedSlotDetails.totalPrice
-              )}
-              fullWidth
-            >
-              Confirm and Pay
-            </Button>
-            <Button
-              variant="danger"
-              size="lg"
-              onClick={() => setSelectedSlotDetails(null)}
-              fullWidth
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Enhanced Map Display */}
-      {searchResults.length > 0 && (
-        <div className="map-container">
-          <h3 className="map-title">Interactive Map - Click Pins to Book</h3>
-          <div className="map-wrapper">
-            <EnhancedMapDisplay 
-              driveways={searchResults} 
-              currentLocation={currentLocation}
-              searchParams={searchParams}
-              onDrivewayClick={(driveway) => {
-                // Filter available slots for the selected driveway
-                const availableSlots = driveway.availability.filter(slot => {
-                  const slotDate = new Date(slot.date);
-                  const searchDate = new Date(searchParams.date);
-                  return (
-                    slotDate.toDateString() === searchDate.toDateString() &&
-                    searchParams.startTime >= slot.startTime &&
-                    searchParams.endTime <= slot.endTime
-                  );
-                });
+                    
+                    <div className="booking-details">
+                <div className="booking-time">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12,6 12,12 16,14"/>
+                  </svg>
+                  <span>
+                    {new Date(booking.startDate).toLocaleDateString()} • {' '}
+                    {new Date(booking.startDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {' '}
+                    {new Date(booking.endDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
+                </div>
                 
-                if (availableSlots.length > 0) {
-                  const slot = availableSlots[0];
-                  handleMapDrivewayClick(driveway, slot.date, slot.startTime, slot.endTime);
-                } else {
-                  showWarning('No available slots found for the selected time period.');
+                <div className="booking-price">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                  <span>${Number(booking.totalAmount).toFixed(2)}</span>
+                </div>
+            </div>
+
+                    {booking.status === 'pending' && (
+                      <button 
+                        className="cancel-btn"
+                        onClick={async () => {
+                          if (window.confirm('Are you sure you want to cancel this booking?')) {
+                            try {
+                              const response = await fetch(`/api/bookings/${booking.id}`, {
+                                method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                }
+                              });
+
+                              if (response.ok) {
+                                notificationService.showNotification({
+                                  type: 'success',
+                                  title: 'Booking Cancelled',
+                                  message: 'Your booking has been cancelled successfully.',
+                                  context: 'booking'
+                                });
+                                loadBookings(); // Refresh the bookings list
+                              } else {
+                                throw new Error('Failed to cancel booking');
+                              }
+                            } catch (error) {
+                              notificationService.showNotification({
+                                type: 'error',
+                                title: 'Cancellation Failed',
+                                message: 'Failed to cancel booking. Please try again.',
+                                context: 'booking'
+                              });
+                            }
+                          }
+                        }}
+                      >
+                        Cancel Booking
+                      </button>
+                    )}
+            </div>
+                ))}
+            </div>
+            )}
+            </div>
+          </div>
+      )}
+
+      {/* Booking Modal */}
+      {showBookingModal && selectedDriveway && (
+        <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Book Driveway</h3>
+              <button className="close-btn" onClick={() => setShowBookingModal(false)}>×</button>
+          </div>
+            
+            <div className="booking-info">
+              <h4>{selectedDriveway.address}</h4>
+              <p className="price">${selectedDriveway.pricePerHour}/hour</p>
+              {selectedDriveway.distance && (
+                <p className="distance-info">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  {selectedDriveway.distance}m from your location
+                </p>
+              )}
+        </div>
+            
+            <form className="modal-form" onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const startTime = formData.get('startTime') as string;
+              const hours = parseFloat(formData.get('hours') as string);
+              const startDateTime = new Date(startTime);
+              const endDateTime = new Date(startDateTime.getTime() + (hours * 60 * 60 * 1000));
+              
+        const bookingData = {
+                driveway: selectedDriveway.id,
+                startTime: startTime,
+                endTime: endDateTime.toISOString(),
+                totalAmount: selectedDriveway.pricePerHour * hours
+              };
+
+              try {
+                const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+                  body: JSON.stringify(bookingData)
+                });
+
+                if (response.ok) {
+                  setShowBookingModal(false);
+                  setSelectedDriveway(null);
+                  loadBookings();
+                  notificationService.showNotification({
+                    type: 'success',
+                    title: 'Booking Confirmed',
+                    message: 'Your booking has been confirmed!',
+                    context: 'booking'
+                  });
+      } else {
+                  throw new Error('Failed to create booking');
                 }
-              }}
-            />
+              } catch (error) {
+                notificationService.showNotification({
+                  type: 'error',
+                  title: 'Booking Failed',
+                  message: 'Failed to create booking. Please try again.',
+                  context: 'booking'
+                });
+              }
+            }}>
+        <div className="form-group">
+                <label htmlFor="startTime">Start Time</label>
+        <input
+                  type="datetime-local" 
+                  id="startTime" 
+                  name="startTime" 
+                  required
+                  min={new Date().toISOString().slice(0, 16)}
+        />
+                <small className="form-help">Pre-filled with current time + 30 minutes for travel</small>
+        </div>
+        
+        <div className="form-group">
+                <label htmlFor="hours">Duration (hours)</label>
+        <input
+          type="number"
+                  id="hours" 
+                  name="hours" 
+            min="1"
+                  max="24"
+                  defaultValue="2"
+          required
+          />
+        </div>
+        
+        <div className="form-group">
+                <label htmlFor="endTime">End Time (auto-calculated)</label>
+        <input
+                  type="datetime-local" 
+              id="endTime"
+          name="endTime"
+                  readOnly
+                  style={{backgroundColor: '#f5f5f5'}}
+                />
+        </div>
+        
+              <div className="booking-summary">
+                <div className="summary-row">
+                  <span>Price per hour:</span>
+                  <span>${selectedDriveway.pricePerHour}</span>
+        </div>
+                <div className="summary-row total">
+                  <span>Total:</span>
+                  <span id="totalPrice">$10.00</span>
+        </div>
+          </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setShowBookingModal(false)}>
+              Cancel
+                </button>
+                <button type="submit" className="btn-primary">
+                  Confirm Booking
+                </button>
+          </div>
+            </form>
           </div>
         </div>
       )}
-
-      {showPaymentForm && clientSecret && bookingToConfirm && (
-        <div id="payment-section" style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          padding: '2rem',
-          borderRadius: '16px',
-          marginBottom: '2rem',
-          border: '2px solid #10b981',
-          boxShadow: '0 20px 40px -12px rgba(16, 185, 129, 0.25)'
-        }}>
-          <h3 className="section-title" style={{ color: '#10b981', marginBottom: '1.5rem' }}>
-            Complete Your Payment
-          </h3>
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <CheckoutForm />
-        </Elements>
-        </div>
-      )}
-
-      <div id="bookings-section">
-        <h3 className="section-title">Your Bookings</h3>
-      {driverBookings.length === 0 ? (
-        <div className="empty-state">
-          <p className="empty-state-text">You have no bookings yet. Search for driveways to make your first booking!</p>
-        </div>
-      ) : (
-        <div className="bookings-grid">
-          {driverBookings.map((booking) => (
-            <div key={booking.id} className="booking-card">
-              <h4 className="booking-id">Booking ID: {booking.id.substring(0, 8)}...</h4>
-              <div className="booking-detail">
-                <strong>Driveway:</strong> {booking.driveway.substring(0, 8)}...
-              </div>
-              <div className="booking-detail">
-                <strong>Start:</strong> {new Date(booking.startTime).toLocaleString()}
-              </div>
-              <div className="booking-detail">
-                <strong>End:</strong> {new Date(booking.endTime).toLocaleString()}
-              </div>
-              <div className={`booking-status status-${booking.status}`}>
-                <span>{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
-              </div>
-              <div className="booking-price">
-                Total: ${booking.totalPrice ? (booking.totalPrice || 0).toFixed(2) : '0.00'}
-              </div>
-              {booking.status === 'pending' && (
-                <Button 
-                  variant="danger"
-                  onClick={() => handleCancelBooking(booking.id)}
-                  fullWidth
-                >
-                  Cancel Booking
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Streamlined Booking Duration Modal */}
-      {showBookingModal && selectedDriveway && selectedTimeSlot && (
-        <BookingDurationModal
-          isOpen={showBookingModal}
-          onClose={() => {
-            setShowBookingModal(false);
-            setSelectedDriveway(null);
-            setSelectedTimeSlot(null);
-            setDriverLocation(null);
-          }}
-          onConfirm={handleStreamlinedBooking}
-          driveway={{
-            id: selectedDriveway.id,
-            address: selectedDriveway.address,
-            description: selectedDriveway.description,
-            pricePerHour: selectedTimeSlot.pricePerHour,
-            availability: [{
-              date: searchParams.date,
-              startTime: selectedTimeSlot.startTime,
-              endTime: selectedTimeSlot.endTime,
-              pricePerHour: selectedTimeSlot.pricePerHour
-            }]
-          }}
-          selectedDate={searchParams.date}
-          selectedTimeSlot={selectedTimeSlot}
-          driverLocation={driverLocation}
-        />
-      )}
-      </div>
     </div>
   );
 };

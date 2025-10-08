@@ -46,7 +46,11 @@ const Booking = sequelize.define('Booking', {
   totalAmount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
-    field: 'total_amount'
+    field: 'total_amount',
+    get() {
+      const value = this.getDataValue('totalAmount');
+      return value ? parseFloat(value) : 0;
+    }
   },
   status: {
     type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'completed'),

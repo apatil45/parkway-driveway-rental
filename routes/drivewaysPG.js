@@ -7,6 +7,55 @@ const { authenticateToken: auth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Helper function to calculate distance between two coordinates (Haversine formula)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c; // Distance in kilometers
+  return distance;
+}
+
+// Helper function to geocode an address (mock implementation - in production use a real geocoding service)
+async function geocodeAddress(address) {
+  // For now, return mock coordinates for Jersey City area
+  // In production, you'd use Google Maps API, OpenCage, or similar
+  const normalizedAddress = address.toLowerCase();
+  
+  // Handle Lincoln Street addresses with slight variations
+  if (normalizedAddress.includes('lincoln street') || normalizedAddress.includes('lincoln st')) {
+    // Extract house number if possible
+    const match = normalizedAddress.match(/(\d+)/);
+    const houseNumber = match ? parseInt(match[1]) : 70;
+    
+    // Generate coordinates based on house number (slight variations)
+    const baseLat = 40.7178;
+    const baseLng = -74.0431;
+    const latOffset = (houseNumber - 70) * 0.0001; // Small offset per house number
+    const lngOffset = (houseNumber - 70) * 0.00005;
+    
+    return { 
+      lat: baseLat + latOffset, 
+      lng: baseLng + lngOffset 
+    };
+  }
+  
+  // Handle other known addresses
+  const mockCoordinates = {
+    '70 lincoln street jersey city': { lat: 40.7178, lng: -74.0431 },
+    '68 lincoln street jersey city': { lat: 40.7176, lng: -74.0430 },
+    '123 test street': { lat: 40.7282, lng: -74.0776 },
+    'jersey city': { lat: 40.7178, lng: -74.0431 }
+  };
+  
+  return mockCoordinates[normalizedAddress] || { lat: 40.7178, lng: -74.0431 };
+}
+
 // @route   GET /api/driveways
 // @desc    Get all available driveways
 // @access  Public
@@ -90,7 +139,7 @@ router.get('/search', async (req, res) => {
   const {
     latitude,
     longitude,
-    radius = 5000,
+    radius = 10000, // Increased from 5000 to 10000 meters (10km)
     date,
     startTime,
     endTime
@@ -100,18 +149,14 @@ router.get('/search', async (req, res) => {
     let whereClause = { isAvailable: true };
 
     // If location parameters are provided, we'll filter by distance
-    // Note: For PostgreSQL, we'd need PostGIS for proper geographic queries
-    // For now, we'll do basic filtering and can enhance later
+    let userLatitude, userLongitude;
     if (latitude && longitude) {
-      const parsedLatitude = parseFloat(latitude);
-      const parsedLongitude = parseFloat(longitude);
+      userLatitude = parseFloat(latitude);
+      userLongitude = parseFloat(longitude);
       
-      if (isNaN(parsedLatitude) || isNaN(parsedLongitude)) {
+      if (isNaN(userLatitude) || isNaN(userLongitude)) {
         return res.status(400).json({ error: 'Invalid geographic coordinates provided.' });
       }
-      
-      // For now, we'll get all available driveways and filter by date/time
-      // In a production app, you'd want to use PostGIS for proper geographic queries
     }
 
     let driveways = await Driveway.findAll({
@@ -124,6 +169,42 @@ router.get('/search', async (req, res) => {
       order: [['created_at', 'DESC']],
       raw: false
     });
+
+    // Add coordinates and distance to each driveway
+    for (let driveway of driveways) {
+      const coordinates = await geocodeAddress(driveway.address);
+      driveway.coordinates = coordinates;
+      
+      if (userLatitude && userLongitude) {
+        const distance = calculateDistance(
+          userLatitude, 
+          userLongitude, 
+          coordinates.lat, 
+          coordinates.lng
+        );
+        driveway.distance = Math.round(distance * 1000); // Convert to meters and round
+        
+        console.log(`Driveway: ${driveway.address}`);
+        console.log(`  Coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+        console.log(`  Distance: ${driveway.distance}m`);
+        console.log(`  User location: ${userLatitude}, ${userLongitude}`);
+      }
+    }
+
+    // Filter by radius if location is provided
+    if (userLatitude && userLongitude && radius) {
+      const radiusInKm = parseFloat(radius) / 1000; // Convert meters to kilometers
+      const beforeFilter = driveways.length;
+      driveways = driveways.filter(driveway => {
+        return driveway.distance <= (radiusInKm * 1000); // Convert back to meters for comparison
+      });
+      console.log(`Filtered driveways: ${beforeFilter} -> ${driveways.length} (radius: ${radius}m)`);
+    }
+
+    // Sort by distance if location is provided
+    if (userLatitude && userLongitude) {
+      driveways.sort((a, b) => a.distance - b.distance);
+    }
 
     // Filter by date and time if provided
     if (date && startTime && endTime) {
@@ -207,6 +288,34 @@ router.get('/search', async (req, res) => {
   }
 });
 
+// @route   GET /api/driveways/owner
+// @desc    Get driveways by owner
+// @access  Private
+router.get('/owner', auth, async (req, res) => {
+  try {
+    console.log('Owner endpoint - User ID:', req.user.id);
+    console.log('Owner endpoint - User ID type:', typeof req.user.id);
+    console.log('Owner endpoint - User:', req.user);
+    
+    // Check if user.id exists and is valid
+    if (!req.user.id) {
+      return res.status(400).json({ error: 'User ID not found' });
+    }
+    
+    // Try a simpler query first
+    const driveways = await Driveway.findAll({
+      where: { owner: req.user.id }
+    });
+    
+    console.log('Owner endpoint - Found driveways:', driveways.length);
+    res.json(driveways);
+  } catch (err) {
+    console.error('Get Owner Driveways Error:', err.message);
+    console.error('Error details:', err);
+    res.status(500).json({ error: 'Server error', message: 'Failed to fetch owner driveways' });
+  }
+});
+
 // @route   GET /api/driveways/:id
 // @desc    Get a single driveway by ID
 // @access  Public
@@ -228,24 +337,6 @@ router.get('/:id', async (req, res) => {
   } catch (err) {
     console.error('Get Driveway Error:', err.message);
     res.status(500).json({ error: 'Server error', message: 'Failed to fetch driveway' });
-  }
-});
-
-// @route   GET /api/driveways/owner
-// @desc    Get driveways by owner
-// @access  Private
-router.get('/owner', auth, async (req, res) => {
-  try {
-    const driveways = await Driveway.findAll({
-      where: { owner: req.user.id },
-      order: [['created_at', 'DESC']],
-      raw: false
-    });
-    res.json(driveways);
-  } catch (err) {
-    console.error('Get Owner Driveways Error:', err.message);
-    console.error('Error details:', err);
-    res.status(500).json({ error: 'Server error', message: 'Failed to fetch owner driveways' });
   }
 });
 

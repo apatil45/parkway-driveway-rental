@@ -41,40 +41,29 @@ router.post('/register', async (req, res) => {
     // Ensure roles is an array
     const userRoles = Array.isArray(roles) ? roles : [roles || 'driver'];
 
-    // Create user
+    // Create user (password will be hashed by model hooks)
     user = await User.create({
       name,
       email,
-      password: await bcrypt.hash(password, 10),
+      password,
       roles: userRoles
     });
 
-    // Create JWT token
-    const payload = { userId: user.id };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
-      if (err) {
-        console.error('JWT Error:', err);
-        return res.status(500).json({ 
-          success: false,
-          msg: 'Server error creating token' 
-        });
-      }
-      res.json({ 
-        success: true,
-        token, 
-        user: { 
-          id: user.id, 
-          name: user.name, 
-          email: user.email, 
-          roles: user.roles 
-        } 
-      });
+    // Generate token using the middleware function
+    const { generateToken } = require('../middleware/auth');
+    const token = generateToken(user);
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      token,
+      user: user.toJSON()
     });
   } catch (err) {
     console.error('Register Route Error:', err.message);
     res.status(500).json({ 
       success: false,
-      msg: 'Server error during registration' 
+      message: 'Server error during registration' 
     });
   }
 });
@@ -103,41 +92,30 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Check password using model method
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ 
         success: false,
-        msg: 'Invalid credentials' 
+        message: 'Invalid credentials' 
       });
     }
 
-    // Create JWT token
-    const payload = { userId: user.id };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
-      if (err) {
-        console.error('JWT Error:', err);
-        return res.status(500).json({ 
-          success: false,
-          msg: 'Server error creating token' 
-        });
-      }
-      res.json({ 
-        success: true,
-        token, 
-        user: { 
-          id: user.id, 
-          name: user.name, 
-          email: user.email, 
-          roles: user.roles 
-        } 
-      });
+    // Generate token using the middleware function
+    const { generateToken } = require('../middleware/auth');
+    const token = generateToken(user);
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: user.toJSON()
     });
   } catch (err) {
     console.error('Login Route Error:', err.message);
     res.status(500).json({ 
       success: false,
-      msg: 'Server error during login' 
+      message: 'Server error during login' 
     });
   }
 });
@@ -159,15 +137,7 @@ router.get('/user', auth, async (req, res) => {
       });
     }
     
-    res.json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        roles: user.roles
-      }
-    });
+    res.json(user.toJSON());
   } catch (err) {
     console.error('Get User Route Error:', err.message);
     res.status(500).json({ 

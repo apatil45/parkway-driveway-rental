@@ -54,7 +54,11 @@ const authorize = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Check if user has any of the required roles
+    const userRoles = req.user.roles || [];
+    const hasRequiredRole = roles.some(role => userRoles.includes(role));
+    
+    if (!hasRequiredRole) {
       return res.status(403).json({
         success: false,
         message: 'Insufficient permissions'
@@ -70,7 +74,7 @@ const generateToken = (user) => {
     {
       userId: user.id,
       email: user.email,
-      role: user.role
+      roles: user.roles
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }

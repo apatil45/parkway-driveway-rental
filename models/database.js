@@ -10,20 +10,23 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false, // Disable logging for better performance
   pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
+    max: process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX) : 20,
+    min: process.env.DB_POOL_MIN ? parseInt(process.env.DB_POOL_MIN) : 5,
+    acquire: process.env.DB_POOL_ACQUIRE ? parseInt(process.env.DB_POOL_ACQUIRE) : 30000,
+    idle: process.env.DB_POOL_IDLE ? parseInt(process.env.DB_POOL_IDLE) : 10000,
     evict: 1000
   },
   retry: {
     max: 5
   },
   dialectOptions: {
-    ssl: process.env.NODE_ENV === 'production' ? {
+    ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('render.com') ? {
       require: true,
       rejectUnauthorized: false
-    } : false,
+    } : (process.env.NODE_ENV === 'production' ? {
+      require: true,
+      rejectUnauthorized: false
+    } : false),
     connectTimeout: 30000,
     acquireTimeout: 30000,
     timeout: 30000

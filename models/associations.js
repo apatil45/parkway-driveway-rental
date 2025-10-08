@@ -8,7 +8,7 @@ const setupAssociations = () => {
     // User-Driveway associations
     User.hasMany(Driveway, { 
       foreignKey: 'owner',
-      as: 'driveways',
+      as: 'userDriveways',
       onDelete: 'CASCADE',
       hooks: true
     });
@@ -22,7 +22,7 @@ const setupAssociations = () => {
     // User-Booking associations (driver)
     User.hasMany(Booking, { 
       foreignKey: 'driver',
-      as: 'bookings',
+      as: 'userBookings',
       onDelete: 'CASCADE',
       hooks: true
     });
@@ -36,7 +36,7 @@ const setupAssociations = () => {
     // Driveway-Booking associations
     Driveway.hasMany(Booking, { 
       foreignKey: 'driveway',
-      as: 'bookings',
+      as: 'drivewayBookings',
       onDelete: 'CASCADE',
       hooks: true
     });

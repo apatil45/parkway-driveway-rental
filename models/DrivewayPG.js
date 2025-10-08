@@ -70,9 +70,6 @@ const Driveway = sequelize.define('Driveway', {
   underscored: true
 });
 
-// Set up associations
-Driveway.associate = (models) => {
-  Driveway.belongsTo(models.User, { foreignKey: 'owner' });
-};
+// Associations are set up in models/associations.js
 
 module.exports = Driveway;

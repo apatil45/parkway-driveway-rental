@@ -140,9 +140,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('rememberMe', rememberMe.toString());
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      const userRes = await axios.get('/api/auth/user');
-      console.log('AuthContext - Login successful, user:', userRes.data);
-      setUser(userRes.data);
+      // Use user data from login response directly
+      const userData = res.data.user;
+      console.log('AuthContext - Login successful, user:', userData);
+      setUser(userData);
 
       // Don't show welcome notification on login - user already knows they're logged in
 
@@ -152,7 +153,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       setIsLoading(false);
-      return userRes.data.roles?.[0] || 'driver'; // Return first role instead of single role
+      return userData.roles?.[0] || 'driver'; // Return first role instead of single role
     } catch (err: any) {
       console.error("AuthContext - Login error:", err.response?.data || err.message);
       
@@ -175,8 +176,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('rememberMe', 'true'); // Auto-remember on registration
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      const userRes = await axios.get('/api/auth/user');
-      setUser(userRes.data);
+      // Use user data from register response directly
+      const userData = res.data.user;
+      setUser(userData);
       
       // Don't show welcome notification on registration - redirect to login is enough feedback
       
@@ -184,7 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setupTokenRefresh();
       
       setIsLoading(false);
-      return userRes.data.roles?.[0] || 'driver'; // Return first role instead of single role
+      return userData.roles?.[0] || 'driver'; // Return first role instead of single role
     } catch (err: any) {
       console.error("AuthContext - Register error:", err.response?.data || err.message);
       
