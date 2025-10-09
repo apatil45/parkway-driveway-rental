@@ -182,6 +182,8 @@ const ParkwaySearchResults: React.FC<ParkwaySearchResultsProps> = ({
                   <div 
                     key={driveway.id} 
                     className={`parking-spot-card ${isSelected ? 'selected' : ''}`}
+                    data-driveway-id={driveway.id}
+                    onClick={() => onDrivewaySelect(driveway)}
                   >
                     <div className="spot-image">
                       {driveway.images && driveway.images.length > 0 ? (

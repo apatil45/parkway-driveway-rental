@@ -198,44 +198,60 @@
   color: var(--color-text-secondary);
 }
 
-/* Search Button */
+/* Enhanced Search Button */
 .search-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: var(--color-secondary);
-  color: var(--color-text-inverse);
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
   border: none;
-  border-radius: var(--border-radius-md);
-  font-size: 1rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: auto;
+  min-height: 56px;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .search-button:hover:not(:disabled) {
-  background: var(--color-secondary-dark);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+  transform: translateY(-2px);
 }
 
 .search-button:active:not(:disabled) {
   transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.search-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .search-button:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
+  pointer-events: none;
   transform: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .button-spinner {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid var(--color-text-inverse);
+  border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -264,8 +280,9 @@
   }
   
   .search-button {
-    padding: 0.875rem;
-    font-size: 0.95rem;
+    padding: 0.875rem 1.25rem;
+    font-size: 1rem;
+    min-height: 52px;
   }
 }
 

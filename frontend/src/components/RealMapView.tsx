@@ -48,8 +48,8 @@ interface RealMapViewProps {
   selectedDriveway: Driveway | null;
 }
 
-// Custom icons with better parking status indicators
-const createCustomIcon = (color: string, iconType: 'parking' | 'user' | 'pickup' | 'dropoff', status?: string) => {
+// Enhanced custom icons with better parking status indicators
+const createCustomIcon = (color: string, iconType: 'parking' | 'user' | 'pickup' | 'dropoff', status?: string, isSelected?: boolean) => {
   const iconMap = {
     parking: '🅿️',
     user: '📍',
@@ -68,19 +68,22 @@ const createCustomIcon = (color: string, iconType: 'parking' | 'user' | 'pickup'
   };
 
   const statusColor = getStatusColor(status);
+  const markerSize = isSelected ? 40 : 32;
+  const pulseSize = isSelected ? 60 : 50;
 
   return L.divIcon({
-    className: 'custom-marker',
+    className: `custom-marker ${isSelected ? 'selected' : ''}`,
     html: `
-      <div class="marker-container ${iconType}" style="background-color: ${statusColor};">
-        <div class="marker-icon">${iconMap[iconType]}</div>
-        <div class="marker-pulse"></div>
+      <div class="marker-container ${iconType} ${isSelected ? 'selected' : ''}" style="background-color: ${statusColor}; width: ${markerSize}px; height: ${markerSize}px;">
+        <div class="marker-icon" style="font-size: ${isSelected ? '18px' : '14px'};">${iconMap[iconType]}</div>
+        <div class="marker-pulse" style="width: ${pulseSize}px; height: ${pulseSize}px;"></div>
         ${status ? `<div class="status-indicator ${status}"></div>` : ''}
+        ${isSelected ? '<div class="selection-ring"></div>' : ''}
       </div>
     `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    popupAnchor: [0, -15]
+    iconSize: [markerSize, markerSize],
+    iconAnchor: [markerSize / 2, markerSize / 2],
+    popupAnchor: [0, -markerSize / 2]
   });
 };
 
@@ -228,21 +231,28 @@ const RealMapView: React.FC<RealMapViewProps> = ({
             </Marker>
           )}
 
-          {/* Driveway Markers */}
+          {/* Enhanced Driveway Markers */}
           {driveways.map((driveway) => {
             if (!driveway.coordinates) return null;
             
             const availability = getAvailabilityStatus(driveway);
             const isSelected = selectedDriveway?.id === driveway.id;
-            const markerColor = isSelected ? '#FF6B35' : availability.color;
+            const markerColor = availability.color;
             
             return (
               <Marker
                 key={driveway.id}
                 position={[driveway.coordinates.lat, driveway.coordinates.lng]}
-                icon={createCustomIcon(markerColor, 'parking', availability.status)}
+                icon={createCustomIcon(markerColor, 'parking', availability.status, isSelected)}
                 eventHandlers={{
-                  click: () => onDrivewaySelect(driveway)
+                  click: () => {
+                    onDrivewaySelect(driveway);
+                    // Scroll to the corresponding list item
+                    const listItem = document.querySelector(`[data-driveway-id="${driveway.id}"]`);
+                    if (listItem) {
+                      listItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }
                 }}
               >
                 <Popup>
