@@ -139,14 +139,31 @@
   margin: 0;
 }
 
-/* Responsive Design */
+/* Enhanced Responsive Design */
+@media (max-width: 1200px) {
+  .parkway-main {
+    max-width: 100%;
+    gap: 0.75rem;
+  }
+  
+  .search-panel {
+    width: 350px;
+  }
+}
+
 @media (max-width: 1024px) {
   .parkway-main {
     flex-direction: column;
+    gap: 1rem;
   }
   
   .search-panel {
     width: 100%;
+    max-width: none;
+  }
+  
+  .results-panel {
+    min-height: 500px;
   }
 }
 
@@ -155,8 +172,184 @@
     padding: 0.5rem;
   }
   
+  .parkway-main {
+    gap: 0.75rem;
+    min-height: calc(100vh - 100px);
+  }
+  
   .search-panel {
     padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .results-panel {
+    min-height: 400px;
+    border-radius: 8px;
+  }
+  
+  .loading-state,
+  .error-state,
+  .no-results,
+  .welcome-state {
+    padding: 2rem 1rem;
+  }
+  
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .parkway-interface {
+    padding: 0.25rem;
+  }
+  
+  .parkway-main {
+    gap: 0.5rem;
+    min-height: calc(100vh - 80px);
+  }
+  
+  .search-panel {
+    padding: 0.75rem;
+    border-radius: 6px;
+  }
+  
+  .results-panel {
+    min-height: 350px;
+    border-radius: 6px;
+  }
+  
+  .loading-state,
+  .error-state,
+  .no-results,
+  .welcome-state {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .loading-state p,
+  .error-state p,
+  .no-results p,
+  .welcome-state p {
+    font-size: 0.9rem;
+  }
+  
+  .welcome-state h2 {
+    font-size: 1.25rem;
+  }
+  
+  .error-state button {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .parkway-interface {
+    padding: 0.125rem;
+  }
+  
+  .parkway-main {
+    gap: 0.25rem;
+    min-height: calc(100vh - 60px);
+  }
+  
+  .search-panel {
+    padding: 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .results-panel {
+    min-height: 300px;
+    border-radius: 4px;
+  }
+  
+  .loading-state,
+  .error-state,
+  .no-results,
+  .welcome-state {
+    padding: 1rem 0.5rem;
+  }
+  
+  .loading-spinner {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .parkway-interface {
+    padding: 0.5rem;
+  }
+  
+  .search-panel,
+  .results-panel {
+    border-radius: 8px;
+  }
+  
+  .error-state button {
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+/* High DPI Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .parkway-interface {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Landscape Orientation on Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .parkway-main {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+  
+  .search-panel {
+    width: 40%;
+    min-width: 280px;
+  }
+  
+  .results-panel {
+    flex: 1;
+    min-height: 250px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .parkway-interface {
+    background: #111827;
+  }
+  
+  .search-panel,
+  .results-panel {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .loading-state p,
+  .error-state p,
+  .no-results p,
+  .welcome-state p {
+    color: #d1d5db;
+  }
+  
+  .welcome-state h2 {
+    color: #f9fafb;
+  }
+  
+  .error-state button {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .error-state button:hover {
+    background: #2563eb;
   }
 }
 

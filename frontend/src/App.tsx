@@ -1,4 +1,5 @@
 import './App.css'
+import './styles/enhanced-responsive.css'
 import Register from './components/Register';
 import Login from './components/Login';
 import OwnerDashboard from './components/OwnerDashboard';

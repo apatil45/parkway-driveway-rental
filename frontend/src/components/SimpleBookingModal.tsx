@@ -257,13 +257,13 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
             >
               Back
             </button>
-            <button 
-              type="submit" 
-              className="btn-primary"
-              disabled={!stripe || !isElementsReady || isProcessing}
-            >
-              {isProcessing ? 'Processing...' : isElementsReady ? `Pay $${totalAmount.toFixed(2)}` : 'Loading...'}
-            </button>
+                   <button 
+                     type="submit" 
+                     className={`btn-primary ${isProcessing ? 'btn-loading' : ''}`}
+                     disabled={!stripe || !isElementsReady || isProcessing}
+                   >
+                     {isProcessing ? 'Processing...' : isElementsReady ? `Pay $${totalAmount.toFixed(2)}` : 'Loading...'}
+                   </button>
           </div>
         </form>
       </div>
@@ -410,13 +410,13 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
                   <button type="button" onClick={onClose} className="btn-secondary">
                     Cancel
                   </button>
-                  <button 
-                    type="submit" 
-                    className="btn-primary"
-                    disabled={isSubmitting || totalAmount <= 0}
-                  >
-                    {isSubmitting ? 'Processing...' : 'Continue to Payment'}
-                  </button>
+                         <button 
+                           type="submit" 
+                           className={`btn-primary ${isSubmitting ? 'btn-loading' : ''}`}
+                           disabled={isSubmitting || totalAmount <= 0}
+                         >
+                           {isSubmitting ? 'Processing...' : 'Continue to Payment'}
+                         </button>
                 </div>
               </form>
             </>
