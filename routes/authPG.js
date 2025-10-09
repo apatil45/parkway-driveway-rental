@@ -11,11 +11,15 @@ const router = express.Router();
 // @desc    Register user
 // @access  Public
 router.post('/register', async (req, res) => {
-  const { name, email, password, roles } = req.body;
-
   try {
+    const { name, email, password, roles } = req.body;
+
+    // Log the request for debugging
+    console.log('Registration request:', { name, email, roles });
+
     // Basic validation
     if (!name || !email || !password) {
+      console.log('Validation failed - missing required fields');
       return res.status(400).json({ 
         success: false,
         msg: 'Name, email, and password are required' 

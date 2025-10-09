@@ -53,10 +53,24 @@ const startServer = async () => {
   }
 };
 
-// Robust middleware setup
+// Robust middleware setup with better error handling
 app.use(express.json({ 
   extended: false,
-  limit: '10mb'
+  limit: '10mb',
+  verify: (req, res, buf, encoding) => {
+    try {
+      JSON.parse(buf);
+    } catch (e) {
+      console.error('JSON Parse Error:', e.message);
+      console.error('Request body:', buf.toString());
+      res.status(400).json({
+        success: false,
+        message: 'Invalid JSON format',
+        error: e.message
+      });
+      throw new Error('Invalid JSON');
+    }
+  }
 }));
 app.use(express.urlencoded({ extended: true }));
 

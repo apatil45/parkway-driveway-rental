@@ -56,6 +56,8 @@ const testConnection = async () => {
     } catch (error) {
       console.error(`❌ Database connection failed. Retries left: ${retries - 1}`);
       console.error('Error:', error.message);
+      console.error('Database URL (masked):', process.env.DATABASE_URL ? 
+        process.env.DATABASE_URL.replace(/:\/\/[^:]+:[^@]+@/, '://***:***@') : 'Not set');
       retries--;
       if (retries > 0) {
         const delay = Math.min(2000 * (6 - retries), 10000); // Exponential backoff, max 10s

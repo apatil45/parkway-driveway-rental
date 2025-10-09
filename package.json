@@ -9,6 +9,7 @@
     "migrate": "node scripts/migrate.js",
     "migrate:prod": "NODE_ENV=production node scripts/migrate.js",
     "postinstall": "npm run migrate:prod || echo 'Migration failed, continuing...'",
+    "check-env": "node scripts/check-render-env.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:backend": "jest",
     "lint:backend": "eslint .",
