@@ -6,7 +6,7 @@ import SmartBookingModal from './SmartBookingModal';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
 import QuickActions from './QuickActions';
-import UberStyleInterface from './UberStyleInterface';
+import ParkwayInterface from './ParkwayInterface';
 import './DriverDashboard.css';
 
 interface Booking {
@@ -23,6 +23,7 @@ interface Booking {
 }
 
 const DriverDashboardNew: React.FC = () => {
+  console.log('DriverDashboardNew component rendered!');
   const { user, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
@@ -99,7 +100,7 @@ const DriverDashboardNew: React.FC = () => {
     <div className="driver-dashboard-new">
       {/* Main Uber-style Interface */}
       <div className="main-interface">
-        <UberStyleInterface />
+        <ParkwayInterface />
       </div>
 
       {/* Recent Bookings Section */}

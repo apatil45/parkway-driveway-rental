@@ -182,7 +182,6 @@ const ParkwaySearchResults: React.FC<ParkwaySearchResultsProps> = ({
                   <div 
                     key={driveway.id} 
                     className={`parking-spot-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => onDrivewaySelect(driveway)}
                   >
                     <div className="spot-image">
                       {driveway.images && driveway.images.length > 0 ? (
@@ -236,7 +235,16 @@ const ParkwaySearchResults: React.FC<ParkwaySearchResultsProps> = ({
                         </div>
                         <div className="spot-price">
                           <span className="price">{formatPrice(driveway.pricePerHour)}</span>
-                          <button className="book-button">Book Now</button>
+                          <button 
+                            className="book-button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDrivewaySelect(driveway);
+            }}
+                          >
+                            Book Now
+                          </button>
                         </div>
                       </div>
                     </div>

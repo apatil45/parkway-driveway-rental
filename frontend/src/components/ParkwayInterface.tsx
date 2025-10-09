@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ParkwaySearchForm from './ParkwaySearchForm';
 import ParkwaySearchResults from './ParkwaySearchResults';
 import EnhancedMapView from './EnhancedMapView';
-import SmartBookingModal from './SmartBookingModal';
+import SimpleBookingModal from './SimpleBookingModal';
 import QuickActions from './QuickActions';
 import './ParkwayInterface.css';
 
@@ -208,14 +208,15 @@ const ParkwayInterface: React.FC = () => {
       {/* Quick Actions */}
       <QuickActions />
 
-      {/* Booking Modal */}
-      {showBookingModal && selectedDriveway && (
-        <SmartBookingModal
-          driveway={selectedDriveway}
-          onBookingSuccess={handleBookingSuccess}
-          onCancel={handleCancel}
-        />
-      )}
+        {/* Booking Modal */}
+        {showBookingModal && selectedDriveway && (
+          <SimpleBookingModal
+            isOpen={showBookingModal}
+            onClose={handleCancel}
+            driveway={selectedDriveway}
+            onBookingSuccess={handleBookingSuccess}
+          />
+        )}
     </div>
   );
 };

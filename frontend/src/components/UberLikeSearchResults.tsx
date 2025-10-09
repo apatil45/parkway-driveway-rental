@@ -44,6 +44,7 @@ const UberLikeSearchResults: React.FC<UberLikeSearchResultsProps> = ({
   isLoading = false,
   error = null
 }) => {
+  console.log('UberLikeSearchResults rendered with driveways:', driveways.length);
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'split'>('split');
   const [sortBy, setSortBy] = useState<'distance' | 'price' | 'rating'>('distance');
 
@@ -208,6 +209,7 @@ const UberLikeSearchResults: React.FC<UberLikeSearchResultsProps> = ({
             
             <div className="list-body">
               {sortedDriveways.map((driveway) => {
+                console.log('Rendering UberLike driveway:', driveway.id, 'with Book Now button');
                 const availability = getAvailabilityStatus(driveway);
                 return (
                   <div 
@@ -278,6 +280,7 @@ const UberLikeSearchResults: React.FC<UberLikeSearchResultsProps> = ({
                       <button 
                         className="book-btn"
                         onClick={(e) => {
+                          console.log('UberLike Book Now button clicked!', driveway.id);
                           e.stopPropagation();
                           onDrivewaySelect(driveway);
                         }}

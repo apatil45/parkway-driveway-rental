@@ -86,6 +86,18 @@ const SmartBookingModal: React.FC<SmartBookingModalProps> = ({
   const handlePaymentSuccess = async (paymentIntentId: string) => {
     setIsSubmitting(true);
     
+    const bookingData = {
+      driveway: driveway.id,
+      startTime: `${formData.selectedDate}T${formData.startTime}`,
+      endTime: `${formData.selectedDate}T${formData.endTime}`,
+      totalAmount: formData.totalPrice,
+      specialRequests: formData.specialRequests,
+      stripePaymentId: paymentIntentId
+    };
+    
+    console.log('Sending booking data:', bookingData);
+    console.log('Driveway object:', driveway);
+    
     try {
       const response = await fetch('/api/bookings', {
         method: 'POST',
@@ -93,24 +105,22 @@ const SmartBookingModal: React.FC<SmartBookingModalProps> = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          driveway: driveway.id,
-          startTime: `${formData.selectedDate}T${formData.startTime}`,
-          endTime: `${formData.selectedDate}T${formData.endTime}`,
-          totalAmount: formData.totalPrice,
-          specialRequests: formData.specialRequests,
-          stripePaymentId: paymentIntentId
-        })
+        body: JSON.stringify(bookingData)
       });
 
+      console.log('Booking API response status:', response.status);
+      
       if (response.ok) {
         const booking = await response.json();
+        console.log('Booking created successfully:', booking);
         notificationService.showSuccess('Booking confirmed! 🎉');
         onBookingSuccess?.(booking.id);
         setCurrentStep('confirm');
         setShowPaymentModal(false);
       } else {
-        throw new Error('Failed to create booking');
+        const errorData = await response.json();
+        console.error('Booking API error:', errorData);
+        throw new Error(errorData.message || 'Failed to create booking');
       }
     } catch (error) {
       console.error('Booking creation failed:', error);
@@ -121,6 +131,52 @@ const SmartBookingModal: React.FC<SmartBookingModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  // Check if user is authenticated and has driver role
+  if (!user) {
+    return (
+      <div className="smart-booking-modal-overlay" role="dialog" aria-modal="true">
+        <div className="smart-booking-modal">
+          <div className="modal-header">
+            <h2>Authentication Required</h2>
+            <button onClick={onClose} className="close-button" aria-label="Close booking modal">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div className="modal-content">
+            <p>Please log in to book a parking spot.</p>
+            <button onClick={onClose} className="btn-primary">Close</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user has driver role
+  if (!user.roles || !user.roles.includes('driver')) {
+    return (
+      <div className="smart-booking-modal-overlay" role="dialog" aria-modal="true">
+        <div className="smart-booking-modal">
+          <div className="modal-header">
+            <h2>Driver Role Required</h2>
+            <button onClick={onClose} className="close-button" aria-label="Close booking modal">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div className="modal-content">
+            <p>You need to have a driver role to book parking spots. Please contact support to update your account.</p>
+            <button onClick={onClose} className="btn-primary">Close</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -231,7 +287,7 @@ const SmartBookingModal: React.FC<SmartBookingModalProps> = ({
                     </div>
                     <div className="summary-item">
                       <span className="label">Rate:</span>
-                      <span className="value">${driveway.pricePerHour.toFixed(2)}/hour</span>
+                      <span className="value">${Number(driveway.pricePerHour || 0).toFixed(2)}/hour</span>
                     </div>
                     <div className="summary-item total">
                       <span className="label">Total:</span>
@@ -292,7 +348,7 @@ const SmartBookingModal: React.FC<SmartBookingModalProps> = ({
                   </div>
                   <div className="summary-item">
                     <span className="label">Rate:</span>
-                    <span className="value">${driveway.pricePerHour.toFixed(2)}/hour</span>
+                    <span className="value">${Number(driveway.pricePerHour || 0).toFixed(2)}/hour</span>
                   </div>
                   <div className="summary-item total">
                     <span className="label">Total Amount:</span>
