@@ -265,7 +265,7 @@ const ParkwaySearchResults: React.FC<ParkwaySearchResultsProps> = ({
         )}
 
         {/* Map View */}
-        {(viewMode === 'map' || viewMode === 'split') && userLocation && (
+        {(viewMode === 'map' || viewMode === 'split') && (
           <div className="map-panel">
             <RealMapView
               driveways={sortedDriveways}

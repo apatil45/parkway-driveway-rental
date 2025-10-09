@@ -233,7 +233,17 @@ const RealMapView: React.FC<RealMapViewProps> = ({
 
           {/* Enhanced Driveway Markers */}
           {driveways.map((driveway) => {
-            if (!driveway.coordinates) return null;
+            // If no coordinates, generate some based on the center with some offset
+            let coordinates = driveway.coordinates;
+            if (!coordinates) {
+              // Generate coordinates around the center with some random offset
+              const offsetLat = (Math.random() - 0.5) * 0.01; // ~500m offset
+              const offsetLng = (Math.random() - 0.5) * 0.01;
+              coordinates = {
+                lat: center[0] + offsetLat,
+                lng: center[1] + offsetLng
+              };
+            }
             
             const availability = getAvailabilityStatus(driveway);
             const isSelected = selectedDriveway?.id === driveway.id;
@@ -242,7 +252,7 @@ const RealMapView: React.FC<RealMapViewProps> = ({
             return (
               <Marker
                 key={driveway.id}
-                position={[driveway.coordinates.lat, driveway.coordinates.lng]}
+                position={[coordinates.lat, coordinates.lng]}
                 icon={createCustomIcon(markerColor, 'parking', availability.status, isSelected)}
                 eventHandlers={{
                   click: () => {
