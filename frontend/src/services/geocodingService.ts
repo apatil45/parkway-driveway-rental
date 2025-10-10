@@ -9,6 +9,16 @@ interface GeocodingError {
   message: string;
 }
 
+interface AddressSuggestion {
+  address: string;
+  latitude: number;
+  longitude: number;
+  city?: string;
+  state?: string;
+  country?: string;
+  zipcode?: string;
+}
+
 class GeocodingService {
   private baseUrl = '/api/geocoding';
 
@@ -136,6 +146,37 @@ class GeocodingService {
   }
 
   /**
+   * Get address suggestions for autocomplete
+   * @param query - The search query (minimum 2 characters)
+   * @returns Promise with array of address suggestions
+   */
+  async getAddressSuggestions(query: string): Promise<AddressSuggestion[]> {
+    if (!query || query.trim().length < 2) {
+      return [];
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/autocomplete?query=${encodeURIComponent(query.trim())}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData: GeocodingError = await response.json();
+        throw new Error(errorData.message || `Autocomplete failed with status ${response.status}`);
+      }
+
+      const suggestions: AddressSuggestion[] = await response.json();
+      return suggestions;
+    } catch (error) {
+      console.error('Autocomplete error:', error);
+      throw error instanceof Error ? error : new Error('Failed to get address suggestions');
+    }
+  }
+
+  /**
    * Get a human-readable address from coordinates (reverse geocoding)
    * Note: This would require a reverse geocoding service
    * @param latitude - Latitude coordinate
@@ -154,4 +195,4 @@ class GeocodingService {
 }
 
 export const geocodingService = new GeocodingService();
-export type { GeocodingResponse, GeocodingError };
+export type { GeocodingResponse, GeocodingError, AddressSuggestion };

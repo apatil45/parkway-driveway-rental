@@ -1,6 +1,6 @@
 // Test Setup for Parkway.com Backend
-const { sequelize } = require('../../models');
-const app = require('../../production-server');
+const { sequelize } = require('../../models/database');
+const app = require('../../index');
 
 // Test database configuration
 const testConfig = {
@@ -40,7 +40,7 @@ afterEach(async () => {
 global.testUtils = {
   // Create test user
   createTestUser: async (userData = {}) => {
-    const { User } = require('../models');
+    const User = require('../../models/UserPG');
     const defaultUser = {
       email: 'test@example.com',
       password: 'password123',
@@ -56,7 +56,8 @@ global.testUtils = {
 
   // Create test driveway
   createTestDriveway: async (drivewayData = {}) => {
-    const { Driveway, User } = require('../models');
+    const Driveway = require('../../models/DrivewayPG');
+    const User = require('../../models/UserPG');
     
     // Create owner if not provided
     let owner = drivewayData.ownerId ? 
@@ -81,7 +82,9 @@ global.testUtils = {
 
   // Create test booking
   createTestBooking: async (bookingData = {}) => {
-    const { Booking, User, Driveway } = require('../models');
+    const Booking = require('../../models/BookingPG');
+    const User = require('../../models/UserPG');
+    const Driveway = require('../../models/DrivewayPG');
     
     // Create user and driveway if not provided
     let user = bookingData.userId ? 

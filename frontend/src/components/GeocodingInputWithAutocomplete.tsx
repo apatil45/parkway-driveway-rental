@@ -1,21 +1,30 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { geocodingService, AddressSuggestion } from '../services/geocodingService';
-import './GeocodingSearch.css';
+import './GeocodingInputWithAutocomplete.css';
 
-interface GeocodingSearchProps {
-  onSearch: (query: string, coordinates?: { latitude: number; longitude: number }) => void;
+interface GeocodingInputWithAutocompleteProps {
+  value: string;
+  onChange: (address: string, coordinates?: { latitude: number; longitude: number }) => void;
   placeholder?: string;
-  className?: string;
+  label?: string;
+  required?: boolean;
   disabled?: boolean;
+  className?: string;
+  onSuccess?: (coordinates: { latitude: number; longitude: number }) => void;
+  onError?: (error: string) => void;
 }
 
-const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
-  onSearch,
-  placeholder = "Enter location or address...",
+const GeocodingInputWithAutocomplete: React.FC<GeocodingInputWithAutocompleteProps> = ({
+  value,
+  onChange,
+  placeholder = "Enter address...",
+  label = "Address",
+  required = false,
+  disabled = false,
   className = "",
-  disabled = false
+  onSuccess,
+  onError
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,40 +60,14 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
     }
   }, []);
 
-  const handleGeocodeAndSearch = useCallback(async () => {
-    if (!searchQuery.trim()) {
-      setError('Please enter a location to search');
-      return;
-    }
-
-    setIsGeocoding(true);
-    setError(null);
-
-    try {
-      // First try to geocode the address
-      const geocodeResult = await geocodingService.geocodeAddress(searchQuery);
-      setCoordinates(geocodeResult);
-      
-      // Search with both query and coordinates
-      onSearch(searchQuery, geocodeResult);
-    } catch (geocodeError) {
-      console.warn('Geocoding failed, searching with text only:', geocodeError);
-      
-      // If geocoding fails, search with text only
-      setCoordinates(null);
-      onSearch(searchQuery);
-    } finally {
-      setIsGeocoding(false);
-    }
-  }, [searchQuery, onSearch]);
-
+  // Handle input change with debounced search
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setSearchQuery(newValue);
+    onChange(newValue, coordinates || undefined);
     setError(null);
     
-    // Clear coordinates if search query changes
-    if (coordinates && newValue !== searchQuery) {
+    // Clear coordinates if address changes
+    if (coordinates && newValue !== value) {
       setCoordinates(null);
     }
 
@@ -102,18 +85,19 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
   const handleSuggestionSelect = (suggestion: AddressSuggestion) => {
     const coords = { latitude: suggestion.latitude, longitude: suggestion.longitude };
     setCoordinates(coords);
-    setSearchQuery(suggestion.address);
+    onChange(suggestion.address, coords);
     setShowSuggestions(false);
     setSuggestions([]);
     setSelectedIndex(-1);
-    onSearch(suggestion.address, coords);
+    onSuccess?.(coords);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSuggestions || suggestions.length === 0) {
       if (e.key === 'Enter' && !isGeocoding) {
         e.preventDefault();
-        handleGeocodeAndSearch();
+        handleGeocode();
       }
       return;
     }
@@ -134,7 +118,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
         if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
           handleSuggestionSelect(suggestions[selectedIndex]);
         } else {
-          handleGeocodeAndSearch();
+          handleGeocode();
         }
         break;
       case 'Escape':
@@ -144,11 +128,29 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
     }
   };
 
-  const handleSearchClick = () => {
-    if (!isGeocoding) {
-      handleGeocodeAndSearch();
+  // Handle geocoding
+  const handleGeocode = useCallback(async () => {
+    if (!value.trim()) {
+      setError('Please enter an address to geocode');
+      return;
     }
-  };
+
+    setIsGeocoding(true);
+    setError(null);
+
+    try {
+      const result = await geocodingService.geocodeAddress(value);
+      setCoordinates(result);
+      onChange(value, result);
+      onSuccess?.(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to geocode address';
+      setError(errorMessage);
+      onError?.(errorMessage);
+    } finally {
+      setIsGeocoding(false);
+    }
+  }, [value, onChange, onSuccess, onError]);
 
   // Handle click outside to close suggestions
   useEffect(() => {
@@ -180,19 +182,26 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
   }, []);
 
   return (
-    <div className={`geocoding-search ${className}`}>
-      <div className="search-input-group">
+    <div className={`geocoding-input-autocomplete ${className}`}>
+      {label && (
+        <label className="geocoding-label">
+          {label}
+          {required && <span className="required">*</span>}
+        </label>
+      )}
+      
+      <div className="geocoding-input-group">
         <input
           ref={inputRef}
           type="text"
-          value={searchQuery}
+          value={value}
           onChange={handleInputChange}
-          onKeyDown={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          className={`search-input ${error ? 'error' : ''} ${coordinates ? 'success' : ''}`}
-          aria-label="Search location"
-          aria-describedby={error ? 'search-error' : coordinates ? 'search-coordinates' : 'search-help'}
+          className={`geocoding-field ${error ? 'error' : ''} ${coordinates ? 'success' : ''}`}
+          aria-label={label}
+          aria-describedby={error ? 'geocoding-error' : coordinates ? 'geocoding-coordinates' : undefined}
           aria-expanded={showSuggestions}
           aria-autocomplete="list"
           role="combobox"
@@ -200,13 +209,13 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
         
         <button
           type="button"
-          onClick={handleSearchClick}
-          disabled={disabled || isGeocoding || !searchQuery.trim()}
-          className="search-button"
-          aria-label="Search for driveways"
+          onClick={handleGeocode}
+          disabled={disabled || isGeocoding || !value.trim()}
+          className="geocoding-button"
+          aria-label="Geocode address"
         >
           {isGeocoding ? (
-            <div className="search-spinner" aria-hidden="true">
+            <div className="geocoding-spinner" aria-hidden="true">
               <div className="spinner"></div>
             </div>
           ) : (
@@ -224,7 +233,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
           ref={suggestionsRef}
           className="suggestions-dropdown"
           role="listbox"
-          aria-label="Location suggestions"
+          aria-label="Address suggestions"
         >
           {isLoadingSuggestions ? (
             <div className="suggestion-item loading">
@@ -257,7 +266,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
       )}
 
       {error && (
-        <div id="search-error" className="search-error" role="alert">
+        <div id="geocoding-error" className="geocoding-error" role="alert">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -268,7 +277,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
       )}
 
       {coordinates && (
-        <div id="search-coordinates" className="search-coordinates">
+        <div id="geocoding-coordinates" className="geocoding-coordinates">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
             <circle cx="12" cy="10" r="3"></circle>
@@ -276,14 +285,8 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
           <span>Location verified: {geocodingService.formatCoordinates(coordinates.latitude, coordinates.longitude)}</span>
         </div>
       )}
-
-      {!error && !coordinates && searchQuery.trim() && (
-        <div id="search-help" className="search-help">
-          Press Enter or click search to find driveways near this location
-        </div>
-      )}
     </div>
   );
 };
 
-export default GeocodingSearch;
+export default GeocodingInputWithAutocomplete;

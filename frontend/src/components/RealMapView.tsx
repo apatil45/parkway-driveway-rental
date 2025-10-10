@@ -48,13 +48,21 @@ interface RealMapViewProps {
   selectedDriveway: Driveway | null;
 }
 
-// Enhanced custom icons with better parking status indicators
+// Enhanced custom icons with professional SVG indicators
 const createCustomIcon = (color: string, iconType: 'parking' | 'user' | 'pickup' | 'dropoff', status?: string, isSelected?: boolean) => {
   const iconMap = {
-    parking: '🅿️',
-    user: '📍',
-    pickup: '🚗',
-    dropoff: '🏁'
+    parking: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>`,
+    user: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
+    </svg>`,
+    pickup: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17S18.83 15.5 18 15.5 16.5 16.17 16.5 17 17.17 18.5 18 18.5M19.5 9.5H18V14H19.5V9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17S6.83 15.5 6 15.5 4.5 16.17 4.5 17 5.17 18.5 6 18.5M20 8L23 12V17H21A3 3 0 0 1 18 20A3 3 0 0 1 15 17H9A3 3 0 0 1 6 20A3 3 0 0 1 3 17H1V12L4 8H20M12 6.5H6V14H12V6.5Z"/>
+    </svg>`,
+    dropoff: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+    </svg>`
   };
 
   // Different colors based on parking status
@@ -68,17 +76,18 @@ const createCustomIcon = (color: string, iconType: 'parking' | 'user' | 'pickup'
   };
 
   const statusColor = getStatusColor(status);
-  const markerSize = isSelected ? 40 : 32;
-  const pulseSize = isSelected ? 60 : 50;
+  const markerSize = isSelected ? 50 : 40; // Larger markers for better visibility
+  const pulseSize = isSelected ? 70 : 60;
 
   return L.divIcon({
     className: `custom-marker ${isSelected ? 'selected' : ''}`,
     html: `
       <div class="marker-container ${iconType} ${isSelected ? 'selected' : ''}" style="background-color: ${statusColor}; width: ${markerSize}px; height: ${markerSize}px;">
-        <div class="marker-icon" style="font-size: ${isSelected ? '18px' : '14px'};">${iconMap[iconType]}</div>
+        <div class="marker-icon" style="width: ${isSelected ? '22px' : '18px'}; height: ${isSelected ? '22px' : '18px'}; color: white;">${iconMap[iconType]}</div>
         <div class="marker-pulse" style="width: ${pulseSize}px; height: ${pulseSize}px;"></div>
         ${status ? `<div class="status-indicator ${status}"></div>` : ''}
         ${isSelected ? '<div class="selection-ring"></div>' : ''}
+        <div class="marker-shadow"></div>
       </div>
     `,
     iconSize: [markerSize, markerSize],
@@ -275,7 +284,9 @@ const RealMapView: React.FC<RealMapViewProps> = ({
                             key={i}
                             className={`star ${i < Math.floor(driveway.rating || 4.5) ? 'filled' : ''}`}
                           >
-                            ★
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                            </svg>
                           </span>
                         ))}
                         <span className="rating-value">{driveway.rating || 4.5}</span>

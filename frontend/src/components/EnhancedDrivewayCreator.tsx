@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
 import ResponsiveForm, { FormField, FormButton, FormCheckbox } from './ResponsiveForm';
-import GeocodingInput from './GeocodingInput';
+import GeocodingInputWithAutocomplete from './GeocodingInputWithAutocomplete';
 import './EnhancedDrivewayCreator.css';
 
 interface DrivewayFormData {
@@ -469,11 +469,11 @@ const EnhancedDrivewayCreator: React.FC<{
     <div className="step-content">
       <h3 className="step-title">Basic Information</h3>
       
-      <GeocodingInput
+      <GeocodingInputWithAutocomplete
         label="Address"
         value={formData.address}
         onChange={handleAddressChange}
-        placeholder="Enter the complete address of your driveway"
+        placeholder="Start typing your address (e.g., 70 Lincoln St...)"
         required
         onError={(error) => {
           setErrors(prev => ({ ...prev, address: error }));

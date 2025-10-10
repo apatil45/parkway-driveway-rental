@@ -62,7 +62,39 @@ router.get('/', async (req, res) => {
       order: [['created_at', 'DESC']],
       raw: false
     });
-    res.json(driveways);
+
+    // Process driveways to ensure they have coordinates
+    const processedDriveways = await Promise.all(driveways.map(async (driveway) => {
+      const drivewayData = driveway.toJSON();
+      
+      // If no coordinates, try to geocode the address
+      if (!drivewayData.latitude || !drivewayData.longitude) {
+        try {
+          const coordinates = await geocodeAddress(drivewayData.address);
+          drivewayData.coordinates = coordinates;
+          
+          // Update the database with the new coordinates
+          await driveway.update({
+            latitude: coordinates.lat,
+            longitude: coordinates.lng
+          });
+        } catch (error) {
+          console.error(`Failed to geocode address for driveway ${drivewayData.id}:`, error);
+          // Use fallback coordinates
+          drivewayData.coordinates = { lat: 40.7178, lng: -74.0431 };
+        }
+      } else {
+        // Convert database coordinates to the expected format
+        drivewayData.coordinates = {
+          lat: parseFloat(drivewayData.latitude),
+          lng: parseFloat(drivewayData.longitude)
+        };
+      }
+      
+      return drivewayData;
+    }));
+
+    res.json(processedDriveways);
   } catch (err) {
     console.error('Get Driveways Error:', err.message);
     console.error('Error details:', err);
