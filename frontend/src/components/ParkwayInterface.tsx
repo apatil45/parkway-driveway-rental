@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ParkwaySearchForm from './ParkwaySearchForm';
-import ParkwaySearchResults from './ParkwaySearchResults';
+import EnhancedParkwayResults from './EnhancedParkwayResults';
 import EnhancedMapView from './EnhancedMapView';
 import SimpleBookingModal from './SimpleBookingModal';
 import QuickActions from './QuickActions';
@@ -179,7 +179,7 @@ const ParkwayInterface: React.FC = () => {
           )}
 
           {!isSearching && !searchError && driveways.length > 0 && (
-            <ParkwaySearchResults
+            <EnhancedParkwayResults
               driveways={driveways}
               userLocation={userLocation}
               onDrivewaySelect={handleDrivewaySelect}
