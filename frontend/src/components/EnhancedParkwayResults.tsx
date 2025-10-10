@@ -10,6 +10,7 @@ interface Driveway {
   images: string[];
   rating: number;
   distance?: number;
+  isAvailable?: boolean;
   owner?: {
     name: string;
     rating: number;
@@ -19,7 +20,12 @@ interface Driveway {
   availability?: {
     startTime: string;
     endTime: string;
-  };
+  } | Array<{
+    dayOfWeek: string;
+    isAvailable: boolean;
+    startTime: string;
+    endTime: string;
+  }>;
   coordinates?: {
     lat: number;
     lng: number;
@@ -71,7 +77,9 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
 
   const sortedDriveways = [...driveways].sort((a, b) => {
     if (sortBy === 'distance') {
-      return (a.distance || Infinity) - (b.distance || Infinity);
+      const distanceA = getDrivewayDistance(a) || Infinity;
+      const distanceB = getDrivewayDistance(b) || Infinity;
+      return distanceA - distanceB;
     } else if (sortBy === 'price') {
       const priceA = typeof a.pricePerHour === 'string' ? parseFloat(a.pricePerHour) : a.pricePerHour;
       const priceB = typeof b.pricePerHour === 'string' ? parseFloat(b.pricePerHour) : b.pricePerHour;
@@ -94,12 +102,39 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
     return priceMatch && amenitiesMatch;
   });
 
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance in meters
+  };
+
   const formatDistance = (distanceInMeters: number | undefined) => {
-    if (distanceInMeters === undefined) return 'N/A';
+    if (distanceInMeters === undefined || distanceInMeters === null) return 'N/A';
     if (distanceInMeters < 1000) {
-      return `${distanceInMeters}m`;
+      return `${Math.round(distanceInMeters)}m`;
     }
     return `${(distanceInMeters / 1000).toFixed(1)}km`;
+  };
+
+  const getDrivewayDistance = (driveway: Driveway) => {
+    if (!userLocation || !driveway.coordinates) {
+      return undefined;
+    }
+    return calculateDistance(
+      userLocation.lat,
+      userLocation.lng,
+      driveway.coordinates.lat,
+      driveway.coordinates.lng
+    );
   };
 
   const formatPrice = (price: number | string | undefined) => {
@@ -111,8 +146,37 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
   };
 
   const getAvailabilityStatus = (driveway: Driveway) => {
+    // Check if driveway has isAvailable flag
+    if (driveway.isAvailable === false) {
+      return { status: 'closed', text: 'Closed', color: '#E53E3E' };
+    }
+
+    // If availability is an array (day-specific), check current day
+    if (Array.isArray(driveway.availability)) {
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const todayAvailability = driveway.availability.find(day => day.dayOfWeek === today);
+      
+      if (todayAvailability && todayAvailability.isAvailable) {
+        const now = new Date();
+        const startTime = new Date(`2000-01-01T${todayAvailability.startTime}`);
+        const endTime = new Date(`2000-01-01T${todayAvailability.endTime}`);
+        const currentTime = new Date(`2000-01-01T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+        
+        if (currentTime >= startTime && currentTime <= endTime) {
+          return { status: 'available', text: 'Available Now', color: '#00D4AA' };
+        } else if (currentTime < startTime) {
+          return { status: 'opens-later', text: `Opens at ${todayAvailability.startTime}`, color: '#FFB800' };
+        } else {
+          return { status: 'closed', text: 'Closed', color: '#E53E3E' };
+        }
+      } else {
+        return { status: 'closed', text: 'Closed', color: '#E53E3E' };
+      }
+    }
+
+    // Fallback for simple availability object
     const now = new Date();
-    const availability = driveway.availability || { startTime: '06:00', endTime: '22:00' };
+    const availability = driveway.availability || { startTime: '00:00', endTime: '23:59' };
     const startTime = new Date(`2000-01-01T${availability.startTime}`);
     const endTime = new Date(`2000-01-01T${availability.endTime}`);
     const currentTime = new Date(`2000-01-01T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
@@ -380,7 +444,7 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
                       </div>
                       
                       <div className="spot-details">
-                        <span className="distance">{formatDistance(driveway.distance)}</span>
+                        <span className="distance">{formatDistance(getDrivewayDistance(driveway))}</span>
                         <span className="availability" style={{ color: availability.color }}>
                           {availability.text}
                         </span>
