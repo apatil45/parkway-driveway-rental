@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationCenter from './NotificationCenter';
+import RoleSwitcher from './RoleSwitcher';
 import './Nav.css';
 
 const Nav: React.FC = () => {
@@ -185,7 +186,9 @@ const Nav: React.FC = () => {
         <div className="nav-actions" id="user-menu">
           {isAuthenticated && <NotificationCenter />}
           {isAuthenticated ? (
-            <div className="profile-section" ref={dropdownRef}>
+            <>
+              <RoleSwitcher />
+              <div className="profile-section" ref={dropdownRef}>
               <button 
                 className="profile-button"
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -243,6 +246,7 @@ const Nav: React.FC = () => {
                 </div>
               )}
             </div>
+            </>
           ) : (
             <div className="auth-buttons">
               <Link to="/login" className="btn btn-outline">

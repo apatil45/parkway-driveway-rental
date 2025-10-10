@@ -340,3 +340,41 @@
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
 }
+
+/* Error States */
+.location-input.error,
+.datetime-input.error {
+  border-color: var(--color-error) !important;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1) !important;
+}
+
+.location-input.error:focus,
+.datetime-input.error:focus {
+  border-color: var(--color-error) !important;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2) !important;
+}
+
+.form-errors {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: rgba(229, 62, 62, 0.1);
+  border: 1px solid rgba(229, 62, 62, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+
+.error-message svg {
+  flex-shrink: 0;
+  color: var(--color-error);
+}

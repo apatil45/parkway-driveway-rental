@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getMinDate, getMinTime, validateDateTime, getESTTime } from '../utils/timeUtils';
 import './ParkwaySearchForm.css';
 
 interface UserLocation {
@@ -28,19 +29,45 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | undefined>();
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Set default date and time
-  React.useEffect(() => {
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  // Set default date and time using US time
+  useEffect(() => {
+    const minDate = getMinDate();
+    const minTime = getMinTime(minDate);
     
-    setDate(tomorrow.toISOString().split('T')[0]);
-    setTime('09:00');
+    setDate(minDate);
+    setTime(minTime);
   }, []);
+
+  // Real-time validation
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    // Location validation
+    if (!location.trim()) {
+      newErrors.location = 'Location is required';
+    }
+
+    // Date and time validation
+    if (date && time) {
+      const validation = validateDateTime(date, time);
+      if (!validation.isValid) {
+        newErrors.datetime = validation.error || 'Invalid date or time';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleLocationChange = (value: string) => {
     setLocation(value);
+    // Clear location error when user starts typing
+    if (errors.location) {
+      setErrors(prev => ({ ...prev, location: '' }));
+    }
+    
     // Here you could add geocoding to get coordinates
     // For now, we'll use user location if available
     if (userLocation && value.toLowerCase().includes('current')) {
@@ -48,11 +75,41 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
     }
   };
 
+  const handleDateChange = (value: string) => {
+    setDate(value);
+    // Clear datetime error when user changes date
+    if (errors.datetime) {
+      setErrors(prev => ({ ...prev, datetime: '' }));
+    }
+    
+    // Update time if needed (if date is today, ensure time is not in past)
+    if (value && time) {
+      const minTimeForDate = getMinTime(value);
+      if (time < minTimeForDate) {
+        setTime(minTimeForDate);
+      }
+    }
+    
+    // Validate immediately
+    setTimeout(() => validateForm(), 100);
+  };
+
+  const handleTimeChange = (value: string) => {
+    setTime(value);
+    // Clear datetime error when user changes time
+    if (errors.datetime) {
+      setErrors(prev => ({ ...prev, datetime: '' }));
+    }
+    
+    // Validate immediately
+    setTimeout(() => validateForm(), 100);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!location.trim()) {
-      alert('Please enter a location');
+    // Validate form before submission
+    if (!validateForm()) {
       return;
     }
 
@@ -99,7 +156,7 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
               value={location}
               onChange={(e) => handleLocationChange(e.target.value)}
               placeholder="Enter destination address"
-              className="location-input"
+              className={`location-input ${errors.location ? 'error' : ''}`}
               required
             />
             <button
@@ -131,8 +188,9 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
                 type="date"
                 id="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="datetime-input"
+                onChange={(e) => handleDateChange(e.target.value)}
+                min={getMinDate()}
+                className={`datetime-input ${errors.datetime ? 'error' : ''}`}
                 required
               />
             </div>
@@ -149,13 +207,40 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
                 type="time"
                 id="time"
                 value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="datetime-input"
+                onChange={(e) => handleTimeChange(e.target.value)}
+                min={getMinTime(date)}
+                className={`datetime-input ${errors.datetime ? 'error' : ''}`}
                 required
               />
             </div>
           </div>
         </div>
+
+        {/* Error Messages */}
+        {Object.keys(errors).length > 0 && (
+          <div className="form-errors">
+            {errors.location && (
+              <div className="error-message location-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                {errors.location}
+              </div>
+            )}
+            {errors.datetime && (
+              <div className="error-message datetime-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                {errors.datetime}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Popular Destinations */}
         <div className="popular-destinations">

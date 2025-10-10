@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import RealMapView from './RealMapView';
+import { getESTTime, getCurrentDayOfWeek, formatTimeForAvailability } from '../utils/timeUtils';
 import './EnhancedParkwayResults.css';
 
 interface Driveway {
@@ -153,14 +154,15 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
 
     // If availability is an array (day-specific), check current day
     if (Array.isArray(driveway.availability)) {
-      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const today = getCurrentDayOfWeek();
       const todayAvailability = driveway.availability.find(day => day.dayOfWeek === today);
       
       if (todayAvailability && todayAvailability.isAvailable) {
-        const now = new Date();
+        const now = getESTTime();
+        const currentTimeStr = formatTimeForAvailability(now);
         const startTime = new Date(`2000-01-01T${todayAvailability.startTime}`);
         const endTime = new Date(`2000-01-01T${todayAvailability.endTime}`);
-        const currentTime = new Date(`2000-01-01T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+        const currentTime = new Date(`2000-01-01T${currentTimeStr}`);
         
         if (currentTime >= startTime && currentTime <= endTime) {
           return { status: 'available', text: 'Available Now', color: '#00D4AA' };
@@ -175,11 +177,12 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
     }
 
     // Fallback for simple availability object
-    const now = new Date();
+    const now = getESTTime();
+    const currentTimeStr = formatTimeForAvailability(now);
     const availability = driveway.availability || { startTime: '00:00', endTime: '23:59' };
     const startTime = new Date(`2000-01-01T${availability.startTime}`);
     const endTime = new Date(`2000-01-01T${availability.endTime}`);
-    const currentTime = new Date(`2000-01-01T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+    const currentTime = new Date(`2000-01-01T${currentTimeStr}`);
     
     if (currentTime >= startTime && currentTime <= endTime) {
       return { status: 'available', text: 'Available Now', color: '#00D4AA' };
