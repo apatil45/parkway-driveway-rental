@@ -138,6 +138,22 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
     }
   };
 
+  const handleMapFocus = (driveway: Driveway) => {
+    // Focus on map and select the driveway for map highlighting
+    onDrivewaySelect(driveway);
+    // Switch to split view and expand map if not already
+    if (viewMode !== 'split') {
+      handleViewModeChange('split');
+    }
+    setMapExpanded(true);
+    setListExpanded(false);
+  };
+
+  const handleBooking = (driveway: Driveway) => {
+    // This will open the booking modal
+    onDrivewaySelect(driveway);
+  };
+
   const toggleListExpansion = () => {
     if (viewMode === 'split') {
       setListExpanded(!listExpanded);
@@ -334,7 +350,7 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
                   <div 
                     key={driveway.id} 
                     className={`parking-spot-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => onDrivewaySelect(driveway)}
+                    onClick={() => handleMapFocus(driveway)}
                   >
                     <div className="spot-image">
                       {driveway.images && driveway.images.length > 0 ? (
@@ -374,7 +390,7 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
                           className="book-button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDrivewaySelect(driveway);
+                            handleBooking(driveway);
                           }}
                         >
                           Book Now
