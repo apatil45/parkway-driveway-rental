@@ -129,6 +129,25 @@ const MapUpdater: React.FC<{ driveways: Driveway[]; userLocation: UserLocation |
   return null;
 };
 
+// Component to handle map focusing on selected driveway
+const MapFocus: React.FC<{
+  selectedDriveway: Driveway | null;
+}> = ({ selectedDriveway }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (selectedDriveway && selectedDriveway.coordinates) {
+      const { lat, lng } = selectedDriveway.coordinates;
+      map.flyTo([lat, lng], 16, {
+        animate: true,
+        duration: 1.5
+      });
+    }
+  }, [selectedDriveway, map]);
+
+  return null;
+};
+
 const RealMapView: React.FC<RealMapViewProps> = ({
   driveways,
   userLocation,
@@ -224,6 +243,7 @@ const RealMapView: React.FC<RealMapViewProps> = ({
           />
           
           <MapUpdater driveways={driveways} userLocation={userLocation} />
+          <MapFocus selectedDriveway={selectedDriveway} />
           
           {/* User Location Marker */}
           {userLocation && (
