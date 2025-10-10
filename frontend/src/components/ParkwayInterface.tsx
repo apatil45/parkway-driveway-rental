@@ -138,6 +138,12 @@ const ParkwayInterface: React.FC = () => {
     setShowBookingModal(true);
   };
 
+  const handleDrivewayFocus = (driveway: Driveway) => {
+    // Only select for map focus, don't open booking modal
+    setSelectedDriveway(driveway);
+    setShowBookingModal(false);
+  };
+
   const handleBookingSuccess = () => {
     setShowBookingModal(false);
     setSelectedDriveway(null);
@@ -183,6 +189,7 @@ const ParkwayInterface: React.FC = () => {
               driveways={driveways}
               userLocation={userLocation}
               onDrivewaySelect={handleDrivewaySelect}
+              onDrivewayFocus={handleDrivewayFocus}
               selectedDriveway={selectedDriveway}
               isLoading={isSearching}
               error={searchError}

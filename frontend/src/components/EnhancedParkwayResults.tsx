@@ -35,6 +35,7 @@ interface EnhancedParkwayResultsProps {
   driveways: Driveway[];
   userLocation: UserLocation | null;
   onDrivewaySelect: (driveway: Driveway) => void;
+  onDrivewayFocus: (driveway: Driveway) => void;
   selectedDriveway: Driveway | null;
   isLoading: boolean;
   error: string | null;
@@ -44,6 +45,7 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
   driveways,
   userLocation,
   onDrivewaySelect,
+  onDrivewayFocus,
   selectedDriveway,
   isLoading,
   error,
@@ -139,8 +141,8 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
   };
 
   const handleMapFocus = (driveway: Driveway) => {
-    // Focus on map and select the driveway for map highlighting
-    onDrivewaySelect(driveway);
+    // Focus on map and select the driveway for map highlighting (without opening booking modal)
+    onDrivewayFocus(driveway);
     // Switch to split view and expand map if not already
     if (viewMode !== 'split') {
       handleViewModeChange('split');
@@ -433,7 +435,7 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
               <RealMapView
                 driveways={filteredDriveways}
                 userLocation={userLocation}
-                onDrivewaySelect={onDrivewaySelect}
+                onDrivewaySelect={onDrivewayFocus}
                 selectedDriveway={selectedDriveway}
               />
             </div>
