@@ -301,21 +301,32 @@ router.get('/search', async (req, res) => {
         }
 
         const matchingAvailability = driveway.availability.find(avail => {
-          if (!avail.date) return false;
-          
-          const availDate = new Date(avail.date);
-          if (isNaN(availDate.getTime())) {
-            return false;
+          // Check if availability is for day of week (legacy format) or specific date
+          if (avail.dayOfWeek) {
+            // Legacy format: day of week based availability
+            const searchDayOfWeek = searchDateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            const isDayMatch = avail.dayOfWeek === searchDayOfWeek;
+            const isTimeMatch = searchStartTime >= avail.startTime && searchEndTime <= avail.endTime;
+            
+            return isDayMatch && isTimeMatch && avail.isAvailable;
+          } else if (avail.date) {
+            // New format: specific date based availability
+            const availDate = new Date(avail.date);
+            if (isNaN(availDate.getTime())) {
+              return false;
+            }
+
+            const availYear = availDate.getUTCFullYear();
+            const availMonth = availDate.getUTCMonth();
+            const availDay = availDate.getUTCDate();
+
+            const isDateMatch = (availYear === searchYear && availMonth === searchMonth && availDay === searchDay);
+            const isTimeMatch = searchStartTime >= avail.startTime && searchEndTime <= avail.endTime;
+
+            return isDateMatch && isTimeMatch;
           }
-
-          const availYear = availDate.getUTCFullYear();
-          const availMonth = availDate.getUTCMonth();
-          const availDay = availDate.getUTCDate();
-
-          const isDateMatch = (availYear === searchYear && availMonth === searchMonth && availDay === searchDay);
-          const isTimeMatch = searchStartTime >= avail.startTime && searchEndTime <= avail.endTime;
-
-          return isDateMatch && isTimeMatch;
+          
+          return false;
         });
 
         if (!matchingAvailability) {
