@@ -125,10 +125,30 @@ app.get('/health', async (req, res) => {
 // Serve static files - production vs development
 if (process.env.NODE_ENV === 'production') {
   console.log('Production: Serving from public directory');
-  app.use(express.static('public'));
+  app.use(express.static('public', {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (path.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (path.endsWith('.json')) {
+        res.setHeader('Content-Type', 'application/json');
+      }
+    }
+  }));
 } else {
   console.log('Development: Serving from frontend/dist directory');
-  app.use(express.static('frontend/dist'));
+  app.use(express.static('frontend/dist', {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (path.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (path.endsWith('.json')) {
+        res.setHeader('Content-Type', 'application/json');
+      }
+    }
+  }));
 }
 
 // Define Routes - PostgreSQL only
