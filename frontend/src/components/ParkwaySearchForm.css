@@ -1,47 +1,55 @@
-/* Parkway Search Form Styles */
+/* Parkway Search Form Styles - Using Design System */
 .parkway-search-form {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-sm);
 }
 
-.form-header {
-  margin-bottom: 2rem;
+.search-header {
+  margin-bottom: var(--space-8);
 }
 
-.form-header h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
+.search-header h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
   color: var(--color-text-primary);
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 var(--space-2) 0;
+  font-family: var(--font-family-primary);
 }
 
-.form-header p {
-  font-size: 1rem;
+.search-header p {
+  font-size: var(--text-base);
   color: var(--color-text-secondary);
   margin: 0;
-  line-height: 1.5;
+  line-height: var(--leading-relaxed);
+  font-family: var(--font-family-secondary);
 }
 
 .search-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-6);
   flex: 1;
 }
 
-/* Form Groups */
+/* Form Groups - Using Design System */
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
 }
 
 .form-label {
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
   color: var(--color-text-primary);
   margin: 0;
+  font-family: var(--font-family-primary);
 }
 
 /* Location Input - Uber Style */
@@ -63,7 +71,7 @@
 }
 
 .location-icon {
-  padding: 0.75rem;
+  padding: var(--space-3);
   color: var(--color-text-secondary);
   display: flex;
   align-items: center;
@@ -72,12 +80,13 @@
 
 .location-input {
   flex: 1;
-  padding: 0.75rem;
+  padding: var(--space-3);
   border: none;
   background: transparent;
-  font-size: 1rem;
+  font-size: var(--text-base);
   color: var(--color-text-primary);
   outline: none;
+  font-family: var(--font-family-primary);
 }
 
 .location-input::placeholder {
@@ -379,14 +388,14 @@
   color: var(--color-error);
 }
 
-/* Mode Selection Tabs */
+/* Mode Selection Tabs - Using Design System */
 .search-mode-tabs {
   display: flex;
-  background: var(--color-surface);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-xs);
-  margin-bottom: var(--spacing-lg);
-  gap: var(--spacing-xs);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  margin-bottom: var(--space-6);
+  gap: var(--space-1);
 }
 
 .mode-tab {
@@ -394,26 +403,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border: none;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
-  font-weight: 500;
-  font-size: var(--font-size-sm);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
+  font-family: var(--font-family-primary);
 }
 
 .mode-tab:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
 }
 
 .mode-tab.active {
   background: var(--color-primary);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   box-shadow: var(--shadow-sm);
 }
 
@@ -422,110 +432,114 @@
   height: 18px;
 }
 
-/* Park Now Section */
+/* Park Now Section - Using Design System */
 .park-now-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--space-6);
 }
 
 .current-time-display {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  background: var(--color-success-light);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: rgba(0, 212, 170, 0.1);
   border: 1px solid var(--color-success);
-  border-radius: var(--border-radius-md);
-  color: var(--color-success-dark);
-  font-weight: 500;
-  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  color: var(--color-success);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  font-family: var(--font-family-primary);
 }
 
 .current-time-display svg {
   color: var(--color-success);
 }
 
-/* Duration Options */
+/* Duration Options - Using Design System */
 .duration-options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-sm);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .duration-option {
-  padding: var(--spacing-md);
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius-md);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-weight: 500;
-  font-size: var(--font-size-sm);
+  padding: var(--space-3);
+  border: 2px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: center;
+  font-family: var(--font-family-primary);
 }
 
 .duration-option:hover {
   border-color: var(--color-primary);
-  background: var(--color-primary-light);
+  background: var(--color-bg-secondary);
 }
 
 .duration-option.selected {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: var(--color-white);
+  color: var(--color-text-inverse);
   box-shadow: var(--shadow-sm);
 }
 
-/* Parking Summary */
+/* Parking Summary - Using Design System */
 .parking-summary {
   display: flex;
   justify-content: space-between;
-  padding: var(--spacing-md);
-  background: var(--color-surface);
-  border-radius: var(--border-radius-md);
-  border: 1px solid var(--color-border);
+  padding: var(--space-3);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-primary);
 }
 
 .summary-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: var(--space-1);
 }
 
 .summary-item .label {
-  font-size: var(--font-size-xs);
+  font-size: var(--text-xs);
   color: var(--color-text-secondary);
-  font-weight: 500;
+  font-weight: var(--font-medium);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: var(--font-family-primary);
 }
 
 .summary-item .value {
-  font-size: var(--font-size-md);
-  color: var(--color-text);
-  font-weight: 600;
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  font-weight: var(--font-semibold);
+  font-family: var(--font-family-primary);
 }
 
-/* Schedule Section */
+/* Schedule Section - Using Design System */
 .schedule-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--space-6);
 }
 
 /* Responsive Design for New Components */
 @media (max-width: 768px) {
   .search-mode-tabs {
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: var(--space-1);
   }
   
   .mode-tab {
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--space-2) var(--space-3);
   }
   
   .duration-options {
@@ -534,6 +548,6 @@
   
   .parking-summary {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--space-2);
   }
 }
