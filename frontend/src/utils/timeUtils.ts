@@ -100,7 +100,12 @@ export const isTimeInPast = (date: Date, time: string): boolean => {
   targetDateTime.setHours(hours, minutes, 0, 0);
   
   const now = getESTTime();
-  return targetDateTime < now;
+  
+  // Compare only the time portion, not the full datetime
+  const targetTime = hours * 60 + minutes;
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+  
+  return targetTime < currentTime;
 };
 
 /**

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getMinDate, getMinTime, validateDateTime, getESTTime, formatTimeForAvailability } from '../utils/timeUtils';
+import GeocodingSearch from './GeocodingSearch';
 import './ParkwaySearchForm.css';
 
 interface UserLocation {
@@ -156,34 +157,16 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
         {/* Location Input */}
         <div className="form-group">
           <label htmlFor="location" className="form-label">Where do you need parking?</label>
-          <div className="location-input-group">
-            <div className="location-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-            </div>
-            <input
-              type="text"
-              id="location"
-              value={location}
-              onChange={(e) => handleLocationChange(e.target.value)}
-              placeholder="Enter destination address"
-              className={`location-input ${errors.location ? 'error' : ''}`}
-              required
-            />
-            <button
-              type="button"
-              onClick={handleCurrentLocation}
-              className="current-location-btn"
-              title="Use current location"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
-              </svg>
-            </button>
-          </div>
+          <GeocodingSearch
+            onSearch={(query, coords) => {
+              handleLocationChange(query);
+              if (coords) {
+                setCoordinates(coords);
+              }
+            }}
+            placeholder="Enter destination address"
+            className="location-search"
+          />
         </div>
 
         {/* Date and Time */}
