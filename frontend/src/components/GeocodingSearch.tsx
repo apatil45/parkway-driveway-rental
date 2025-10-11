@@ -93,6 +93,13 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
       setCoordinates(null);
     }
 
+    // Show suggestions immediately if there's text
+    if (newValue.length >= 2) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+
     // Debounce the search
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -155,6 +162,13 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
     }
   };
 
+  const handleInputFocus = () => {
+    // Show suggestions if there's already text and suggestions available
+    if (searchQuery.length >= 2 && suggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
   // Handle click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -193,6 +207,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
           value={searchQuery}
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
+          onFocus={handleInputFocus}
           placeholder={placeholder}
           disabled={disabled}
           className={`search-input ${error ? 'error' : ''} ${coordinates ? 'success' : ''}`}

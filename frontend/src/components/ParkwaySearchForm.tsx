@@ -70,6 +70,12 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
     if (searchMode === 'now') {
       // Set default duration for Park Now mode
       setDuration(120);
+      
+      // Auto-fill current location for Park Now mode
+      if (userLocation && !location) {
+        setLocation('Current Location');
+        setCoordinates(userLocation);
+      }
     } else {
       // Set default date and time for Schedule mode
       const minDate = getMinDate();
@@ -79,7 +85,7 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
       setDate(minDate);
       setTime(currentTimeStr);
     }
-  }, [searchMode]);
+  }, [searchMode, userLocation, location]);
 
   // Real-time validation
   const validateForm = () => {
