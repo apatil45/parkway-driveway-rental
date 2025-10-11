@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMinDate, getMinTime, validateDateTime, getESTTime } from '../utils/timeUtils';
+import { getMinDate, getMinTime, validateDateTime, getESTTime, formatTimeForAvailability } from '../utils/timeUtils';
 import './ParkwaySearchForm.css';
 
 interface UserLocation {
@@ -33,11 +33,24 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
 
   // Set default date and time using US time
   useEffect(() => {
-    const minDate = getMinDate();
-    const minTime = getMinTime(minDate);
-    
-    setDate(minDate);
-    setTime(minTime);
+    const updateTime = () => {
+      const minDate = getMinDate();
+      const currentTime = getESTTime();
+      const currentTimeStr = formatTimeForAvailability(currentTime);
+      
+      console.log('Setting default time:', currentTimeStr, 'from EST time:', currentTime);
+      
+      setDate(minDate);
+      setTime(currentTimeStr);
+    };
+
+    // Set initial time
+    updateTime();
+
+    // Update time every minute to keep it current
+    const interval = setInterval(updateTime, 60000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Real-time validation

@@ -60,6 +60,28 @@ export const formatTimeForAvailability = (date: Date): string => {
 };
 
 /**
+ * Format time for display in 12-hour format (for user-friendly display)
+ */
+export const formatTimeForDisplay = (date: Date): string => {
+  return date.toLocaleTimeString('en-US', { 
+    hour12: true, 
+    hour: 'numeric', 
+    minute: '2-digit',
+    timeZone: US_TIMEZONES.EST
+  });
+};
+
+/**
+ * Convert 24-hour time string to 12-hour format for display
+ */
+export const convertTo12HourFormat = (time24: string): string => {
+  const [hours, minutes] = time24.split(':').map(Number);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return formatTimeForDisplay(date);
+};
+
+/**
  * Get current day of week in lowercase (for availability matching)
  */
 export const getCurrentDayOfWeek = (): string => {
