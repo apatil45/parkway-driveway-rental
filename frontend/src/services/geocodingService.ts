@@ -151,24 +151,33 @@ class GeocodingService {
    * @returns Promise with array of address suggestions
    */
   async getAddressSuggestions(query: string): Promise<AddressSuggestion[]> {
+    console.log('getAddressSuggestions called with query:', query);
     if (!query || query.trim().length < 2) {
+      console.log('Query too short, returning empty array');
       return [];
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/autocomplete?query=${encodeURIComponent(query.trim())}`, {
+      const url = `${this.baseUrl}/autocomplete?query=${encodeURIComponent(query.trim())}`;
+      console.log('Making request to:', url);
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         const errorData: GeocodingError = await response.json();
+        console.error('Autocomplete error response:', errorData);
         throw new Error(errorData.message || `Autocomplete failed with status ${response.status}`);
       }
 
       const suggestions: AddressSuggestion[] = await response.json();
+      console.log('Parsed suggestions:', suggestions);
       return suggestions;
     } catch (error) {
       console.error('Autocomplete error:', error);

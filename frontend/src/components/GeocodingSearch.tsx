@@ -30,6 +30,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
 
   // Debounced search for suggestions
   const searchSuggestions = useCallback(async (query: string) => {
+    console.log('Searching suggestions for:', query);
     if (query.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -38,9 +39,13 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
 
     setIsLoadingSuggestions(true);
     try {
+      console.log('Calling geocodingService.getAddressSuggestions...');
       const results = await geocodingService.getAddressSuggestions(query);
+      console.log('Received suggestions:', results);
       setSuggestions(results);
-      setShowSuggestions(results.length > 0);
+      const shouldShow = results.length > 0;
+      console.log('Setting showSuggestions to:', shouldShow);
+      setShowSuggestions(shouldShow);
       setSelectedIndex(-1);
     } catch (err) {
       console.error('Error fetching suggestions:', err);
@@ -225,6 +230,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
           className="suggestions-dropdown"
           role="listbox"
           aria-label="Location suggestions"
+          style={{ display: 'block' }}
         >
           {isLoadingSuggestions ? (
             <div className="suggestion-item loading">
