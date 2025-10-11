@@ -106,11 +106,17 @@ export const isTimeInPast = (date: Date, time: string): boolean => {
 /**
  * Check if a date is in the past (for form validation)
  */
-export const isDateInPast = (date: Date): boolean => {
+export const isDateInPast = (date: Date | string): boolean => {
+  const dateObj = typeof date === 'string' ? new Date(date + 'T00:00:00') : date;
   const today = getESTTime();
   today.setHours(0, 0, 0, 0);
-  date.setHours(0, 0, 0, 0);
-  return date < today;
+  dateObj.setHours(0, 0, 0, 0);
+  
+  // Compare dates in the same timezone
+  const todayStr = today.toISOString().split('T')[0];
+  const dateStr = dateObj.toISOString().split('T')[0];
+  
+  return dateStr < todayStr;
 };
 
 /**
@@ -144,19 +150,29 @@ export const getMinTime = (selectedDate: string): string => {
  * Validate date and time combination
  */
 export const validateDateTime = (date: string, time: string): { isValid: boolean; error?: string } => {
-  const selectedDate = new Date(date);
-  const selectedTime = time;
+  console.log('Validating date/time:', { date, time });
   
   // Check if date is in the past
-  if (isDateInPast(selectedDate)) {
+  if (isDateInPast(date)) {
+    console.log('Date is in past:', date);
     return { isValid: false, error: 'Cannot select a date in the past' };
   }
   
   // Check if time is in the past (only for today)
   const today = getESTTime();
-  if (selectedDate.toDateString() === today.toDateString() && isTimeInPast(selectedDate, selectedTime)) {
+  const selectedDate = new Date(date + 'T00:00:00');
+  
+  // Compare date strings to avoid timezone issues
+  const todayStr = today.toISOString().split('T')[0];
+  const selectedDateStr = selectedDate.toISOString().split('T')[0];
+  
+  console.log('Date comparison:', { todayStr, selectedDateStr, isToday: selectedDateStr === todayStr });
+  
+  if (selectedDateStr === todayStr && isTimeInPast(selectedDate, time)) {
+    console.log('Time is in past for today');
     return { isValid: false, error: 'Cannot select a time in the past' };
   }
   
+  console.log('Validation passed');
   return { isValid: true };
 };
