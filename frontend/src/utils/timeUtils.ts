@@ -17,10 +17,27 @@ export type USTimezone = keyof typeof US_TIMEZONES;
  */
 export const getUSTime = (timezone: USTimezone = 'EST'): Date => {
   const now = new Date();
-  const usTime = new Date(now.toLocaleString('en-US', { 
-    timeZone: US_TIMEZONES[timezone] 
-  }));
-  return usTime;
+  // Use Intl.DateTimeFormat to get proper timezone conversion
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: US_TIMEZONES[timezone],
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const year = parts.find(part => part.type === 'year')?.value;
+  const month = parts.find(part => part.type === 'month')?.value;
+  const day = parts.find(part => part.type === 'day')?.value;
+  const hour = parts.find(part => part.type === 'hour')?.value;
+  const minute = parts.find(part => part.type === 'minute')?.value;
+  const second = parts.find(part => part.type === 'second')?.value;
+  
+  return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
 };
 
 /**
@@ -91,8 +108,10 @@ export const getMinTime = (selectedDate: string): string => {
   // If selected date is today, return current time + 1 hour
   if (selectedDateObj.toDateString() === today.toDateString()) {
     const currentHour = today.getHours();
-    const nextHour = (currentHour + 1) % 24;
-    return `${nextHour.toString().padStart(2, '0')}:00`;
+    const nextHour = currentHour + 1;
+    // If next hour is 24, it should be 00 (midnight)
+    const finalHour = nextHour >= 24 ? 0 : nextHour;
+    return `${finalHour.toString().padStart(2, '0')}:00`;
   }
   
   // If selected date is in the future, allow any time
