@@ -159,9 +159,10 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
           <label htmlFor="location" className="form-label">Where do you need parking?</label>
           <GeocodingSearch
             onSearch={(query, coords) => {
+              console.log('GeocodingSearch onSearch called:', { query, coords });
               handleLocationChange(query);
-              if (coords) {
-                setCoordinates(coords);
+              if (coords && coords.latitude && coords.longitude) {
+                setCoordinates({ lat: coords.latitude, lng: coords.longitude });
               }
             }}
             placeholder="Enter destination address"

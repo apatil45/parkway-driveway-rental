@@ -48,22 +48,34 @@ router.get('/autocomplete', async (req, res) => {
 
   try {
     // Use OpenCage's forward geocoding with limit for autocomplete
-    const results = await geocoder.geocode(query.trim(), { limit: 5 });
+    const results = await geocoder.geocode(query.trim(), { 
+      limit: 20 // Get more results to filter from
+    });
 
     if (!results || results.length === 0) {
       return res.json([]);
     }
 
-    // Format results for autocomplete
-    const suggestions = results.map(result => ({
-      address: result.formattedAddress || `${result.streetNumber || ''} ${result.streetName || ''} ${result.city || ''} ${result.state || ''} ${result.zipcode || ''}`.trim(),
-      latitude: result.latitude,
-      longitude: result.longitude,
-      city: result.city,
-      state: result.state,
-      country: result.country,
-      zipcode: result.zipcode
-    }));
+    // Filter results to US only and format for autocomplete
+    const suggestions = results
+      .filter(result => {
+        const country = result.country || '';
+        const countryCode = result.countryCode || '';
+        return country === 'United States' || 
+               country === 'United States of America' ||
+               countryCode === 'US' ||
+               countryCode === 'USA';
+      })
+      .slice(0, 5) // Limit to 5 results
+      .map(result => ({
+        address: result.formattedAddress || `${result.streetNumber || ''} ${result.streetName || ''} ${result.city || ''} ${result.state || ''} ${result.zipcode || ''}`.trim(),
+        latitude: result.latitude,
+        longitude: result.longitude,
+        city: result.city,
+        state: result.state,
+        country: result.country,
+        zipcode: result.zipcode
+      }));
 
     res.json(suggestions);
 
