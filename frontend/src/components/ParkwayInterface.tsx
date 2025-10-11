@@ -98,6 +98,27 @@ const ParkwayInterface: React.FC = () => {
       }
 
       searchParams.append('radius', '1000'); // 1km radius - very local parking
+      searchParams.append('searchMode', data.searchMode);
+
+      // Add mode-specific parameters
+      if (data.searchMode === 'now') {
+        searchParams.append('duration', data.duration?.toString() || '120');
+      } else {
+        if (data.date) searchParams.append('date', data.date);
+        if (data.time) {
+          // For schedule mode, we need to calculate end time
+          // For now, let's assume 2 hours duration
+          const startTime = data.time;
+          const [hours, minutes] = startTime.split(':').map(Number);
+          const startDateTime = new Date();
+          startDateTime.setHours(hours, minutes, 0, 0);
+          const endDateTime = new Date(startDateTime.getTime() + (2 * 60 * 60 * 1000)); // 2 hours
+          const endTime = endDateTime.toTimeString().slice(0, 5);
+          
+          searchParams.append('startTime', startTime);
+          searchParams.append('endTime', endTime);
+        }
+      }
 
       const response = await fetch(`/api/driveways/search?${searchParams}`, {
         method: 'GET',
@@ -113,7 +134,7 @@ const ParkwayInterface: React.FC = () => {
       const result = await response.json();
       console.log('Search API response:', result);
       
-      // Handle different response formats
+      // Handle enhanced response format
       let driveways = [];
       if (Array.isArray(result)) {
         driveways = result;

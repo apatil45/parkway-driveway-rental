@@ -165,11 +165,42 @@ router.get('/search', async (req, res) => {
     radius = 1000, // 1km radius - very local parking
     date,
     startTime,
-    endTime
+    endTime,
+    searchMode = 'later', // 'now' or 'later'
+    duration // in minutes for 'now' mode
   } = req.query;
 
   try {
     let whereClause = { isAvailable: true };
+
+    // Handle search mode and time calculations
+    let searchDate, searchStartTime, searchEndTime;
+    
+    if (searchMode === 'now') {
+      // For "Park Now" mode, use current time + duration
+      const now = new Date();
+      const durationMinutes = parseInt(duration) || 120; // Default 2 hours
+      const endTime = new Date(now.getTime() + (durationMinutes * 60 * 1000));
+      
+      // Format times for search
+      searchDate = now.toISOString().split('T')[0];
+      searchStartTime = now.toTimeString().slice(0, 5); // HH:MM format
+      searchEndTime = endTime.toTimeString().slice(0, 5); // HH:MM format
+      
+      console.log('Park Now mode:', { 
+        searchDate, 
+        searchStartTime, 
+        searchEndTime, 
+        durationMinutes 
+      });
+    } else {
+      // For "Schedule for Later" mode, use provided date/time
+      searchDate = date;
+      searchStartTime = startTime;
+      searchEndTime = endTime;
+      
+      console.log('Schedule mode:', { searchDate, searchStartTime, searchEndTime });
+    }
 
     // If location parameters are provided, we'll filter by distance
     let userLatitude, userLongitude;
@@ -253,15 +284,15 @@ router.get('/search', async (req, res) => {
     }
 
     // Filter by date and time if provided
-    if (date && startTime && endTime) {
-      const searchDate = new Date(date);
-      if (isNaN(searchDate.getTime())) {
+    if (searchDate && searchStartTime && searchEndTime) {
+      const searchDateObj = new Date(searchDate);
+      if (isNaN(searchDateObj.getTime())) {
         return res.status(400).json({ error: 'Invalid date provided for search.' });
       }
 
-      const searchYear = searchDate.getUTCFullYear();
-      const searchMonth = searchDate.getUTCMonth();
-      const searchDay = searchDate.getUTCDate();
+      const searchYear = searchDateObj.getUTCFullYear();
+      const searchMonth = searchDateObj.getUTCMonth();
+      const searchDay = searchDateObj.getUTCDate();
 
       driveways = driveways.filter(driveway => {
         // Check if driveway has availability for the requested date/time
@@ -282,7 +313,7 @@ router.get('/search', async (req, res) => {
           const availDay = availDate.getUTCDate();
 
           const isDateMatch = (availYear === searchYear && availMonth === searchMonth && availDay === searchDay);
-          const isTimeMatch = startTime >= avail.startTime && endTime <= avail.endTime;
+          const isTimeMatch = searchStartTime >= avail.startTime && searchEndTime <= avail.endTime;
 
           return isDateMatch && isTimeMatch;
         });
@@ -295,8 +326,8 @@ router.get('/search', async (req, res) => {
         driveway.pricePerHour = matchingAvailability.pricePerHour;
 
         // Check for booking conflicts
-        const newSearchStartTime = new Date(`${date}T${startTime}:00Z`);
-        const newSearchEndTime = new Date(`${date}T${endTime}:00Z`);
+        const newSearchStartTime = new Date(`${searchDate}T${searchStartTime}:00Z`);
+        const newSearchEndTime = new Date(`${searchDate}T${searchEndTime}:00Z`);
 
         if (isNaN(newSearchStartTime.getTime()) || isNaN(newSearchEndTime.getTime())) {
           return false;
@@ -325,7 +356,18 @@ router.get('/search', async (req, res) => {
       });
     }
 
-    res.json(driveways);
+    // Enhanced response with search mode information
+    const response = {
+      driveways,
+      searchMode,
+      searchDate,
+      searchStartTime,
+      searchEndTime,
+      currentTime: new Date().toISOString(),
+      totalResults: driveways.length
+    };
+    
+    res.json(response);
 
   } catch (err) {
     console.error('Search Driveways Error:', err.message);

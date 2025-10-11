@@ -181,3 +181,53 @@ export const validateDateTime = (date: string, time: string): { isValid: boolean
   console.log('Validation passed');
   return { isValid: true };
 };
+
+/**
+ * Duration options for Park Now mode
+ */
+export const DURATION_OPTIONS = [
+  { value: 30, label: '30 min', display: '30 minutes' },
+  { value: 60, label: '1 hr', display: '1 hour' },
+  { value: 120, label: '2 hr', display: '2 hours' },
+  { value: 240, label: '4 hr', display: '4 hours' },
+  { value: 480, label: '8 hr', display: '8 hours' }
+] as const;
+
+/**
+ * Calculate end time for Park Now mode
+ */
+export const calculateEndTime = (durationMinutes: number): { startTime: string; endTime: string } => {
+  const now = getESTTime();
+  const endTime = new Date(now.getTime() + (durationMinutes * 60 * 1000));
+  
+  return {
+    startTime: formatTimeForAvailability(now),
+    endTime: formatTimeForAvailability(endTime)
+  };
+};
+
+/**
+ * Format duration for display
+ */
+export const formatDuration = (minutes: number): string => {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  if (remainingMinutes === 0) {
+    return `${hours} hr${hours > 1 ? 's' : ''}`;
+  }
+  
+  return `${hours} hr ${remainingMinutes} min`;
+};
+
+/**
+ * Get current time display for Park Now mode
+ */
+export const getCurrentTimeDisplay = (): string => {
+  const now = getESTTime();
+  return formatTimeForDisplay(now);
+};
