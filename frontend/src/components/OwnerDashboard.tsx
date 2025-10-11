@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
 import PaymentStatus from './PaymentStatus';
 import QuickActions from './QuickActions';
+import GeocodingInputWithAutocomplete from './GeocodingInputWithAutocomplete';
 import './OwnerDashboard.css';
 
 interface Driveway {
@@ -815,13 +816,27 @@ const OwnerDashboard: React.FC = () => {
             }}>
               <div className="form-group">
                 <label htmlFor="address">Address *</label>
-                <input 
-                  type="text" 
-                  id="address" 
-                  name="address" 
-                  required 
-                  placeholder="Enter driveway address"
-                />
+                <div style={{ position: 'relative' }}>
+                  <GeocodingInputWithAutocomplete
+                    value=""
+                    onChange={(address) => {
+                      // Update the hidden input value
+                      const hiddenInput = document.getElementById('address') as HTMLInputElement;
+                      if (hiddenInput) {
+                        hiddenInput.value = address;
+                      }
+                    }}
+                    placeholder="Enter driveway address"
+                    label=""
+                    className="form-input"
+                  />
+                  <input 
+                    type="hidden" 
+                    id="address" 
+                    name="address" 
+                    required 
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -1067,14 +1082,28 @@ const OwnerDashboard: React.FC = () => {
             }}>
               <div className="form-group">
                 <label htmlFor="edit-address">Address *</label>
-                <input 
-                  type="text" 
-                  id="edit-address" 
-                  name="address" 
-                  required 
-                  defaultValue={selectedDriveway.address}
-                  placeholder="Enter driveway address"
-                />
+                <div style={{ position: 'relative' }}>
+                  <GeocodingInputWithAutocomplete
+                    value={selectedDriveway.address}
+                    onChange={(address) => {
+                      // Update the hidden input value
+                      const hiddenInput = document.getElementById('edit-address') as HTMLInputElement;
+                      if (hiddenInput) {
+                        hiddenInput.value = address;
+                      }
+                    }}
+                    placeholder="Enter driveway address"
+                    label=""
+                    className="form-input"
+                  />
+                  <input 
+                    type="hidden" 
+                    id="edit-address" 
+                    name="address" 
+                    required 
+                    defaultValue={selectedDriveway.address}
+                  />
+                </div>
               </div>
 
               <div className="form-group">

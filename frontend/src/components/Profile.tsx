@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Button from './Button';
 import ProfileRoleSwitcher from './ProfileRoleSwitcher';
+import GeocodingInputWithAutocomplete from './GeocodingInputWithAutocomplete';
 import './Profile.css';
 
 const Profile: React.FC = () => {
@@ -36,6 +37,14 @@ const Profile: React.FC = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleAddressChange = (address: string, coordinates?: { latitude: number; longitude: number }) => {
+    setFormData(prev => ({
+      ...prev,
+      address: address
+    }));
+    // Note: coordinates could be stored if needed for future features
   };
 
   const handleSave = async () => {
@@ -244,13 +253,12 @@ const Profile: React.FC = () => {
                 <div className="form-group">
                   <label className="form-label">Address</label>
                   {isEditing ? (
-                    <input
-                      type="text"
-                      name="address"
+                    <GeocodingInputWithAutocomplete
                       value={formData.address}
-                      onChange={handleInputChange}
-                      className="form-input"
+                      onChange={handleAddressChange}
                       placeholder="Enter your address"
+                      label=""
+                      className="form-input"
                     />
                   ) : (
                     <div className="info-value">{user?.address || 'Not provided'}</div>
