@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { notificationService, NotificationConfig } from '../services/notificationService';
-import './ProfessionalNotificationSystem.css';
 
 interface NotificationProps {
   notification: NotificationConfig;

@@ -17,6 +17,8 @@ interface AddressSuggestion {
   state?: string;
   country?: string;
   zipcode?: string;
+  distance?: number; // Distance in kilometers from user location
+  formattedAddress?: string;
 }
 
 class GeocodingService {
@@ -148,17 +150,39 @@ class GeocodingService {
   /**
    * Get address suggestions for autocomplete
    * @param query - The search query (minimum 2 characters)
+   * @param userLocation - Optional user location for distance-based ranking
+   * @param radius - Optional radius in kilometers for filtering nearby results
    * @returns Promise with array of address suggestions
    */
-  async getAddressSuggestions(query: string): Promise<AddressSuggestion[]> {
-    console.log('getAddressSuggestions called with query:', query);
+  async getAddressSuggestions(
+    query: string, 
+    userLocation?: { latitude: number; longitude: number },
+    radius?: number
+  ): Promise<AddressSuggestion[]> {
+    console.log('getAddressSuggestions called with query:', query, 'userLocation:', userLocation);
     if (!query || query.trim().length < 2) {
       console.log('Query too short, returning empty array');
       return [];
     }
 
     try {
-      const url = `${this.baseUrl}/autocomplete?query=${encodeURIComponent(query.trim())}`;
+      // Build URL with query parameters
+      const params = new URLSearchParams({
+        query: query.trim()
+      });
+      
+      // Add user location if provided
+      if (userLocation && this.isValidCoordinates(userLocation.latitude, userLocation.longitude)) {
+        params.append('lat', userLocation.latitude.toString());
+        params.append('lng', userLocation.longitude.toString());
+        
+        // Add radius if specified (default to 50km)
+        if (radius && radius > 0) {
+          params.append('radius', radius.toString());
+        }
+      }
+      
+      const url = `${this.baseUrl}/autocomplete?${params.toString()}`;
       console.log('Making request to:', url);
       
       const response = await fetch(url, {

@@ -1,5 +1,4 @@
-import './App.css'
-import './styles/enhanced-responsive.css'
+// CSS imports removed - now using Tailwind CSS
 import Register from './components/Register';
 import Login from './components/Login';
 import OwnerDashboard from './components/OwnerDashboard';

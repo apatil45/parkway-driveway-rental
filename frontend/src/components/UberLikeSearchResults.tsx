@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import EnhancedMapView from './EnhancedMapView';
-import './UberLikeSearchResults.css';
 
 interface Driveway {
   id: string;

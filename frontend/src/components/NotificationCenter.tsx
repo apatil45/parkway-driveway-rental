@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
 import { notificationApiService, Notification } from '../services/notificationApiService';
-import './NotificationCenter.css';
 
 const NotificationCenter: React.FC = () => {
   const { user, isAuthenticated } = useAuth();

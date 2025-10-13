@@ -1,5 +1,4 @@
 import React, { forwardRef } from 'react';
-import './FormInput.css';
 
 interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -29,28 +28,60 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
   const hasError = error && touched;
   const showHelperText = helperText && !hasError;
 
-  const inputClasses = [
-    'form-input',
-    `form-input-${variant}`,
-    `form-input-${size}`,
-    hasError ? 'form-input-error' : '',
-    leftIcon ? 'form-input-with-left-icon' : '',
-    rightIcon ? 'form-input-with-right-icon' : '',
-    className
-  ].filter(Boolean).join(' ');
+  // Base input classes
+  const getBaseInputClasses = () => {
+    const baseClasses = [
+      'w-full font-primary text-base text-text-primary bg-background-primary border border-border-primary rounded-lg transition-all duration-fast',
+      'focus:outline-none focus:border-border-focus focus:ring-4 focus:ring-blue-100',
+      'placeholder:text-text-muted',
+      'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50'
+    ];
+
+    // Size classes
+    const sizeClasses = {
+      sm: 'px-3 py-2 text-sm min-h-[36px]',
+      md: 'px-4 py-3 text-base min-h-[44px]',
+      lg: 'px-5 py-4 text-lg min-h-[52px]',
+    };
+
+    // Variant classes
+    const variantClasses = {
+      default: 'border-border-primary',
+      filled: 'bg-background-secondary border-background-secondary focus:bg-background-primary',
+      outlined: 'border-2 border-border-primary focus:border-border-focus',
+    };
+
+    // Error state
+    const errorClasses = hasError ? 'border-error bg-red-50 focus:border-error focus:ring-red-100' : '';
+
+    // Icon padding adjustments
+    const iconPaddingClasses = [
+      leftIcon ? 'pl-10' : '',
+      rightIcon ? 'pr-10' : ''
+    ].filter(Boolean).join(' ');
+
+    return [
+      ...baseClasses,
+      sizeClasses[size],
+      variantClasses[variant],
+      errorClasses,
+      iconPaddingClasses,
+      className
+    ].filter(Boolean).join(' ');
+  };
 
   return (
-    <div className="form-input-container">
+    <div className="form-group">
       {label && (
-        <label htmlFor={inputId} className="form-input-label">
+        <label htmlFor={inputId} className="form-label">
           {label}
-          {props.required && <span className="form-input-required">*</span>}
+          {props.required && <span className="text-error ml-1">*</span>}
         </label>
       )}
       
-      <div className="form-input-wrapper">
+      <div className="relative">
         {leftIcon && (
-          <div className="form-input-icon form-input-icon-left">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none">
             {leftIcon}
           </div>
         )}
@@ -58,7 +89,7 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
         <input
           ref={ref}
           id={inputId}
-          className={inputClasses}
+          className={getBaseInputClasses()}
           aria-invalid={hasError}
           aria-describedby={
             hasError ? `${inputId}-error` : 
@@ -69,20 +100,23 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
         />
         
         {rightIcon && (
-          <div className="form-input-icon form-input-icon-right">
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none">
             {rightIcon}
           </div>
         )}
       </div>
       
       {hasError && (
-        <div id={`${inputId}-error`} className="form-input-error-message" role="alert">
+        <div id={`${inputId}-error`} className="form-error" role="alert">
+          <svg className="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
           {error}
         </div>
       )}
       
       {showHelperText && (
-        <div id={`${inputId}-helper`} className="form-input-helper-text">
+        <div id={`${inputId}-helper`} className="form-help">
           {helperText}
         </div>
       )}

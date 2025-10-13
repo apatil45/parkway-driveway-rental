@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { paymentService, PaymentStatusResponse } from '../services/paymentService';
-import './PaymentStatus.css';
 
 interface PaymentStatusProps {
   bookingId: string;

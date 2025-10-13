@@ -1,6 +1,5 @@
 // Enhanced Form Input Component for Parkway.com
 import React, { forwardRef } from 'react';
-import './EnhancedFormInput.css';
 
 export interface EnhancedFormInputProps {
   name: string;

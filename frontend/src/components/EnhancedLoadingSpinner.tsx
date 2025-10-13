@@ -1,7 +1,6 @@
 // Enhanced Loading Spinner Component for Parkway.com
 import React from 'react';
 import { LoadingState } from '../hooks/useLoadingState';
-import './EnhancedLoadingSpinner.css';
 
 interface EnhancedLoadingSpinnerProps {
   loadingState: LoadingState;

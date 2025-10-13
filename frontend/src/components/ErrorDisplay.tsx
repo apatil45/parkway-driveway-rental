@@ -1,5 +1,4 @@
 import React from 'react';
-import './ErrorDisplay.css';
 
 interface ErrorDisplayProps {
   error: string | Error;

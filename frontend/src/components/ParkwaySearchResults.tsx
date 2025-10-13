@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import RealMapView from './RealMapView';
-import './ParkwaySearchResults.css';
 
 interface Driveway {
   id: string;

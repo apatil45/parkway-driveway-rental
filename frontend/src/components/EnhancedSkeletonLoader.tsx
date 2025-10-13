@@ -1,5 +1,4 @@
 import React from 'react';
-import './EnhancedSkeletonLoader.css';
 
 interface SkeletonProps {
   variant?: 'text' | 'rectangular' | 'circular' | 'card' | 'list' | 'grid';

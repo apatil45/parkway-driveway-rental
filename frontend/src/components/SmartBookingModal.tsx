@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
 import StripePaymentModal from './StripePaymentModal';
-import './SmartBookingModal.css';
 
 interface Driveway {
   id: string;

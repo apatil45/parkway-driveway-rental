@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
 import ResponsiveForm, { FormField, FormButton, FormCheckbox } from './ResponsiveForm';
 import GeocodingInputWithAutocomplete from './GeocodingInputWithAutocomplete';
-import './EnhancedDrivewayCreator.css';
 
 interface DrivewayFormData {
   address: string;
@@ -466,8 +465,8 @@ const EnhancedDrivewayCreator: React.FC<{
   };
 
   const renderStep1 = () => (
-    <div className="step-content">
-      <h3 className="step-title">Basic Information</h3>
+    <div className="py-8">
+      <h3 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Basic Information</h3>
       
       <GeocodingInputWithAutocomplete
         label="Address"
@@ -595,26 +594,31 @@ const EnhancedDrivewayCreator: React.FC<{
   );
 
   const renderStep2 = () => (
-    <div className="step-content">
-      <h3 className="step-title">Size & Compatibility</h3>
+    <div className="py-8">
+      <h3 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Size & Compatibility</h3>
       
       <div className="form-field">
         <label className="form-label">
           Driveway Size <span className="required-indicator">*</span>
         </label>
-        <div className="size-options">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
           {drivewaySizes.map(size => (
-            <label key={size.value} className="size-option">
+            <label key={size.value} className={`flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 bg-white ${
+              formData.drivewaySize === size.value 
+                ? 'border-secondary bg-blue-50' 
+                : 'border-gray-200 hover:border-secondary hover:bg-gray-50'
+            }`}>
               <input
                 type="radio"
                 name="drivewaySize"
                 value={size.value}
                 checked={formData.drivewaySize === size.value}
                 onChange={handleInputChange}
+                className="mt-1 mr-3 accent-secondary"
               />
-              <div className="size-option-content">
-                <div className="size-option-title">{size.label}</div>
-                <div className="size-option-description">{size.description}</div>
+              <div className="flex-1">
+                <div className="font-semibold text-gray-900 mb-1">{size.label}</div>
+                <div className="text-sm text-gray-600">{size.description}</div>
               </div>
             </label>
           ))}
@@ -737,8 +741,8 @@ const EnhancedDrivewayCreator: React.FC<{
   );
 
   const renderStep3 = () => (
-    <div className="step-content">
-      <h3 className="step-title">Availability Schedule</h3>
+    <div className="py-8">
+      <h3 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Availability Schedule</h3>
       
       <div className="form-field">
         <label className="form-label">
@@ -938,25 +942,65 @@ const EnhancedDrivewayCreator: React.FC<{
   );
 
   return (
-    <div className="enhanced-driveway-creator">
-      <div className="creator-header">
-        <h2 className="creator-title">List Your Driveway</h2>
-        <p className="creator-subtitle">Share your parking space and start earning</p>
+    <div className="w-full max-w-4xl mx-auto p-8 bg-white rounded-3xl shadow-2xl border border-gray-200">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">List Your Driveway</h2>
+        <p className="text-lg text-gray-600">Share your parking space and start earning</p>
       </div>
       
-      <form onSubmit={handleSubmit} className="creator-form">
-        <div className="step-indicator">
-          <div className={`step ${currentStep >= 1 ? 'active' : ''}`}>
-            <span className="step-number">1</span>
-            <span className="step-label">Basic Info</span>
-          </div>
-          <div className={`step ${currentStep >= 2 ? 'active' : ''}`}>
-            <span className="step-number">2</span>
-            <span className="step-label">Size & Features</span>
-          </div>
-          <div className={`step ${currentStep >= 3 ? 'active' : ''}`}>
-            <span className="step-number">3</span>
-            <span className="step-label">Schedule & Photos</span>
+      <form onSubmit={handleSubmit} className="w-full">
+        <div className="flex justify-center mb-8 px-4">
+          <div className="flex items-center space-x-4 max-w-2xl w-full">
+            <div className={`flex flex-col items-center relative flex-1 max-w-[150px] ${currentStep >= 1 ? 'active' : ''}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-base mb-2 relative z-10 transition-all duration-300 ${
+                currentStep >= 1 
+                  ? 'bg-secondary text-white shadow-lg shadow-secondary/30' 
+                  : 'bg-gray-200 text-gray-500'
+              }`}>
+                1
+              </div>
+              <span className={`text-sm text-center font-medium ${
+                currentStep >= 1 ? 'text-secondary font-semibold' : 'text-gray-500'
+              }`}>
+                Basic Info
+              </span>
+              {currentStep >= 1 && (
+                <div className="absolute top-5 left-1/2 w-full h-0.5 bg-secondary z-0" style={{ width: 'calc(100% + 1rem)' }} />
+              )}
+            </div>
+            
+            <div className={`flex flex-col items-center relative flex-1 max-w-[150px] ${currentStep >= 2 ? 'active' : ''}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-base mb-2 relative z-10 transition-all duration-300 ${
+                currentStep >= 2 
+                  ? 'bg-secondary text-white shadow-lg shadow-secondary/30' 
+                  : 'bg-gray-200 text-gray-500'
+              }`}>
+                2
+              </div>
+              <span className={`text-sm text-center font-medium ${
+                currentStep >= 2 ? 'text-secondary font-semibold' : 'text-gray-500'
+              }`}>
+                Size & Features
+              </span>
+              {currentStep >= 2 && (
+                <div className="absolute top-5 left-1/2 w-full h-0.5 bg-secondary z-0" style={{ width: 'calc(100% + 1rem)' }} />
+              )}
+            </div>
+            
+            <div className={`flex flex-col items-center relative flex-1 max-w-[150px] ${currentStep >= 3 ? 'active' : ''}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-base mb-2 relative z-10 transition-all duration-300 ${
+                currentStep >= 3 
+                  ? 'bg-secondary text-white shadow-lg shadow-secondary/30' 
+                  : 'bg-gray-200 text-gray-500'
+              }`}>
+                3
+              </div>
+              <span className={`text-sm text-center font-medium ${
+                currentStep >= 3 ? 'text-secondary font-semibold' : 'text-gray-500'
+              }`}>
+                Schedule & Photos
+              </span>
+            </div>
           </div>
         </div>
 
@@ -964,7 +1008,7 @@ const EnhancedDrivewayCreator: React.FC<{
         {currentStep === 2 && renderStep2()}
         {currentStep === 3 && renderStep3()}
 
-        <div className="form-actions">
+        <div className="flex gap-4 justify-center mt-8 pt-8 border-t border-gray-200">
           {currentStep > 1 && (
             <FormButton
               type="button"

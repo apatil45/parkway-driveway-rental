@@ -4,16 +4,22 @@ import './GeocodingSearch.css';
 
 interface GeocodingSearchProps {
   onSearch: (query: string, coordinates?: { latitude: number; longitude: number }) => void;
+  onLocationChange?: (query: string, coordinates?: { latitude: number; longitude: number }) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  userLocation?: { latitude: number; longitude: number };
+  onCurrentLocationClick?: () => void;
 }
 
 const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
   onSearch,
+  onLocationChange,
   placeholder = "Enter location or address...",
   className = "",
-  disabled = false
+  disabled = false,
+  userLocation,
+  onCurrentLocationClick
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -40,7 +46,12 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
     setIsLoadingSuggestions(true);
     try {
       console.log('Calling geocodingService.getAddressSuggestions...');
-      const results = await geocodingService.getAddressSuggestions(query);
+      // Pass user location for distance-based ranking
+      const results = await geocodingService.getAddressSuggestions(
+        query, 
+        userLocation, 
+        50 // 50km radius for nearby results
+      );
       console.log('Received suggestions:', results);
       setSuggestions(results);
       const shouldShow = results.length > 0;
@@ -54,7 +65,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
     } finally {
       setIsLoadingSuggestions(false);
     }
-  }, []);
+  }, [userLocation]);
 
   const handleGeocodeAndSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
@@ -70,14 +81,14 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
       const geocodeResult = await geocodingService.geocodeAddress(searchQuery);
       setCoordinates(geocodeResult);
       
-      // Search with both query and coordinates
-      onSearch(searchQuery, geocodeResult);
+      // DISABLED: Don't automatically trigger search
+      // onSearch(searchQuery, geocodeResult);
     } catch (geocodeError) {
       console.warn('Geocoding failed, searching with text only:', geocodeError);
       
-      // If geocoding fails, search with text only
+      // DISABLED: Don't automatically trigger search
       setCoordinates(null);
-      onSearch(searchQuery);
+      // onSearch(searchQuery);
     } finally {
       setIsGeocoding(false);
     }
@@ -118,7 +129,10 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
     setShowSuggestions(false);
     setSuggestions([]);
     setSelectedIndex(-1);
-    onSearch(suggestion.address, coords);
+    // Notify parent of location change but don't trigger search
+    if (onLocationChange) {
+      onLocationChange(suggestion.address, coords);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -169,6 +183,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
     }
   };
 
+
   // Handle click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -199,8 +214,22 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
   }, []);
 
   return (
-    <div className={`geocoding-search ${className}`}>
+    <div className={`geocoding-search ${className} ${showSuggestions ? 'has-suggestions' : ''}`}>
       <div className="search-input-group">
+        {/* Location Icon */}
+        {onCurrentLocationClick && (
+          <div 
+            className="location-icon cursor-pointer"
+            onClick={onCurrentLocationClick}
+          >
+            <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors">
+              <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </div>
+        )}
         <input
           ref={inputRef}
           type="text"
@@ -238,6 +267,13 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
         </button>
       </div>
 
+      {/* Debug info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+          Debug: showSuggestions={showSuggestions.toString()}, suggestions.length={suggestions.length}, searchQuery="{searchQuery}"
+        </div>
+      )}
+
       {/* Suggestions dropdown */}
       {showSuggestions && (
         <div 
@@ -245,34 +281,76 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
           className="suggestions-dropdown"
           role="listbox"
           aria-label="Location suggestions"
-          style={{ display: 'block' }}
+          style={{ display: 'block', position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999 }}
         >
+
           {isLoadingSuggestions ? (
             <div className="suggestion-item loading">
               <div className="suggestion-spinner"></div>
               <span>Searching...</span>
             </div>
           ) : (
-            suggestions.map((suggestion, index) => (
-              <div
-                key={`${suggestion.latitude}-${suggestion.longitude}-${index}`}
-                className={`suggestion-item ${index === selectedIndex ? 'selected' : ''}`}
-                onClick={() => handleSuggestionSelect(suggestion)}
-                role="option"
-                aria-selected={index === selectedIndex}
-              >
-                <div className="suggestion-address">
-                  {suggestion.address}
-                </div>
-                {(suggestion.city || suggestion.state) && (
-                  <div className="suggestion-details">
-                    {[suggestion.city, suggestion.state, suggestion.zipcode]
-                      .filter(Boolean)
-                      .join(', ')}
+            suggestions.map((suggestion, index) => {
+              // Format the address nicely
+              const formatAddress = (addr: string) => {
+                // Remove redundant parts and clean up formatting
+                return addr
+                  .replace(/\s+/g, ' ')
+                  .replace(/,\s*,/g, ',')
+                  .trim();
+              };
+
+              // Create a clean location string
+              const locationParts = [
+                suggestion.city,
+                suggestion.state,
+                suggestion.zipcode
+              ].filter(Boolean);
+              
+              const locationString = locationParts.length > 0 
+                ? locationParts.join(', ')
+                : '';
+
+              // Format distance if available
+              const formatDistance = (distance: number | undefined) => {
+                if (!distance) return '';
+                if (distance < 1) {
+                  return `${Math.round(distance * 1000)}m away`;
+                } else {
+                  return `${distance.toFixed(1)}km away`;
+                }
+              };
+
+              return (
+                <div
+                  key={`${suggestion.latitude}-${suggestion.longitude}-${index}`}
+                  className={`suggestion-item ${index === selectedIndex ? 'selected' : ''}`}
+                  onClick={() => handleSuggestionSelect(suggestion)}
+                  role="option"
+                  aria-selected={index === selectedIndex}
+                >
+                  <div className="suggestion-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
                   </div>
-                )}
-              </div>
-            ))
+                  <div className="suggestion-content">
+                    <div className="suggestion-address">
+                      {formatAddress(suggestion.address)}
+                    </div>
+                    <div className="suggestion-details">
+                      {locationString}
+                      {suggestion.distance && (
+                        <span className="suggestion-distance">
+                          {formatDistance(suggestion.distance)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       )}
@@ -298,11 +376,6 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
         </div>
       )}
 
-      {!error && !coordinates && searchQuery.trim() && (
-        <div id="search-help" className="search-help">
-          Press Enter or click search to find driveways near this location
-        </div>
-      )}
     </div>
   );
 };

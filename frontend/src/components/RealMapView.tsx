@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import './RealMapView.css';
 
 // Fix for default markers in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -206,31 +205,31 @@ const RealMapView: React.FC<RealMapViewProps> = ({
   const center = userLocation ? [userLocation.lat, userLocation.lng] as [number, number] : defaultCenter;
 
   return (
-    <div className="real-map-container">
-      <div className="map-header">
-        <div className="map-controls">
-          <div className="map-legend">
-            <div className="legend-item">
-              <div className="legend-marker user-marker"></div>
+    <div className="flex flex-col h-full bg-white rounded-lg overflow-hidden shadow-lg">
+      <div className="p-3 bg-gray-50 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm text-gray-600 px-2 py-1 bg-white rounded border border-gray-200">
+              <div className="w-3 h-3 rounded-full bg-blue-500 border border-white shadow-sm"></div>
               <span>Your Location</span>
             </div>
-            <div className="legend-item">
-              <div className="legend-marker available-marker"></div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 px-2 py-1 bg-white rounded border border-gray-200">
+              <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm"></div>
               <span>Available Now</span>
             </div>
-            <div className="legend-item">
-              <div className="legend-marker opens-later-marker"></div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 px-2 py-1 bg-white rounded border border-gray-200">
+              <div className="w-3 h-3 rounded-full bg-yellow-500 border border-white shadow-sm"></div>
               <span>Opens Later</span>
             </div>
-            <div className="legend-item">
-              <div className="legend-marker closed-marker"></div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 px-2 py-1 bg-white rounded border border-gray-200">
+              <div className="w-3 h-3 rounded-full bg-red-500 border border-white shadow-sm"></div>
               <span>Closed</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="map-area" style={{ height: `${getMapHeight()}px` }}>
+      <div className="flex-1" style={{ height: `${getMapHeight()}px` }}>
         <MapContainer
           center={center}
           zoom={13}
@@ -252,9 +251,9 @@ const RealMapView: React.FC<RealMapViewProps> = ({
               icon={createCustomIcon('#276EF1', 'user')}
             >
               <Popup>
-                <div className="user-location-popup">
-                  <h4>Your Location</h4>
-                  <p>You are here</p>
+                <div className="p-2">
+                  <h4 className="font-semibold text-gray-900 mb-1">Your Location</h4>
+                  <p className="text-sm text-gray-600">You are here</p>
                 </div>
               </Popup>
             </Marker>
@@ -295,10 +294,10 @@ const RealMapView: React.FC<RealMapViewProps> = ({
                 }}
               >
                 <Popup>
-                  <div className="driveway-popup">
-                    <div className="popup-header">
-                      <h4>{driveway.address}</h4>
-                      <div className="popup-rating">
+                  <div className="p-3 min-w-[200px]">
+                    <div className="mb-2">
+                      <h4 className="font-semibold text-gray-900 text-sm mb-1">{driveway.address}</h4>
+                      <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
                           <span
                             key={i}
@@ -313,35 +312,35 @@ const RealMapView: React.FC<RealMapViewProps> = ({
                       </div>
                     </div>
                     
-                    <div className="popup-details">
-                      <div className="detail-item">
-                        <span className="detail-label">Price:</span>
-                        <span className="detail-value price">{formatPrice(driveway.pricePerHour)}</span>
+                    <div className="space-y-1 mb-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Price:</span>
+                        <span className="font-medium text-green-600">{formatPrice(driveway.pricePerHour)}</span>
                       </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Distance:</span>
-                        <span className="detail-value">{formatDistance(driveway.distance)}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Distance:</span>
+                        <span className="font-medium text-gray-900">{formatDistance(driveway.distance)}</span>
                       </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Status:</span>
-                        <span className="detail-value" style={{ color: availability.color }}>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Status:</span>
+                        <span className="font-medium" style={{ color: availability.color }}>
                           {availability.text}
                         </span>
                       </div>
                     </div>
                     
-                    <div className="popup-actions">
+                    <div className="flex gap-2">
                       <button 
-                        className="popup-route-btn"
+                        className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                         onClick={() => {
                           const url = `https://www.google.com/maps/dir/?api=1&destination=${driveway.coordinates?.lat},${driveway.coordinates?.lng}`;
                           window.open(url, '_blank');
                         }}
                       >
-                        Get Directions
+                        Directions
                       </button>
                       <button 
-                        className="popup-book-btn"
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                         onClick={() => onDrivewaySelect(driveway)}
                       >
                         Book Now

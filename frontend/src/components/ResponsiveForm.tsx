@@ -1,5 +1,4 @@
 import React from 'react';
-import './ResponsiveForm.css';
 
 interface ResponsiveFormProps {
   title: string;

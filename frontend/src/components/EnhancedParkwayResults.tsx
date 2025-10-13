@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import RealMapView from './RealMapView';
 import { getESTTime, getCurrentDayOfWeek, formatTimeForAvailability } from '../utils/timeUtils';
-import './EnhancedParkwayResults.css';
 
 interface Driveway {
   id: string;

@@ -36,7 +36,7 @@ router.post('/', async (req, res) => {
 // @desc    Get address suggestions for autocomplete
 // @access  Public
 router.get('/autocomplete', async (req, res) => {
-  const { query } = req.query;
+  const { query, lat, lng, radius = 50 } = req.query;
 
   if (!query || query.trim().length < 2) {
     return res.status(400).json({ msg: 'Query must be at least 2 characters long' });
@@ -56,8 +56,20 @@ router.get('/autocomplete', async (req, res) => {
       return res.json([]);
     }
 
+    // Helper function to calculate distance between two points (Haversine formula)
+    const calculateDistance = (lat1, lng1, lat2, lng2) => {
+      const R = 6371; // Earth's radius in kilometers
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c; // Distance in kilometers
+    };
+
     // Filter results to US only and format for autocomplete
-    const suggestions = results
+    let suggestions = results
       .filter(result => {
         const country = result.country || '';
         const countryCode = result.countryCode || '';
@@ -66,16 +78,75 @@ router.get('/autocomplete', async (req, res) => {
                countryCode === 'US' ||
                countryCode === 'USA';
       })
-      .slice(0, 5) // Limit to 5 results
-      .map(result => ({
-        address: result.formattedAddress || `${result.streetNumber || ''} ${result.streetName || ''} ${result.city || ''} ${result.state || ''} ${result.zipcode || ''}`.trim(),
-        latitude: result.latitude,
-        longitude: result.longitude,
-        city: result.city,
-        state: result.state,
-        country: result.country,
-        zipcode: result.zipcode
-      }));
+      .map(result => {
+        // Create a clean, consistent address format
+        const streetNumber = result.streetNumber || '';
+        const streetName = result.streetName || '';
+        const city = result.city || '';
+        const state = result.state || '';
+        const zipcode = result.zipcode || '';
+        
+        // Build address parts
+        const streetAddress = [streetNumber, streetName].filter(Boolean).join(' ');
+        const fullAddress = [streetAddress, city, state, zipcode].filter(Boolean).join(', ');
+        
+        // Calculate distance if user location is provided
+        let distance = null;
+        if (lat && lng && result.latitude && result.longitude) {
+          distance = calculateDistance(parseFloat(lat), parseFloat(lng), result.latitude, result.longitude);
+        }
+        
+        return {
+          address: fullAddress || result.formattedAddress || query,
+          latitude: result.latitude,
+          longitude: result.longitude,
+          city: city,
+          state: state,
+          country: result.country,
+          zipcode: zipcode,
+          distance: distance,
+          formattedAddress: result.formattedAddress
+        };
+      })
+      // Remove duplicates based on address
+      .filter((suggestion, index, self) => 
+        index === self.findIndex(s => s.address === suggestion.address)
+      );
+
+    // Sort suggestions by relevance and distance
+    suggestions = suggestions.sort((a, b) => {
+      // If user location is provided, prioritize by distance
+      if (lat && lng) {
+        // First, filter by radius if specified
+        if (radius && a.distance !== null && b.distance !== null) {
+          const radiusKm = parseFloat(radius);
+          const aInRadius = a.distance <= radiusKm;
+          const bInRadius = b.distance <= radiusKm;
+          
+          if (aInRadius && !bInRadius) return -1;
+          if (!aInRadius && bInRadius) return 1;
+        }
+        
+        // Then sort by distance
+        if (a.distance !== null && b.distance !== null) {
+          return a.distance - b.distance;
+        }
+        if (a.distance !== null) return -1;
+        if (b.distance !== null) return 1;
+      }
+      
+      // Fallback: prioritize exact matches and shorter addresses
+      const queryLower = query.toLowerCase();
+      const aExactMatch = a.address.toLowerCase().includes(queryLower);
+      const bExactMatch = b.address.toLowerCase().includes(queryLower);
+      
+      if (aExactMatch && !bExactMatch) return -1;
+      if (!aExactMatch && bExactMatch) return 1;
+      
+      // Then by address length (shorter is usually more specific)
+      return a.address.length - b.address.length;
+    })
+    .slice(0, 8); // Limit to 8 results
 
     res.json(suggestions);
 

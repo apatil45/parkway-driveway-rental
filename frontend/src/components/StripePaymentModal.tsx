@@ -8,7 +8,6 @@ import {
 } from '@stripe/react-stripe-js';
 import { paymentService, PaymentIntentResponse } from '../services/paymentService';
 import { notificationService } from '../services/notificationService';
-import './StripePaymentModal.css';
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY || 'pk_test_your_stripe_public_key_here');

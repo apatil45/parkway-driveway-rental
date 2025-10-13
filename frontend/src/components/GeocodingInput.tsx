@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { geocodingService } from '../services/geocodingService';
-import './GeocodingInput.css';
 
 interface GeocodingInputProps {
   value: string;

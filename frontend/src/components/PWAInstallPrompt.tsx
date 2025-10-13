@@ -1,6 +1,5 @@
 import React from 'react';
 import { usePWA } from '../hooks/usePWA';
-import './PWAInstallPrompt.css';
 
 const PWAInstallPrompt: React.FC = () => {
   const { 

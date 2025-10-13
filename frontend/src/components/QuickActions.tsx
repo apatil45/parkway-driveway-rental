@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// import './QuickActions.css';
-
+// 
 // Icon component for rendering SVG icons
 const Icon: React.FC<{ name: string; size?: number }> = ({ name, size = 20 }) => {
   const iconProps = {
@@ -94,85 +93,7 @@ const QuickActions: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   // Force rebuild - updated design system
 
-  // Inline styles to avoid CSS import issues
-  const styles = `
-    .quick-actions-section {
-      padding: var(--space-16) 0;
-      background: var(--color-bg-secondary);
-    }
-    .quick-actions-header {
-      text-align: center;
-      margin-bottom: var(--space-6);
-    }
-    .quick-actions-header h3 {
-      font-size: var(--text-2xl);
-      font-weight: var(--font-semibold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--space-2) 0;
-    }
-    .quick-actions-header p {
-      color: var(--color-text-secondary);
-      margin: 0;
-      font-size: var(--text-sm);
-    }
-    .quick-actions-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-4);
-    }
-    .quick-action-card {
-      background: var(--color-bg-card);
-      border: 1px solid var(--color-border-primary);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4);
-      text-align: center;
-      transition: all var(--transition-normal);
-      cursor: pointer;
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-    .quick-action-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
-      border-color: var(--color-secondary);
-    }
-    .action-icon {
-      width: 48px;
-      height: 48px;
-      margin: 0 auto var(--space-3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--radius-md);
-      color: white;
-    }
-    .action-icon svg {
-      width: 24px;
-      height: 24px;
-    }
-    .action-title {
-      font-size: var(--text-base);
-      font-weight: var(--font-semibold);
-      color: var(--color-text-primary);
-      margin: 0 0 var(--space-1) 0;
-    }
-    .action-description {
-      font-size: var(--text-sm);
-      color: var(--color-text-secondary);
-      margin: 0;
-    }
-    @media (max-width: 1024px) {
-      .quick-actions-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    @media (max-width: 768px) {
-      .quick-actions-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  `;
+  // Using Tailwind CSS classes for professional styling
 
   const driverActions: QuickAction[] = [
     {
@@ -316,41 +237,50 @@ const QuickActions: React.FC = () => {
   const actions = getActionsForUser();
 
   return (
-    <>
-      <style>{styles}</style>
-      <section className="quick-actions-section">
-        <div className="container">
-          <div className="quick-actions-header">
-            <h2>Quick Actions</h2>
-            <p>Jump to the most common tasks</p>
-          </div>
+    <section className="section-spacing bg-gray-50">
+      <div className="container-spacing">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">Quick Actions</h2>
+          <p className="text-lg text-gray-600 font-medium">Jump to the most common tasks</p>
+        </div>
       
-      <div className="quick-actions-grid">
-        {actions.map(action => (
-          <Link
-            key={action.id}
-            to={action.link}
-            className="quick-action-card"
-            style={{ '--action-color': action.color } as React.CSSProperties}
-          >
-            <div className="action-icon" style={{ backgroundColor: action.color }}>
-              <Icon name={action.icon} size={20} />
-            </div>
-            <div className="action-content">
-              <h4 className="action-title">{action.title}</h4>
-              <p className="action-description">{action.description}</p>
-            </div>
-            <div className="action-arrow">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="9,18 15,12 9,6"/>
-              </svg>
-            </div>
-          </Link>
-        ))}
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {actions.map(action => (
+            <Link
+              key={action.id}
+              to={action.link}
+              className="group card-compact hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
+            >
+              <div className="flex items-center gap-4 p-6">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300"
+                  style={{ backgroundColor: action.color }}
+                >
+                  <Icon name={action.icon} size={20} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-gray-700 transition-colors">
+                    {action.title}
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-500 transition-colors">
+                    {action.description}
+                  </p>
+                </div>
+                <div className="text-gray-400 group-hover:text-gray-600 transition-colors">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9,18 15,12 9,6"/>
+                  </svg>
+                </div>
+              </div>
+              <div 
+                className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ background: `linear-gradient(90deg, ${action.color}, ${action.color}80)` }}
+              />
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
-    </>
   );
 };
 

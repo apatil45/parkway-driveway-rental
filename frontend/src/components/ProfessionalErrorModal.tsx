@@ -1,5 +1,4 @@
 import React from 'react';
-import './ProfessionalErrorModal.css';
 
 interface ErrorDetails {
   code?: string;

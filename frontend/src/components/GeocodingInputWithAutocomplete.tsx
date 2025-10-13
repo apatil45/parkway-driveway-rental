@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { geocodingService, AddressSuggestion } from '../services/geocodingService';
-import './GeocodingInputWithAutocomplete.css';
 
 interface GeocodingInputWithAutocompleteProps {
   value: string;

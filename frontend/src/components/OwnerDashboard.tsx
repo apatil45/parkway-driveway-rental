@@ -4,7 +4,6 @@ import { notificationService } from '../services/notificationService';
 import PaymentStatus from './PaymentStatus';
 import QuickActions from './QuickActions';
 import GeocodingInputWithAutocomplete from './GeocodingInputWithAutocomplete';
-import './OwnerDashboard.css';
 
 interface Driveway {
   id: string;
@@ -301,222 +300,275 @@ const OwnerDashboard: React.FC = () => {
   const totalBookings = recentBookings.length;
 
   return (
-    <div className="owner-dashboard">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">Manage Driveways</h1>
-        <p className="dashboard-subtitle">Welcome back, {user?.name || 'Owner'}! Manage your driveway listings and earnings.</p>
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Manage Driveways</h1>
+          <p className="text-xl text-gray-600">Welcome back, {user?.name || 'Owner'}! Manage your driveway listings and earnings.</p>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="1" x2="12" y2="23"/>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-3xl font-bold text-green-600 mb-1">${totalEarnings.toFixed(2)}</h3>
+                <p className="text-gray-600 font-medium">Total Earnings</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-600">
+                  <line x1="12" y1="1" x2="12" y2="23"/>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+              </div>
+            </div>
           </div>
-          <div className="stat-content">
-            <h3 className="stat-value">${totalEarnings.toFixed(2)}</h3>
-            <p className="stat-label">Total Earnings</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-          </div>
-          <div className="stat-content">
-            <h3 className="stat-value">{driveways.length}</h3>
-            <p className="stat-label">Listed Driveways</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="8" y1="6" x2="21" y2="6"/>
-              <line x1="8" y1="12" x2="21" y2="12"/>
-              <line x1="8" y1="18" x2="21" y2="18"/>
-              <line x1="3" y1="6" x2="3.01" y2="6"/>
-              <line x1="3" y1="12" x2="3.01" y2="12"/>
-              <line x1="3" y1="18" x2="3.01" y2="18"/>
-            </svg>
-          </div>
-          <div className="stat-content">
-            <h3 className="stat-value">{totalBookings}</h3>
-            <p className="stat-label">Total Bookings</p>
-        </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
-              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-            </svg>
-          </div>
-          <div className="stat-content">
-                <h3 className="stat-value">
-                  {driveways.length > 0 
-                    ? (driveways.reduce((sum, d) => sum + (d.rating || 0), 0) / driveways.length).toFixed(1)
-                    : '0.0'
-                  }
-                </h3>
-            <p className="stat-label">Average Rating</p>
-          </div>
-        </div>
-        </div>
-
-      {/* Quick Actions */}
-      <div className="quick-actions">
-        <button 
-          className="quick-action-btn primary"
-          onClick={() => setActiveTab('driveways')}
-        >
-          My Driveways
-        </button>
-        <button 
-          className="quick-action-btn secondary"
-          onClick={() => setActiveTab('analytics')}
-        >
-          Analytics
-        </button>
-        <button 
-          className="quick-action-btn secondary"
-          onClick={() => setActiveTab('bookings')}
-        >
-          Bookings
-        </button>
-        </div>
-        
-      {/* Driveways Tab */}
-      {activeTab === 'driveways' && (
-        <div className="driveways-section">
-          <div className="section-header">
-            <h3 className="section-title">Your Driveways</h3>
-            <button className="add-btn" onClick={handleAddDriveway}>
-              <span className="icon">+</span>
-              Add Driveway
-            </button>
-        </div>
-
-      {driveways.length === 0 ? (
-        <div className="empty-state">
-              <div className="empty-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-3xl font-bold text-blue-600 mb-1">{driveways.length}</h3>
+                <p className="text-gray-600 font-medium">Listed Driveways</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-600">
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
                   <line x1="8" y1="21" x2="16" y2="21"/>
                   <line x1="12" y1="17" x2="12" y2="21"/>
                 </svg>
               </div>
-              <h4>No driveways listed yet</h4>
-              <p>Add your first driveway to start earning money!</p>
-              <button className="btn-primary" onClick={handleAddDriveway}>
-                List Your First Driveway
-              </button>
-        </div>
-      ) : (
-            <div className="driveways-grid">
-          {driveways.map((driveway) => (
-            <div key={driveway.id} className="driveway-card">
-                  <div className="driveway-image">
-                    {driveway.images && driveway.images.length > 0 ? (
-                      <img 
-                        src={driveway.images[0]} 
-                        alt={driveway.address}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = 'https://via.placeholder.com/300x200/6366f1/ffffff?text=Driveway';
-                        }}
-                      />
-                    ) : (
-                      <div className="placeholder-image">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                          <circle cx="8.5" cy="8.5" r="1.5"/>
-                          <polyline points="21,15 16,10 5,21"/>
-                        </svg>
-                        <p>No image</p>
-                      </div>
-                    )}
-                    <div className="availability-badge">
-                      {driveway.isAvailable ? 'Available' : 'Unavailable'}
-                    </div>
-                    {driveway.images && driveway.images.length > 1 && (
-                      <div className="image-count-badge">
-                        +{driveway.images.length - 1}
-                      </div>
-                    )}
-              </div>
-              
-                  <div className="driveway-content">
-                    <h4 className="driveway-address">{driveway.address}</h4>
-                    <p className="driveway-description">{driveway.description}</p>
-                    
-                    <div className="driveway-stats">
-                      <div className="stat">
-                        <span className="stat-label">Price:</span>
-                        <span className="stat-value">${driveway.pricePerHour}/hr</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">Earnings:</span>
-                        <span className="stat-value">${recentBookings
-                          .filter(booking => booking.drivewayId === driveway.id)
-                          .reduce((sum, booking) => {
-                            const amount = typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : booking.totalAmount;
-                            return sum + (amount || 0);
-                          }, 0).toFixed(2)}</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">Bookings:</span>
-                        <span className="stat-value">{recentBookings.filter(booking => booking.drivewayId === driveway.id).length}</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">Rating:</span>
-                        <span className="stat-value">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
-                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                          </svg>
-                          {driveway.rating || 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="amenities">
-                      {driveway.amenities.slice(0, 3).map((amenity, index) => (
-                        <span key={index} className="amenity-tag">{amenity}</span>
-                      ))}
-                    </div>
-
-                    <div className="driveway-actions">
-                      <button 
-                        className="action-btn secondary"
-                        onClick={() => toggleAvailability(driveway.id)}
-                      >
-                        {driveway.isAvailable ? 'Make Unavailable' : 'Make Available'}
-                      </button>
-                      <button 
-                        className="action-btn primary"
-                        onClick={() => handleEditDriveway(driveway)}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        className="action-btn danger"
-                        onClick={() => handleDeleteDriveway(driveway.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    </div>
-                  </div>
-                ))}
             </div>
-          )}
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-3xl font-bold text-purple-600 mb-1">{totalBookings}</h3>
+                <p className="text-gray-600 font-medium">Total Bookings</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-600">
+                  <line x1="8" y1="6" x2="21" y2="6"/>
+                  <line x1="8" y1="12" x2="21" y2="12"/>
+                  <line x1="8" y1="18" x2="21" y2="18"/>
+                  <line x1="3" y1="6" x2="3.01" y2="6"/>
+                  <line x1="3" y1="12" x2="3.01" y2="12"/>
+                  <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-3xl font-bold text-yellow-600 mb-1">
+                  {driveways.length > 0 
+                    ? (driveways.reduce((sum, d) => sum + (d.rating || 0), 0) / driveways.length).toFixed(1)
+                    : '0.0'
+                  }
+                </h3>
+                <p className="text-gray-600 font-medium">Average Rating</p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" className="text-yellow-600">
+                  <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <button 
+            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+              activeTab === 'driveways' 
+                ? 'bg-primary-600 text-white shadow-lg' 
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-50'
+            }`}
+            onClick={() => setActiveTab('driveways')}
+          >
+            My Driveways
+          </button>
+          <button 
+            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+              activeTab === 'analytics' 
+                ? 'bg-primary-600 text-white shadow-lg' 
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-50'
+            }`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            Analytics
+          </button>
+          <button 
+            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+              activeTab === 'bookings' 
+                ? 'bg-primary-600 text-white shadow-lg' 
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-50'
+            }`}
+            onClick={() => setActiveTab('bookings')}
+          >
+            Bookings
+          </button>
+        </div>
+        
+        {/* Driveways Tab */}
+        {activeTab === 'driveways' && (
+          <div className="bg-white rounded-xl shadow-md border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold text-gray-900">Your Driveways</h3>
+                <button 
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+                  onClick={handleAddDriveway}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Add Driveway
+                </button>
+              </div>
+            </div>
+
+            {driveways.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                </div>
+                <h4 className="text-2xl font-bold text-gray-900 mb-3">No driveways listed yet</h4>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">Add your first driveway to start earning money from drivers who need parking!</p>
+                <button 
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
+                  onClick={handleAddDriveway}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  List Your First Driveway
+                </button>
+              </div>
+            ) : (
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {driveways.map((driveway) => (
+                    <div key={driveway.id} className="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+                      <div className="relative h-48 bg-gray-100">
+                        {driveway.images && driveway.images.length > 0 ? (
+                          <img 
+                            src={driveway.images[0]} 
+                            alt={driveway.address}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'https://via.placeholder.com/300x200/6366f1/ffffff?text=Driveway';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                              <circle cx="8.5" cy="8.5" r="1.5"/>
+                              <polyline points="21,15 16,10 5,21"/>
+                            </svg>
+                            <p className="text-sm mt-2">No image</p>
+                          </div>
+                        )}
+                        <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-medium ${
+                          driveway.isAvailable 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {driveway.isAvailable ? 'Available' : 'Unavailable'}
+                        </div>
+                        {driveway.images && driveway.images.length > 1 && (
+                          <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
+                            +{driveway.images.length - 1}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="p-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">{driveway.address}</h4>
+                        <p className="text-gray-600 text-sm mb-4">{driveway.description}</p>
+                        
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                            <div className="text-sm text-gray-600 mb-1">Price</div>
+                            <div className="font-semibold text-green-600">${driveway.pricePerHour}/hr</div>
+                          </div>
+                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                            <div className="text-sm text-gray-600 mb-1">Earnings</div>
+                            <div className="font-semibold text-blue-600">${recentBookings
+                              .filter(booking => booking.drivewayId === driveway.id)
+                              .reduce((sum, booking) => {
+                                const amount = typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : booking.totalAmount;
+                                return sum + (amount || 0);
+                              }, 0).toFixed(2)}</div>
+                          </div>
+                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                            <div className="text-sm text-gray-600 mb-1">Bookings</div>
+                            <div className="font-semibold text-purple-600">{recentBookings.filter(booking => booking.drivewayId === driveway.id).length}</div>
+                          </div>
+                          <div className="text-center p-3 bg-gray-50 rounded-lg">
+                            <div className="text-sm text-gray-600 mb-1">Rating</div>
+                            <div className="flex items-center justify-center gap-1 font-semibold text-yellow-600">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
+                                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                              </svg>
+                              {driveway.rating || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {driveway.amenities.slice(0, 3).map((amenity, index) => (
+                            <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                              {amenity}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button 
+                            className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                            onClick={() => toggleAvailability(driveway.id)}
+                          >
+                            {driveway.isAvailable ? 'Make Unavailable' : 'Make Available'}
+                          </button>
+                          <button 
+                            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors duration-200"
+                            onClick={() => handleEditDriveway(driveway)}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors duration-200"
+                            onClick={() => handleDeleteDriveway(driveway.id)}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="3,6 5,6 21,6"/>
+                              <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       {/* Analytics Tab */}
       {activeTab === 'analytics' && (
@@ -1238,8 +1290,9 @@ const OwnerDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Quick Actions */}
-      <QuickActions />
+        {/* Quick Actions */}
+        <QuickActions />
+      </div>
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './RoleSwitcher.css';
 
 const RoleSwitcher: React.FC = () => {
   const { user } = useAuth();
@@ -58,15 +57,17 @@ const RoleSwitcher: React.FC = () => {
   const currentRole = getCurrentRole();
 
   return (
-    <div className="role-switcher">
+    <div className="relative">
       <button
-        className="role-switcher-button"
+        className="flex items-center gap-3 px-4 py-3 bg-white border-2 border-primary-500 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-primary-200"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-label={`Switch role. Current: ${getRoleLabel(currentRole)}`}
       >
-        <span className="role-icon">{getRoleIcon(currentRole)}</span>
-        <span className="role-label">{getRoleLabel(currentRole)}</span>
+        <div className="flex items-center justify-center w-6 h-6 text-primary-600">
+          {getRoleIcon(currentRole)}
+        </div>
+        <span className="font-semibold text-gray-900">{getRoleLabel(currentRole)}</span>
         <svg 
           width="12" 
           height="12" 
@@ -74,23 +75,27 @@ const RoleSwitcher: React.FC = () => {
           fill="none" 
           stroke="currentColor" 
           strokeWidth="2"
-          className={`role-arrow ${isOpen ? 'open' : ''}`}
+          className={`text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         >
           <polyline points="6,9 12,15 18,9"/>
         </svg>
       </button>
 
       {isOpen && (
-        <div className="role-dropdown">
+        <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
           {hasDriverRole && (
             <button
-              className={`role-option ${currentRole === 'driver' ? 'active' : ''}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors duration-200 ${
+                currentRole === 'driver' ? 'bg-primary-50 border-l-4 border-primary-500' : ''
+              }`}
               onClick={() => handleRoleSwitch('driver')}
             >
-              <span className="role-icon">{getRoleIcon('driver')}</span>
-              <span>Driver</span>
+              <div className="flex items-center justify-center w-6 h-6 text-gray-600">
+                {getRoleIcon('driver')}
+              </div>
+              <span className="flex-1 font-medium text-gray-900">Driver</span>
               {currentRole === 'driver' && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-600">
                   <polyline points="20,6 9,17 4,12"/>
                 </svg>
               )}
@@ -99,13 +104,17 @@ const RoleSwitcher: React.FC = () => {
           
           {hasOwnerRole && (
             <button
-              className={`role-option ${currentRole === 'owner' ? 'active' : ''}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors duration-200 ${
+                currentRole === 'owner' ? 'bg-primary-50 border-l-4 border-primary-500' : ''
+              }`}
               onClick={() => handleRoleSwitch('owner')}
             >
-              <span className="role-icon">{getRoleIcon('owner')}</span>
-              <span>Owner</span>
+              <div className="flex items-center justify-center w-6 h-6 text-gray-600">
+                {getRoleIcon('owner')}
+              </div>
+              <span className="flex-1 font-medium text-gray-900">Owner</span>
               {currentRole === 'owner' && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-600">
                   <polyline points="20,6 9,17 4,12"/>
                 </svg>
               )}

@@ -7,7 +7,6 @@ import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
 import QuickActions from './QuickActions';
 import ParkwayInterface from './ParkwayInterface';
-import './DriverDashboard.css';
 
 interface Booking {
   id: string;

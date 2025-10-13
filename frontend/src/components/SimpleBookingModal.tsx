@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import './SimpleBookingModal.css';
 
 // Stripe configuration
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;

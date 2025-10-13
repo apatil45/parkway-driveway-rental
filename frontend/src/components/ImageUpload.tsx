@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { notificationService } from '../services/notificationService';
-import './ImageUpload.css';
 
 interface ImageUploadProps {
   onImagesChange: (images: string[]) => void;

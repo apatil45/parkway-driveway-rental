@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './OptimizedImage.css';
 
 interface OptimizedImageProps {
   src: string;

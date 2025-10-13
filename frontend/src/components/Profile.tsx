@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import Button from './Button';
 import ProfileRoleSwitcher from './ProfileRoleSwitcher';
 import GeocodingInputWithAutocomplete from './GeocodingInputWithAutocomplete';
-import './Profile.css';
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();

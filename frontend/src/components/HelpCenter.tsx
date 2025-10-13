@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './HelpCenter.css';
 
 // Icon component for rendering SVG icons
 const Icon: React.FC<{ name: string; size?: number }> = ({ name, size = 20 }) => {
