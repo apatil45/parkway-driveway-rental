@@ -40,7 +40,12 @@ class CacheService {
       });
 
       this.client.on('error', (err) => {
-        console.warn('⚠️ Redis Client Error:', err.message);
+        // Only log Redis errors once to avoid flooding console
+        if (!this.errorLogged) {
+          console.warn('⚠️ Redis Client Error:', err.message);
+          console.warn('💡 Caching will be disabled. To enable Redis caching, install and start Redis server.');
+          this.errorLogged = true;
+        }
         this.isConnected = false;
       });
 

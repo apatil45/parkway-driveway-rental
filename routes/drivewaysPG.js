@@ -243,24 +243,40 @@ router.get('/search', cacheService.cacheMiddleware(180, cacheService.generateDri
 
     // Add coordinates and distance to each driveway (optimized)
     const geocodePromises = driveways.map(async (driveway) => {
-      const coordinates = await geocodeAddress(driveway.address);
-      driveway.coordinates = coordinates;
-      
-      if (userLatitude && userLongitude) {
-        const distance = calculateDistance(
-          userLatitude, 
-          userLongitude, 
-          coordinates.lat, 
-          coordinates.lng
-        );
-        driveway.distance = Math.round(distance * 1000); // Convert to meters and round
+      try {
+        const coordinates = await geocodeAddress(driveway.address);
+        driveway.coordinates = coordinates;
         
-        console.log(`Driveway: ${driveway.address}`);
-        console.log(`  Coordinates: ${coordinates.lat}, ${coordinates.lng}`);
-        console.log(`  Distance: ${driveway.distance}m`);
-        console.log(`  User location: ${userLatitude}, ${userLongitude}`);
+        if (userLatitude && userLongitude) {
+          const distance = calculateDistance(
+            userLatitude, 
+            userLongitude, 
+            coordinates.lat, 
+            coordinates.lng
+          );
+          driveway.distance = Math.round(distance * 1000); // Convert to meters and round
+          
+          console.log(`Driveway: ${driveway.address}`);
+          console.log(`  Coordinates: ${coordinates.lat}, ${coordinates.lng}`);
+          console.log(`  Distance: ${driveway.distance}m`);
+          console.log(`  User location: ${userLatitude}, ${userLongitude}`);
+        }
+        return driveway;
+      } catch (error) {
+        console.error(`Geocoding error for driveway ${driveway.id}:`, error.message);
+        // Use fallback coordinates
+        driveway.coordinates = { lat: 40.7178, lng: -74.0431 };
+        if (userLatitude && userLongitude) {
+          const distance = calculateDistance(
+            userLatitude, 
+            userLongitude, 
+            40.7178, 
+            -74.0431
+          );
+          driveway.distance = Math.round(distance * 1000);
+        }
+        return driveway;
       }
-      return driveway;
     });
     
     // Wait for all geocoding to complete
@@ -280,14 +296,18 @@ router.get('/search', cacheService.cacheMiddleware(180, cacheService.generateDri
     // Additional filter: Only show driveways that are actually available for booking
     const beforeAvailabilityFilter = driveways.length;
     driveways = driveways.filter(driveway => {
+      // Always check if driveway is marked as available
+      if (!driveway.isAvailable) {
+        return false;
+      }
+      
       // For Park Now mode, be more lenient - show all generally available driveways
       if (searchMode === 'now') {
-        return driveway.isAvailable === true;
+        return true; // Show all available driveways for immediate parking
       }
       
       // For scheduled mode, check if driveway has availability data
-      return driveway.isAvailable === true && 
-             (driveway.availability || driveway.availability === null);
+      return driveway.availability && Array.isArray(driveway.availability) && driveway.availability.length > 0;
     });
     console.log(`Availability filtered: ${beforeAvailabilityFilter} -> ${driveways.length}`);
 
@@ -317,11 +337,8 @@ router.get('/search', cacheService.cacheMiddleware(180, cacheService.generateDri
       driveways = driveways.filter(driveway => {
         // For Park Now mode, be much more lenient - show all available driveways
         if (searchMode === 'now') {
-          // Just check if driveway is generally available and has some availability
-          return driveway.isAvailable === true && 
-                 driveway.availability && 
-                 Array.isArray(driveway.availability) && 
-                 driveway.availability.length > 0;
+          // Just check if driveway is generally available
+          return driveway.isAvailable === true;
         }
 
         // For scheduled mode, use exact time matching
@@ -435,7 +452,18 @@ router.get('/search', cacheService.cacheMiddleware(180, cacheService.generateDri
   } catch (err) {
     console.error('Search Driveways Error:', err.message);
     console.error('Error details:', err);
-    res.status(500).json({ error: 'Server error', message: 'Failed to search driveways' });
+    console.error('Search parameters:', {
+      latitude, longitude, radius, date, startTime, endTime, searchMode, duration
+    });
+    res.status(500).json({ 
+      error: 'Server error', 
+      message: 'Failed to search driveways',
+      debug: {
+        searchMode,
+        hasLocation: !!(latitude && longitude),
+        hasDateTime: !!(date && startTime && endTime)
+      }
+    });
   }
 });
 
