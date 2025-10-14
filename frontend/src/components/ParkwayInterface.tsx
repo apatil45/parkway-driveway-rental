@@ -255,13 +255,13 @@ const ParkwayInterface: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Search & Results Panel - 2/5 width */}
-          <div className="lg:col-span-2 space-y-6">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
+          {/* Search & Results Panel - responsive width */}
+          <div className="md:col-span-1 lg:col-span-2 space-y-6">
             {/* Search Panel */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200">
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <ParkwaySearchForm 
                   onSearch={handleSearch}
                   userLocation={userLocation}
@@ -327,12 +327,12 @@ const ParkwayInterface: React.FC = () => {
             </div>
           </div>
 
-          {/* Map Panel - 3/5 width */}
-          <div className="lg:col-span-3">
+          {/* Map Panel - responsive width */}
+          <div className="md:col-span-2 lg:col-span-3">
             <div className="sticky top-24">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 h-[700px]">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 h-[500px] md:h-[600px] lg:h-[700px]">
                 <div className="p-0">
-                  <div className="h-[700px] rounded-2xl overflow-hidden">
+                  <div className="h-[500px] md:h-[600px] lg:h-[700px] rounded-2xl overflow-hidden">
                     <UnifiedMapView
                       driveways={driveways}
                       userLocation={userLocation}

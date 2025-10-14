@@ -298,7 +298,7 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
                 How long do you need parking?
               </label>
               
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {DURATION_OPTIONS.map((option) => (
                   <button
                     key={option.value}
