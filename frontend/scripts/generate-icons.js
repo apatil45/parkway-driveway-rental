@@ -1,0 +1,86 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Simple script to create placeholder PWA icons
+// In a real project, you'd use a proper image processing library like sharp
+
+const iconSizes = [72, 96, 128, 144, 152, 192, 384, 512];
+const iconsDir = path.join(__dirname, '../public/icons');
+
+// Ensure icons directory exists
+if (!fs.existsSync(iconsDir)) {
+  fs.mkdirSync(iconsDir, { recursive: true });
+}
+
+// Create a simple SVG-based icon for each size
+iconSizes.forEach(size => {
+  const svgContent = `<svg width="${size}" height="${size}" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#3b82f6"/>
+  
+  <!-- Parking icon -->
+  <g transform="translate(128, 128)">
+    <!-- Car body -->
+    <rect x="40" y="80" width="176" height="80" rx="8" fill="white"/>
+    
+    <!-- Car roof -->
+    <path d="M60 80 L196 80 L180 40 L76 40 Z" fill="white"/>
+    
+    <!-- Windows -->
+    <rect x="70" y="50" width="40" height="25" rx="4" fill="#3b82f6"/>
+    <rect x="146" y="50" width="40" height="25" rx="4" fill="#3b82f6"/>
+    
+    <!-- Wheels -->
+    <circle cx="80" cy="180" r="20" fill="#1f2937"/>
+    <circle cx="80" cy="180" r="12" fill="#6b7280"/>
+    <circle cx="176" cy="180" r="20" fill="#1f2937"/>
+    <circle cx="176" cy="180" r="12" fill="#6b7280"/>
+    
+    <!-- Parking lines -->
+    <rect x="20" y="200" width="8" height="40" fill="white"/>
+    <rect x="40" y="200" width="8" height="40" fill="white"/>
+    <rect x="60" y="200" width="8" height="40" fill="white"/>
+    <rect x="80" y="200" width="8" height="40" fill="white"/>
+    <rect x="100" y="200" width="8" height="40" fill="white"/>
+    <rect x="120" y="200" width="8" height="40" fill="white"/>
+    <rect x="140" y="200" width="8" height="40" fill="white"/>
+    <rect x="160" y="200" width="8" height="40" fill="white"/>
+    <rect x="180" y="200" width="8" height="40" fill="white"/>
+    <rect x="200" y="200" width="8" height="40" fill="white"/>
+    <rect x="220" y="200" width="8" height="40" fill="white"/>
+  </g>
+  
+  <!-- Parkway text -->
+  <text x="256" y="380" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">Parkway</text>
+</svg>`;
+
+  // For now, we'll create SVG files instead of PNG
+  // In production, you'd convert these to PNG using a proper image library
+  const svgPath = path.join(iconsDir, `icon-${size}x${size}.svg`);
+  fs.writeFileSync(svgPath, svgContent);
+  
+  console.log(`Created icon-${size}x${size}.svg`);
+});
+
+// Create a simple favicon
+const faviconSvg = `<svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="256" cy="256" r="256" fill="#3b82f6"/>
+  <g transform="translate(128, 128)">
+    <rect x="40" y="80" width="176" height="80" rx="8" fill="white"/>
+    <path d="M60 80 L196 80 L180 40 L76 40 Z" fill="white"/>
+    <rect x="70" y="50" width="40" height="25" rx="4" fill="#3b82f6"/>
+    <rect x="146" y="50" width="40" height="25" rx="4" fill="#3b82f6"/>
+    <circle cx="80" cy="180" r="20" fill="#1f2937"/>
+    <circle cx="176" cy="180" r="20" fill="#1f2937"/>
+  </g>
+</svg>`;
+
+fs.writeFileSync(path.join(iconsDir, '../favicon.svg'), faviconSvg);
+console.log('Created favicon.svg');
+
+console.log('\n✅ PWA icons generated successfully!');
+console.log('📝 Note: These are SVG icons. For production, convert to PNG using a tool like sharp or imagemagick.');

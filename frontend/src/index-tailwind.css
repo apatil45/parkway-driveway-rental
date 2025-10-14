@@ -477,6 +477,71 @@
   }
 }
 
+/* PWA Install Prompt Styles */
+.pwa-prompt-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4;
+}
+
+.pwa-prompt {
+  @apply bg-white rounded-xl shadow-2xl max-w-md w-full p-6;
+}
+
+.pwa-prompt-header {
+  @apply text-center mb-6;
+}
+
+.pwa-prompt-icon {
+  @apply w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4;
+}
+
+.pwa-prompt-icon svg {
+  @apply w-8 h-8 text-blue-600;
+}
+
+.pwa-prompt h3 {
+  @apply text-xl font-bold text-gray-900 mb-2;
+}
+
+.pwa-prompt p {
+  @apply text-gray-600 text-sm;
+}
+
+.pwa-prompt-features {
+  @apply space-y-3 mb-6;
+}
+
+.pwa-prompt-features .feature {
+  @apply flex items-center space-x-3 text-sm text-gray-700;
+}
+
+.pwa-prompt-features .feature svg {
+  @apply w-5 h-5 text-green-500 flex-shrink-0;
+}
+
+.pwa-prompt-actions {
+  @apply flex space-x-3;
+}
+
+.pwa-prompt-button {
+  @apply flex-1 px-4 py-3 rounded-lg font-medium transition-colors duration-150;
+}
+
+.pwa-prompt-button.primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.pwa-prompt-button.secondary {
+  @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+}
+
+.pwa-prompt.update-prompt .pwa-prompt-icon {
+  @apply bg-yellow-100;
+}
+
+.pwa-prompt.update-prompt .pwa-prompt-icon svg {
+  @apply text-yellow-600;
+}
+
 /* Enhanced Responsive Design */
 @media (max-width: 1536px) {
   .container-spacing {
