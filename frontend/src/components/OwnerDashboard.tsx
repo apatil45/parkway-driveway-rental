@@ -320,19 +320,19 @@ const OwnerDashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Manage Driveways</h1>
-          <p className="text-xl text-gray-600">Welcome back, {user?.name || 'Owner'}! Manage your driveway listings and earnings.</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Manage Driveways</h1>
+          <p className="text-lg sm:text-xl text-gray-600">Welcome back, {user?.name || 'Owner'}! Manage your driveway listings and earnings.</p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-3xl font-bold text-green-600 mb-1">${totalEarnings.toFixed(2)}</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold text-green-600 mb-1">${totalEarnings.toFixed(2)}</h3>
                 <p className="text-gray-600 font-medium">Total Earnings</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -400,7 +400,7 @@ const OwnerDashboard: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 mb-8">
+        <div className="flex flex-wrap gap-2 mb-6 sm:mb-8">
           <button 
             className={`btn ${activeTab === 'driveways' ? 'btn-primary' : 'btn-outline'} btn-sm`}
             onClick={() => setActiveTab('driveways')}
@@ -464,7 +464,7 @@ const OwnerDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {driveways.map((driveway) => (
                     <div key={driveway.id} className="bg-white rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
                       <div className="relative h-48 bg-gray-100">

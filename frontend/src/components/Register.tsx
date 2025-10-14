@@ -128,21 +128,25 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-header">
-          <div className="auth-logo">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8">
+        <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <div className="w-12 h-12 text-blue-600">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                <line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+            </div>
           </div>
-          <h1>Join Parkway</h1>
-          <p>Create your account to get started</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Join Parkway</h1>
+          <p className="text-sm sm:text-base text-gray-600">Create your account to get started</p>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="card">
+          <div className="card-body">
+            <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name">Full Name</label>
             <input
@@ -253,12 +257,16 @@ const Register: React.FC = () => {
           >
             {isLoading ? 'Creating Account...' : 'Create Account'}
           </button>
-        </form>
+            </form>
+          </div>
+        </div>
 
-        <div className="auth-footer">
-          <p>
+        <div className="text-center">
+          <p className="text-sm sm:text-base text-gray-600">
             Already have an account?{' '}
-            <Link to="/login">Sign in here</Link>
+            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+              Sign in here
+            </Link>
           </p>
         </div>
       </div>

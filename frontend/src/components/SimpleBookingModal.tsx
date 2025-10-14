@@ -439,8 +439,8 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
     }
     
     const { x, y } = clickPosition;
-    const modalWidth = 500; // Approximate modal width
-    const modalHeight = 600; // Approximate modal height
+    const modalWidth = window.innerWidth < 640 ? Math.min(400, window.innerWidth - 32) : 500;
+    const modalHeight = window.innerWidth < 640 ? Math.min(500, window.innerHeight - 32) : 600;
     
     // Ensure modal stays within viewport bounds
     const left = Math.min(Math.max(x - modalWidth / 2, 16), window.innerWidth - modalWidth - 16);
@@ -450,7 +450,10 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
       position: 'absolute' as const,
       left: `${left}px`,
       top: `${top}px`,
-      transform: 'none'
+      transform: 'none',
+      width: `${modalWidth}px`,
+      maxWidth: '95vw',
+      maxHeight: '95vh'
     };
   };
 

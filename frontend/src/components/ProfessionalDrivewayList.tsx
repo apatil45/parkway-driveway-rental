@@ -134,15 +134,15 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-gray-50">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Available Driveways</h3>
-        <p className="text-sm text-gray-600">{driveways.length} driveways found</p>
+      <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Available Driveways</h3>
+        <p className="text-xs sm:text-sm text-gray-600">{driveways.length} driveways found</p>
       </div>
 
       {/* Driveway List */}
       <div className="max-h-96 overflow-y-auto">
         {driveways.length === 0 ? (
-          <div className="p-8 text-center">
+          <div className="p-6 sm:p-8 text-center">
             <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
@@ -159,7 +159,7 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
             return (
               <div
                 key={driveway.id}
-                className={`p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 cursor-pointer ${
+                className={`p-4 sm:p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 cursor-pointer ${
                   selectedDriveway?.id === driveway.id ? 'bg-blue-50 border-blue-200' : ''
                 }`}
                 onClick={() => {
@@ -167,9 +167,9 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
                   onDrivewaySelect(driveway);
                 }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   {/* Image Thumbnail */}
-                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
                     {driveway.images && driveway.images.length > 0 ? (
                       <img
                         src={driveway.images[0]}
@@ -189,21 +189,21 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
                           {driveway.address.split(',')[0] || 'Driveway'}
                         </h4>
-                        <p className="text-sm text-gray-600 mb-2">{driveway.address}</p>
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2">{driveway.address}</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-green-600 mb-1">
+                        <div className="text-base sm:text-lg font-bold text-green-600 mb-1">
                           {formatPrice(driveway.pricePerHour)}
                         </div>
-                        <div className="text-sm text-gray-500">{distance}</div>
+                        <div className="text-xs sm:text-sm text-gray-500">{distance}</div>
                       </div>
                     </div>
 
                     {/* Features */}
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <div className="flex items-center gap-1 sm:gap-2 mb-3 flex-wrap">
                       <span className={`badge ${getSizeColor(driveway.drivewaySize)}`}>
                         {driveway.drivewaySize.charAt(0).toUpperCase() + driveway.drivewaySize.slice(1)}
                       </span>
@@ -233,10 +233,10 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
                           {availability.text}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                         {/* Quick Booking Buttons */}
                         <button 
-                          className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full hover:bg-green-700 transition-colors"
+                          className="px-2 sm:px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full hover:bg-green-700 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleQuickBook(driveway, 60); // 1 hour
@@ -245,7 +245,7 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
                           1hr - ${(Number(driveway.pricePerHour) * 1).toFixed(0)}
                         </button>
                         <button 
-                          className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full hover:bg-blue-700 transition-colors"
+                          className="px-2 sm:px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full hover:bg-blue-700 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleQuickBook(driveway, 120); // 2 hours
@@ -267,7 +267,7 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
                   </div>
 
                   {/* Parking Icon */}
-                  <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                     </svg>
@@ -280,7 +280,7 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="p-4 bg-gray-50 border-t border-gray-200">
+      <div className="p-3 sm:p-4 bg-gray-50 border-t border-gray-200">
         {selectedDriveway ? (
           <button 
             className="w-full btn btn-primary"

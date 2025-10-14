@@ -28,10 +28,10 @@ const Home: React.FC = () => {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary-600 to-primary-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-6 py-20 lg:py-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24 xl:py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12 items-center">
+            <div className="space-y-6 sm:space-y-8">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
                 {isAuthenticated ? (
                   <>Welcome back, {user?.name || 'User'}!</>
                 ) : (
@@ -39,7 +39,7 @@ const Home: React.FC = () => {
                 )}
               </h1>
               
-              <p className="text-xl lg:text-2xl text-primary-100 leading-relaxed max-w-2xl">
+              <p className="text-lg sm:text-xl md:text-xl lg:text-2xl text-primary-100 leading-relaxed max-w-2xl">
                 {isAuthenticated ? (
                   user?.roles?.includes('driver') && user?.roles?.includes('owner')
                     ? 'Access your driver and owner dashboards from the navigation above.'
@@ -51,9 +51,9 @@ const Home: React.FC = () => {
                 )}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button 
-                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-black rounded-xl hover:bg-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white bg-black rounded-xl hover:bg-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl"
                   onClick={handleGetStarted}
                 >
                   {isAuthenticated ? (
@@ -66,7 +66,7 @@ const Home: React.FC = () => {
                 {!isAuthenticated && (
                   <Link 
                     to="/login" 
-                    className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-primary-600 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-primary-600 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     Sign In
                   </Link>
@@ -75,7 +75,7 @@ const Home: React.FC = () => {
             </div>
 
             <div className="flex justify-center lg:justify-end">
-              <div className="relative w-80 h-80 bg-white/10 rounded-3xl backdrop-blur-sm border border-white/20 p-8">
+              <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 bg-white/10 rounded-3xl backdrop-blur-sm border border-white/20 p-6 sm:p-8">
                 <div className="relative w-full h-full">
                   {/* House */}
                   <div className="absolute bottom-8 left-8 w-16 h-20 bg-white/20 rounded-lg">
@@ -101,16 +101,16 @@ const Home: React.FC = () => {
       <QuickActions />
 
       {/* How It Works */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+      <section className="py-12 sm:py-16 md:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
               Simple steps to connect drivers with homeowners for convenient parking solutions
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="text-center space-y-6">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto">
                 <span className="text-2xl font-bold text-primary-600">1</span>
@@ -151,17 +151,17 @@ const Home: React.FC = () => {
       </section>
 
       {/* Features */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+      <section className="py-12 sm:py-16 md:py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
               Experience the best in driveway rental with our innovative platform
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow duration-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            <div className="bg-white rounded-xl p-6 sm:p-8 shadow-md hover:shadow-lg transition-shadow duration-200">
               <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-6">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-600">
                   <circle cx="11" cy="11" r="8"/>
@@ -220,22 +220,22 @@ const Home: React.FC = () => {
 
       {/* CTA */}
       {!isAuthenticated && (
-        <section className="py-20 bg-primary-600">
-          <div className="max-w-4xl mx-auto px-6 text-center">
-            <h2 className="text-4xl font-bold text-white mb-6">Ready to Start?</h2>
-            <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+        <section className="py-12 sm:py-16 md:py-20 bg-primary-600">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">Ready to Start?</h2>
+            <p className="text-lg sm:text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
               Join thousands of drivers and homeowners already using our platform for convenient parking solutions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
                 to="/register" 
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-primary-600 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-primary-600 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Create Account
               </Link>
               <Link 
                 to="/login" 
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white border-2 border-white rounded-xl hover:bg-white hover:text-primary-600 transition-all duration-200"
+                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white border-2 border-white rounded-xl hover:bg-white hover:text-primary-600 transition-all duration-200"
               >
                 Sign In
               </Link>

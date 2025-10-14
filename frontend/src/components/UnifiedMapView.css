@@ -301,17 +301,243 @@
   color: white;
 }
 
-/* Responsive Design */
+/* Enhanced Responsive Design */
+@media (max-width: 1536px) {
+  .unified-map-container {
+    height: 100%;
+  }
+}
+
+@media (max-width: 1280px) {
+  .unified-map-container {
+    height: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .unified-map-container {
+    height: 100%;
+  }
+  
+  .map-controls {
+    padding: 6px 10px;
+  }
+  
+  .map-footer {
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .unified-map-container {
+    height: 100%;
+  }
+  
+  .map-controls {
+    padding: 4px 8px;
+  }
+  
+  .map-footer {
+    padding: 4px 8px;
+  }
+  
+  .map-info {
+    font-size: 11px;
+  }
+  
+  .legend-item {
+    font-size: 11px;
+  }
+  
+  .marker-container {
+    transform: scale(0.9);
+  }
+  
+  .user-marker-container {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .cluster-marker-container {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 @media (max-width: 640px) {
+  .unified-map-container {
+    height: 100%;
+  }
+  
   .map-legend {
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     align-items: flex-start;
   }
   
   .map-info {
     flex-direction: column;
     align-items: flex-start;
+    gap: 3px;
+    font-size: 10px;
+  }
+  
+  .map-controls {
+    padding: 3px 6px;
+  }
+  
+  .map-footer {
+    padding: 3px 6px;
+  }
+  
+  .legend-item {
+    font-size: 10px;
     gap: 4px;
+  }
+  
+  .legend-marker {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .marker-dot {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .marker-container {
+    transform: scale(0.8);
+  }
+  
+  .user-marker-container {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .cluster-marker-container {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .cluster-marker-count {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .unified-map-container {
+    height: 100%;
+  }
+  
+  .map-legend {
+    gap: 4px;
+  }
+  
+  .map-info {
+    gap: 2px;
+    font-size: 9px;
+  }
+  
+  .map-controls {
+    padding: 2px 4px;
+  }
+  
+  .map-footer {
+    padding: 2px 4px;
+  }
+  
+  .legend-item {
+    font-size: 9px;
+    gap: 3px;
+  }
+  
+  .legend-marker {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .marker-dot {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .marker-container {
+    transform: scale(0.7);
+  }
+  
+  .user-marker-container {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .cluster-marker-container {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .cluster-marker-count {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .unified-map-container {
+    height: 100%;
+  }
+  
+  .map-legend {
+    gap: 3px;
+  }
+  
+  .map-info {
+    gap: 1px;
+    font-size: 8px;
+  }
+  
+  .map-controls {
+    padding: 1px 3px;
+  }
+  
+  .map-footer {
+    padding: 1px 3px;
+  }
+  
+  .legend-item {
+    font-size: 8px;
+    gap: 2px;
+  }
+  
+  .legend-marker {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .marker-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .marker-container {
+    transform: scale(0.6);
+  }
+  
+  .user-marker-container {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .cluster-marker-container {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .cluster-marker-count {
+    width: 14px;
+    height: 14px;
+    font-size: 7px;
   }
 }

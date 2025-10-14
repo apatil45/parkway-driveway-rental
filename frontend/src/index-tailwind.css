@@ -477,32 +477,110 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 640px) {
-  .page-container {
-    @apply p-4;
-  }
-  
-  .btn {
-    @apply px-6 py-4 min-h-[48px];
-  }
-  
-  .modal {
-    @apply m-4 max-w-[calc(100vw-2rem)];
+/* Enhanced Responsive Design */
+@media (max-width: 1536px) {
+  .container-spacing {
+    @apply max-w-6xl;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 1280px) {
+  .container-spacing {
+    @apply max-w-5xl;
+  }
+}
+
+@media (max-width: 1024px) {
+  .container-spacing {
+    @apply max-w-4xl;
+  }
+  
+  .section-spacing {
+    @apply py-12 px-4;
+  }
+}
+
+@media (max-width: 768px) {
   .page-container {
+    @apply px-4 py-6;
+  }
+  
+  .section-spacing {
+    @apply py-8 px-4;
+  }
+  
+  .btn {
+    @apply px-5 py-3 min-h-[44px] text-sm;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-4 min-h-[52px] text-base;
+  }
+  
+  .btn-xl {
+    @apply px-7 py-4 min-h-[56px] text-lg;
+  }
+  
+  .modal {
+    @apply m-4 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)];
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    @apply p-4;
+  }
+  
+  .card-header,
+  .card-body,
+  .card-footer {
+    @apply p-4;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply px-4 py-3 text-sm min-h-[44px];
+  }
+  
+  .form-label {
+    @apply text-sm mb-2;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-container {
+    @apply px-3 py-4;
+  }
+  
+  .section-spacing {
+    @apply py-6 px-3;
+  }
+  
+  .btn {
+    @apply px-4 py-3 min-h-[44px] text-sm;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-2 min-h-[40px] text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-5 py-3 min-h-[48px] text-sm;
+  }
+  
+  .btn-xl {
+    @apply px-6 py-4 min-h-[52px] text-base;
+  }
+  
+  .modal {
+    @apply m-3 max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-1.5rem)];
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
     @apply p-3;
-  }
-  
-  .main-content {
-    @apply rounded-xl;
-  }
-  
-  .card {
-    @apply rounded-xl;
   }
   
   .card-header,
@@ -511,8 +589,146 @@
     @apply p-3;
   }
   
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply px-3 py-2 text-sm min-h-[40px];
+  }
+  
+  .form-label {
+    @apply text-xs mb-2;
+  }
+  
+  .grid-spacing {
+    @apply gap-4;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    @apply px-2 py-3;
+  }
+  
+  .section-spacing {
+    @apply py-4 px-2;
+  }
+  
+  .main-content {
+    @apply rounded-lg;
+  }
+  
+  .card {
+    @apply rounded-lg;
+  }
+  
+  .card-header,
+  .card-body,
+  .card-footer {
+    @apply p-2;
+  }
+  
   .btn {
-    @apply px-4 py-2 text-sm;
+    @apply px-3 py-2 min-h-[40px] text-xs;
+  }
+  
+  .btn-sm {
+    @apply px-2 py-1 min-h-[36px] text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-4 py-3 min-h-[44px] text-sm;
+  }
+  
+  .btn-xl {
+    @apply px-5 py-3 min-h-[48px] text-base;
+  }
+  
+  .modal {
+    @apply m-2 max-w-[calc(100vw-1rem)] max-h-[calc(100vh-1rem)];
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    @apply p-2;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply px-2 py-2 text-xs min-h-[36px];
+  }
+  
+  .form-label {
+    @apply text-xs mb-1;
+  }
+  
+  .grid-spacing {
+    @apply gap-2;
+  }
+  
+  .content-spacing {
+    @apply space-y-4;
+  }
+}
+
+@media (max-width: 360px) {
+  .page-container {
+    @apply px-1 py-2;
+  }
+  
+  .section-spacing {
+    @apply py-3 px-1;
+  }
+  
+  .btn {
+    @apply px-2 py-1 min-h-[36px] text-xs;
+  }
+  
+  .btn-sm {
+    @apply px-1 py-1 min-h-[32px] text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-3 py-2 min-h-[40px] text-sm;
+  }
+  
+  .btn-xl {
+    @apply px-4 py-2 min-h-[44px] text-base;
+  }
+  
+  .modal {
+    @apply m-1 max-w-[calc(100vw-0.5rem)] max-h-[calc(100vh-0.5rem)];
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    @apply p-1;
+  }
+  
+  .card-header,
+  .card-body,
+  .card-footer {
+    @apply p-1;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply px-1 py-1 text-xs min-h-[32px];
+  }
+  
+  .form-label {
+    @apply text-xs mb-1;
+  }
+  
+  .grid-spacing {
+    @apply gap-1;
+  }
+  
+  .content-spacing {
+    @apply space-y-2;
   }
 }
 

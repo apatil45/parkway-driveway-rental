@@ -255,10 +255,10 @@ const ParkwayInterface: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Main Content */}
-      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
           {/* Search & Results Panel - responsive width */}
-          <div className="md:col-span-1 lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Search Panel */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200">
               <div className="p-4 sm:p-6">
@@ -328,17 +328,17 @@ const ParkwayInterface: React.FC = () => {
           </div>
 
           {/* Map Panel - responsive width */}
-          <div className="md:col-span-2 lg:col-span-3">
-            <div className="sticky top-24">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 h-[500px] md:h-[600px] lg:h-[700px]">
+          <div className="lg:col-span-3">
+            <div className="sticky top-20 sm:top-24">
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px]">
                 <div className="p-0">
-                  <div className="h-[500px] md:h-[600px] lg:h-[700px] rounded-2xl overflow-hidden">
+                  <div className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] rounded-xl sm:rounded-2xl overflow-hidden">
                     <UnifiedMapView
                       driveways={driveways}
                       userLocation={userLocation}
                       onDrivewaySelect={handleDrivewaySelect}
                       selectedDriveway={selectedDriveway}
-                      height={500}
+                      height={400}
                       showLegend={true}
                       showControls={true}
                       onRefresh={refreshAvailableSpots}

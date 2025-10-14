@@ -174,3 +174,178 @@
   border: 2px solid white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* Enhanced Responsive Design */
+@media (max-width: 1536px) {
+  .map-container {
+    height: 100%;
+  }
+}
+
+@media (max-width: 1280px) {
+  .map-container {
+    height: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .map-container {
+    height: 100%;
+  }
+  
+  .marker-container {
+    transform: scale(0.9);
+  }
+  
+  .legend-item {
+    font-size: 11px;
+  }
+  
+  .legend-marker {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .marker-dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .map-container {
+    height: 100%;
+  }
+  
+  .marker-container {
+    transform: scale(0.8);
+  }
+  
+  .map-legend {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  
+  .legend-item {
+    font-size: 10px;
+    gap: 4px;
+  }
+  
+  .legend-marker {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .marker-dot {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .status-indicator {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .map-container {
+    height: 100%;
+  }
+  
+  .marker-container {
+    transform: scale(0.7);
+  }
+  
+  .map-legend {
+    gap: 6px;
+  }
+  
+  .legend-item {
+    font-size: 9px;
+    gap: 3px;
+  }
+  
+  .legend-marker {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .marker-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .status-indicator {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .map-container {
+    height: 100%;
+  }
+  
+  .marker-container {
+    transform: scale(0.6);
+  }
+  
+  .map-legend {
+    gap: 4px;
+  }
+  
+  .legend-item {
+    font-size: 8px;
+    gap: 2px;
+  }
+  
+  .legend-marker {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .marker-dot {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .status-indicator {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .map-container {
+    height: 100%;
+  }
+  
+  .marker-container {
+    transform: scale(0.5);
+  }
+  
+  .map-legend {
+    gap: 3px;
+  }
+  
+  .legend-item {
+    font-size: 7px;
+    gap: 1px;
+  }
+  
+  .legend-marker {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .marker-dot {
+    width: 3px;
+    height: 3px;
+  }
+  
+  .status-indicator {
+    width: 4px;
+    height: 4px;
+  }
+}

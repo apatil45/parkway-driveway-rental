@@ -129,7 +129,7 @@ const Nav: React.FC = () => {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6 ml-8" role="menubar">
+            <div className="hidden lg:flex items-center space-x-4 xl:space-x-6 ml-4 xl:ml-8" role="menubar">
               {isAuthenticated ? (
                 <>
                   {user?.roles?.includes('driver') && (
@@ -184,7 +184,7 @@ const Nav: React.FC = () => {
             </div>
 
             {/* User Actions */}
-            <div className="flex items-center space-x-4 ml-auto" id="user-menu">
+            <div className="flex items-center space-x-2 sm:space-x-4 ml-auto" id="user-menu">
               {isAuthenticated && <NotificationCenter />}
               {isAuthenticated ? (
                 <>
@@ -202,7 +202,7 @@ const Nav: React.FC = () => {
                       <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
                         {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                       </div>
-                      <span className="hidden sm:block">{user?.name || 'User'}</span>
+                      <span className="hidden md:block">{user?.name || 'User'}</span>
                       <svg 
                         width="16" 
                         height="16" 
@@ -262,7 +262,7 @@ const Nav: React.FC = () => {
 
             {/* Mobile Menu Toggle */}
             <button 
-              className="md:hidden btn btn-ghost btn-sm"
+              className="lg:hidden btn btn-ghost btn-sm"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               aria-expanded={showMobileMenu}
               aria-controls="mobile-menu"
@@ -291,7 +291,7 @@ const Nav: React.FC = () => {
         {/* Mobile Menu */}
         {showMobileMenu && (
           <div 
-            className="md:hidden bg-white border-t border-gray-200 shadow-lg"
+            className="lg:hidden bg-white border-t border-gray-200 shadow-lg"
             id="mobile-menu"
             ref={mobileMenuRef}
             role="dialog"
