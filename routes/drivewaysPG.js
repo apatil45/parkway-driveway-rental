@@ -8,6 +8,11 @@ const cacheService = require('../services/cacheService');
 
 const router = express.Router();
 
+// Test endpoint
+router.get('/test', (req, res) => {
+  res.json({ message: 'Driveways route is working', timestamp: new Date().toISOString() });
+});
+
 // Helper function to calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius of the Earth in kilometers
@@ -51,49 +56,31 @@ async function geocodeAddress(address) {
 // @route   GET /api/driveways
 // @desc    Get all available driveways
 // @access  Public
-router.get('/', cacheService.cacheMiddleware(300, () => 'driveways:all'), async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const driveways = await Driveway.findAll({
       where: { isAvailable: true },
-      include: [{
-        model: User,
-        as: 'ownerInfo',
-        attributes: ['name', 'email']
-      }],
       order: [['created_at', 'DESC']],
       raw: false
     });
 
     // Process driveways to ensure they have coordinates
-    const processedDriveways = await Promise.all(driveways.map(async (driveway) => {
+    const processedDriveways = driveways.map(driveway => {
       const drivewayData = driveway.toJSON();
       
-      // If no coordinates, try to geocode the address
-      if (!drivewayData.latitude || !drivewayData.longitude) {
-        try {
-          const coordinates = await geocodeAddress(drivewayData.address);
-          drivewayData.coordinates = coordinates;
-          
-          // Update the database with the new coordinates
-          await driveway.update({
-            latitude: coordinates.lat,
-            longitude: coordinates.lng
-          });
-        } catch (error) {
-          console.error(`Failed to geocode address for driveway ${drivewayData.id}:`, error);
-          // Use fallback coordinates
-          drivewayData.coordinates = { lat: 40.7178, lng: -74.0431 };
-        }
-      } else {
-        // Convert database coordinates to the expected format
+      // Use existing coordinates or fallback
+      if (drivewayData.latitude && drivewayData.longitude) {
         drivewayData.coordinates = {
           lat: parseFloat(drivewayData.latitude),
           lng: parseFloat(drivewayData.longitude)
         };
+      } else {
+        // Use fallback coordinates for now
+        drivewayData.coordinates = { lat: 40.7178, lng: -74.0431 };
       }
       
       return drivewayData;
-    }));
+    });
 
     res.json(processedDriveways);
   } catch (err) {
@@ -159,7 +146,7 @@ router.post('/:id/availability', async (req, res) => {
 // @route   GET /api/driveways/search
 // @desc    Search for available driveways by location, date, and time
 // @access  Public
-router.get('/search', cacheService.cacheMiddleware(180, cacheService.generateDrivewaySearchKey), async (req, res) => {
+router.get('/search', async (req, res) => {
   const {
     latitude,
     longitude,
@@ -226,11 +213,6 @@ router.get('/search', cacheService.cacheMiddleware(180, cacheService.generateDri
 
     let driveways = await Driveway.findAll({
       where: whereClause,
-      include: [{
-        model: User,
-        as: 'ownerInfo',
-        attributes: ['name', 'email']
-      }],
       order: [['created_at', 'DESC']],
       raw: false
     });
