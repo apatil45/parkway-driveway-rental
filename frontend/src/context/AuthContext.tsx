@@ -11,7 +11,6 @@ interface User {
   drivewaySize?: string;
   phoneNumber?: string;
   address?: string;
-  onboardingCompleted?: boolean;
 }
 
 interface AuthContextType {

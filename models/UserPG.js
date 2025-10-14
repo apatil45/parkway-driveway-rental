@@ -54,12 +54,6 @@ const User = sequelize.define('User', {
   address: {
     type: DataTypes.TEXT,
     allowNull: true
-  },
-  onboardingCompleted: {
-    type: DataTypes.BOOLEAN,
-    allowNull: true,
-    defaultValue: false,
-    field: 'onboarding_completed'
   }
 }, {
   timestamps: true,

@@ -151,45 +151,6 @@ router.get('/user', auth, async (req, res) => {
   }
 });
 
-// @route   PUT /api/auth/profile
-// @desc    Update user profile
-// @access  Private
-router.put('/profile', auth, async (req, res) => {
-  try {
-    const { carSize, drivewaySize, phoneNumber, address, onboardingCompleted } = req.body;
-    
-    const user = await User.findByPk(req.user.id);
-    if (!user) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'User not found' 
-      });
-    }
-
-    // Update user fields
-    const updateData = {};
-    if (carSize !== undefined) updateData.carSize = carSize;
-    if (drivewaySize !== undefined) updateData.drivewaySize = drivewaySize;
-    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
-    if (address !== undefined) updateData.address = address;
-    if (onboardingCompleted !== undefined) updateData.onboardingCompleted = onboardingCompleted;
-
-    await user.update(updateData);
-
-    res.json({
-      success: true,
-      message: 'Profile updated successfully',
-      user: user.toJSON()
-    });
-  } catch (err) {
-    console.error('Update Profile Route Error:', err.message);
-    res.status(500).json({ 
-      success: false,
-      message: 'Server error updating profile' 
-    });
-  }
-});
-
 // @route   POST /api/auth/refresh
 // @desc    Refresh JWT token
 // @access  Private
