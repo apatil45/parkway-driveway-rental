@@ -88,24 +88,35 @@ router.post('/', auth, isDriver, async (req, res) => {
     // Check driveway availability for the requested day/time
     const requestedDate = new Date(startTime);
     const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-    const dayAvailability = drivewayFound.availability.find(av => av.dayOfWeek === dayOfWeek);
+    
+    // If driveway has no availability data, assume it's available 24/7
+    if (!drivewayFound.availability || !Array.isArray(drivewayFound.availability) || drivewayFound.availability.length === 0) {
+      console.log('⚠️ Driveway has no availability data, assuming 24/7 availability');
+    } else {
+      const dayAvailability = drivewayFound.availability.find(av => av.dayOfWeek === dayOfWeek);
 
-    if (!dayAvailability || !dayAvailability.isAvailable) {
-      return res.status(400).json({ 
-        error: 'Driveway not available',
-        message: 'Driveway is not available on this day'
-      });
+      if (!dayAvailability || !dayAvailability.isAvailable) {
+        return res.status(400).json({ 
+          error: 'Driveway not available',
+          message: 'Driveway is not available on this day'
+        });
+      }
     }
 
     // Check if requested time is within driveway availability hours
     const startTimeStr = newStartTime.toTimeString().slice(0, 5);
     const endTimeStr = newEndTime.toTimeString().slice(0, 5);
     
-    if (startTimeStr < dayAvailability.startTime || endTimeStr > dayAvailability.endTime) {
-      return res.status(400).json({ 
-        error: 'Outside availability hours',
-        message: `Driveway is only available from ${dayAvailability.startTime} to ${dayAvailability.endTime}`
-      });
+    // Only check time constraints if driveway has availability data
+    if (drivewayFound.availability && Array.isArray(drivewayFound.availability) && drivewayFound.availability.length > 0) {
+      const dayAvailability = drivewayFound.availability.find(av => av.dayOfWeek === dayOfWeek);
+      
+      if (dayAvailability && (startTimeStr < dayAvailability.startTime || endTimeStr > dayAvailability.endTime)) {
+        return res.status(400).json({ 
+          error: 'Outside availability hours',
+          message: `Driveway is only available from ${dayAvailability.startTime} to ${dayAvailability.endTime}`
+        });
+      }
     }
 
     // Check for conflicts with existing bookings
@@ -208,18 +219,79 @@ router.post('/', auth, isDriver, async (req, res) => {
   }
 });
 
+// @route   GET /api/bookings/stats
+// @desc    Get booking statistics for user
+// @access  Private
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRoles = req.user.roles || [];
+    
+    let stats = {};
+    
+    if (userRoles.includes('driver')) {
+      const driverBookings = await Booking.count({
+        where: { driver: userId }
+      });
+      
+      const confirmedBookings = await Booking.count({
+        where: { driver: userId, status: 'confirmed' }
+      });
+      
+      const pendingBookings = await Booking.count({
+        where: { driver: userId, status: 'pending' }
+      });
+      
+      stats.driver = {
+        totalBookings: driverBookings,
+        confirmedBookings,
+        pendingBookings,
+        cancelledBookings: driverBookings - confirmedBookings - pendingBookings
+      };
+    }
+    
+    if (userRoles.includes('owner')) {
+      // Get all driveways owned by the user
+      const Driveway = require('../models/DrivewayPG');
+      const userDriveways = await Driveway.findAll({
+        where: { owner: userId },
+        attributes: ['id']
+      });
+      
+      const drivewayIds = userDriveways.map(d => d.id);
+      
+      const ownerBookings = await Booking.count({
+        where: { driveway: drivewayIds }
+      });
+      
+      const confirmedOwnerBookings = await Booking.count({
+        where: { 
+          driveway: drivewayIds,
+          status: 'confirmed'
+        }
+      });
+      
+      stats.owner = {
+        totalBookings: ownerBookings,
+        confirmedBookings: confirmedOwnerBookings,
+        pendingBookings: ownerBookings - confirmedOwnerBookings
+      };
+    }
+    
+    res.json(stats);
+  } catch (err) {
+    console.error('Get Booking Stats Error:', err.message);
+    console.error('Error stack:', err.stack);
+    res.status(500).json({ error: 'Server error', message: 'Failed to fetch booking statistics' });
+  }
+});
+
 // @route   GET api/bookings/:id
 // @desc    Get a single booking by ID
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const booking = await Booking.findByPk(req.params.id, {
-      include: [{
-        model: Driveway,
-        as: 'drivewayInfo',
-        attributes: ['address', 'pricePerHour']
-      }]
-    });
+    const booking = await Booking.findByPk(req.params.id);
     
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
@@ -385,11 +457,6 @@ router.get('/driver/:driver_id', auth, isDriver, async (req, res) => {
     
     const bookings = await Booking.findAll({
       where: { driver: req.user.id },
-      include: [{
-        model: Driveway,
-        as: 'drivewayInfo',
-        attributes: ['address', 'pricePerHour']
-      }],
       order: [['created_at', 'DESC']]
     });
     
@@ -412,21 +479,17 @@ router.get('/owner/:owner_id', auth, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to view these bookings' });
     }
     
+    // First get all driveways owned by the user
+    const Driveway = require('../models/DrivewayPG');
+    const userDriveways = await Driveway.findAll({
+      where: { owner: ownerId },
+      attributes: ['id']
+    });
+    
+    const drivewayIds = userDriveways.map(d => d.id);
+    
     const bookings = await Booking.findAll({
-      where: {},
-      include: [
-        {
-          model: Driveway,
-          as: 'drivewayInfo',
-          where: { owner: ownerId },
-          attributes: ['id', 'address', 'description']
-        },
-        {
-          model: User,
-          as: 'driverInfo',
-          attributes: ['id', 'name', 'email']
-        }
-      ],
+      where: { driveway: drivewayIds },
       order: [['created_at', 'DESC']]
     });
     
@@ -434,69 +497,6 @@ router.get('/owner/:owner_id', auth, async (req, res) => {
   } catch (err) {
     console.error('Get Owner Bookings Error:', err.message);
     res.status(500).json({ error: 'Server error', message: 'Failed to fetch owner bookings' });
-  }
-});
-
-// @route   GET /api/bookings/stats
-// @desc    Get booking statistics for user
-// @access  Private
-router.get('/stats', auth, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRoles = req.user.roles || [];
-    
-    let stats = {};
-    
-    if (userRoles.includes('driver')) {
-      const driverBookings = await Booking.count({
-        where: { driver: userId }
-      });
-      
-      const confirmedBookings = await Booking.count({
-        where: { driver: userId, status: 'confirmed' }
-      });
-      
-      const pendingBookings = await Booking.count({
-        where: { driver: userId, status: 'pending' }
-      });
-      
-      stats.driver = {
-        totalBookings: driverBookings,
-        confirmedBookings,
-        pendingBookings,
-        cancelledBookings: driverBookings - confirmedBookings - pendingBookings
-      };
-    }
-    
-    if (userRoles.includes('owner')) {
-      const ownerBookings = await Booking.count({
-        include: [{
-          model: Driveway,
-          as: 'drivewayInfo',
-          where: { owner: userId }
-        }]
-      });
-      
-      const confirmedOwnerBookings = await Booking.count({
-        where: { status: 'confirmed' },
-        include: [{
-          model: Driveway,
-          as: 'drivewayInfo',
-          where: { owner: userId }
-        }]
-      });
-      
-      stats.owner = {
-        totalBookings: ownerBookings,
-        confirmedBookings: confirmedOwnerBookings,
-        pendingBookings: ownerBookings - confirmedOwnerBookings
-      };
-    }
-    
-    res.json(stats);
-  } catch (err) {
-    console.error('Get Booking Stats Error:', err.message);
-    res.status(500).json({ error: 'Server error', message: 'Failed to fetch booking statistics' });
   }
 });
 
