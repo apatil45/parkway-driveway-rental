@@ -69,6 +69,12 @@ const Driveway = sequelize.define('Driveway', {
     defaultValue: [],
     allowNull: true,
     field: 'specific_slots'
+  },
+  bookedSlots: {
+    type: DataTypes.JSON,
+    defaultValue: [],
+    allowNull: true,
+    field: 'booked_slots'
   }
 }, {
   timestamps: true,

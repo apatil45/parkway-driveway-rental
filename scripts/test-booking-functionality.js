@@ -126,8 +126,8 @@ async function testBookingCreation() {
   
   const bookingData = {
     driveway: testDrivewayId,
-    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
-    endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(), // Tomorrow + 2 hours
+    startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Day after tomorrow
+    endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(), // Day after tomorrow + 2 hours
     totalAmount: 25.00,
     driverLocation: { lat: 40.7178, lng: -74.0431 },
     specialRequests: 'Test booking request'
