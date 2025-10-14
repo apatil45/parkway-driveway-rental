@@ -4,6 +4,7 @@ import { notificationService } from '../services/notificationService';
 import PaymentStatus from './PaymentStatus';
 import QuickActions from './QuickActions';
 import GeocodingInputWithAutocomplete from './GeocodingInputWithAutocomplete';
+import AvailabilitySchedule from './AvailabilitySchedule';
 
 interface Driveway {
   id: string;
@@ -1062,65 +1063,13 @@ const OwnerDashboard: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Availability Schedule</label>
-                <div className="availability-schedule">
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="monday" value="monday" />
-                      Monday
-                    </label>
-                    <input type="time" name="mondayStart" placeholder="Start" />
-                    <input type="time" name="mondayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="tuesday" value="tuesday" />
-                      Tuesday
-                    </label>
-                    <input type="time" name="tuesdayStart" placeholder="Start" />
-                    <input type="time" name="tuesdayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="wednesday" value="wednesday" />
-                      Wednesday
-                    </label>
-                    <input type="time" name="wednesdayStart" placeholder="Start" />
-                    <input type="time" name="wednesdayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="thursday" value="thursday" />
-                      Thursday
-                    </label>
-                    <input type="time" name="thursdayStart" placeholder="Start" />
-                    <input type="time" name="thursdayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="friday" value="friday" />
-                      Friday
-                    </label>
-                    <input type="time" name="fridayStart" placeholder="Start" />
-                    <input type="time" name="fridayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="saturday" value="saturday" />
-                      Saturday
-                    </label>
-                    <input type="time" name="saturdayStart" placeholder="Start" />
-                    <input type="time" name="saturdayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="sunday" value="sunday" />
-                      Sunday
-                    </label>
-                    <input type="time" name="sundayStart" placeholder="Start" />
-                    <input type="time" name="sundayEnd" placeholder="End" />
-                  </div>
-                </div>
+                <AvailabilitySchedule
+                  value={[]}
+                  onChange={(availability) => {
+                    // Store availability in a ref or state for form submission
+                    console.log('Availability changed:', availability);
+                  }}
+                />
               </div>
 
               <div className="flex gap-3 pt-6 border-t border-gray-200">
@@ -1341,65 +1290,13 @@ const OwnerDashboard: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Availability Schedule</label>
-                <div className="availability-schedule">
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="monday" value="monday" />
-                      Monday
-                    </label>
-                    <input type="time" name="mondayStart" placeholder="Start" />
-                    <input type="time" name="mondayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="tuesday" value="tuesday" />
-                      Tuesday
-                    </label>
-                    <input type="time" name="tuesdayStart" placeholder="Start" />
-                    <input type="time" name="tuesdayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="wednesday" value="wednesday" />
-                      Wednesday
-                    </label>
-                    <input type="time" name="wednesdayStart" placeholder="Start" />
-                    <input type="time" name="wednesdayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="thursday" value="thursday" />
-                      Thursday
-                    </label>
-                    <input type="time" name="thursdayStart" placeholder="Start" />
-                    <input type="time" name="thursdayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="friday" value="friday" />
-                      Friday
-                    </label>
-                    <input type="time" name="fridayStart" placeholder="Start" />
-                    <input type="time" name="fridayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="saturday" value="saturday" />
-                      Saturday
-                    </label>
-                    <input type="time" name="saturdayStart" placeholder="Start" />
-                    <input type="time" name="saturdayEnd" placeholder="End" />
-                  </div>
-                  <div className="schedule-row">
-                    <label>
-                      <input type="checkbox" name="sunday" value="sunday" />
-                      Sunday
-                    </label>
-                    <input type="time" name="sundayStart" placeholder="Start" />
-                    <input type="time" name="sundayEnd" placeholder="End" />
-                  </div>
-                </div>
+                <AvailabilitySchedule
+                  value={Array.isArray(selectedDriveway?.availability) ? selectedDriveway.availability : []}
+                  onChange={(availability) => {
+                    // Store availability in a ref or state for form submission
+                    console.log('Availability changed:', availability);
+                  }}
+                />
               </div>
 
               <div className="flex gap-3 pt-6 border-t border-gray-200">

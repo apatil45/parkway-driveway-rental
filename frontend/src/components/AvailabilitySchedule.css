@@ -1,0 +1,132 @@
+/* Availability Schedule Component Styles */
+.availability-schedule {
+  @apply bg-gray-50 border border-gray-200 rounded-xl p-6 space-y-4;
+}
+
+.schedule-row {
+  @apply flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 hover:shadow-sm;
+}
+
+.schedule-row:hover {
+  @apply transform scale-[1.01];
+}
+
+.schedule-day-label {
+  @apply flex items-center gap-3 min-w-[120px];
+}
+
+.schedule-day-checkbox {
+  @apply w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2;
+}
+
+.schedule-day-text {
+  @apply text-sm font-semibold text-gray-700 select-none;
+}
+
+.schedule-time-inputs {
+  @apply flex items-center gap-3 flex-1;
+}
+
+.schedule-time-input {
+  @apply flex-1 px-4 py-3 text-sm font-medium text-gray-900 bg-white border-2 border-gray-200 rounded-lg transition-all duration-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100;
+}
+
+.schedule-time-input:focus {
+  @apply transform scale-[1.02];
+}
+
+.schedule-time-input::placeholder {
+  @apply text-gray-400 font-normal;
+}
+
+.schedule-time-separator {
+  @apply text-gray-400 font-medium text-sm;
+}
+
+/* Disabled state */
+.schedule-row.disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.schedule-row.disabled .schedule-time-input {
+  @apply bg-gray-100 cursor-not-allowed;
+}
+
+/* Error state */
+.schedule-row.error {
+  @apply border-red-300 bg-red-50;
+}
+
+.schedule-row.error .schedule-time-input {
+  @apply border-red-300 bg-red-50;
+}
+
+/* Success state */
+.schedule-row.success {
+  @apply border-green-300 bg-green-50;
+}
+
+.schedule-row.success .schedule-time-input {
+  @apply border-green-300 bg-green-50;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .availability-schedule {
+    @apply p-4 space-y-3;
+  }
+  
+  .schedule-row {
+    @apply flex-col items-stretch gap-3 p-3;
+  }
+  
+  .schedule-day-label {
+    @apply min-w-auto justify-center;
+  }
+  
+  .schedule-time-inputs {
+    @apply flex-col gap-2;
+  }
+  
+  .schedule-time-input {
+    @apply w-full;
+  }
+}
+
+@media (max-width: 480px) {
+  .availability-schedule {
+    @apply p-3 space-y-2;
+  }
+  
+  .schedule-row {
+    @apply p-2;
+  }
+  
+  .schedule-day-text {
+    @apply text-xs;
+  }
+  
+  .schedule-time-input {
+    @apply py-2 text-sm;
+  }
+}
+
+/* Animation for form interactions */
+@keyframes scheduleRowHighlight {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.schedule-row.highlight {
+  animation: scheduleRowHighlight 0.3s ease-in-out;
+}
+
+/* Professional focus states */
+.schedule-day-checkbox:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+.schedule-time-input:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
