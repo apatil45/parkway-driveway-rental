@@ -35,7 +35,7 @@ const startServer = async () => {
       console.log('📋 Synchronizing database models...');
       await sequelize.sync({ 
         force: false, // Changed from true to false to prevent data loss
-        alter: true // Temporarily set to true to add onboarding_completed column
+        alter: false // Back to false for production safety
       });
       console.log('✅ Database models synchronized');
       
