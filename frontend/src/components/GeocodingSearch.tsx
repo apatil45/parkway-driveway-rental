@@ -29,6 +29,7 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isGettingCurrentLocation, setIsGettingCurrentLocation] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -93,6 +94,62 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
       setIsGeocoding(false);
     }
   }, [searchQuery, onSearch]);
+
+  // Handle current location click
+  const handleCurrentLocationClick = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser');
+      return;
+    }
+
+    setIsGettingCurrentLocation(true);
+    setError(null);
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      // Set current location in search box
+      setSearchQuery('Current Location');
+      setCoordinates({ latitude, longitude });
+      
+      // Trigger search with current location
+      onSearch('Current Location', { latitude, longitude });
+      
+      // Call the callback if provided
+      if (onCurrentLocationClick) {
+        onCurrentLocationClick();
+      }
+    } catch (error) {
+      console.error('Error getting current location:', error);
+      if (error instanceof GeolocationPositionError) {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setError('Location access denied. Please enable location permissions.');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setError('Location information unavailable.');
+            break;
+          case error.TIMEOUT:
+            setError('Location request timed out.');
+            break;
+          default:
+            setError('Error getting current location.');
+        }
+      } else {
+        setError('Error getting current location.');
+      }
+    } finally {
+      setIsGettingCurrentLocation(false);
+    }
+  }, [onSearch, onCurrentLocationClick]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -216,20 +273,6 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
   return (
     <div className={`geocoding-search ${className} ${showSuggestions ? 'has-suggestions' : ''}`}>
       <div className="search-input-group">
-        {/* Location Icon */}
-        {onCurrentLocationClick && (
-          <div 
-            className="location-icon cursor-pointer"
-            onClick={onCurrentLocationClick}
-          >
-            <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors">
-              <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-          </div>
-        )}
         <input
           ref={inputRef}
           type="text"
@@ -241,38 +284,43 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
           disabled={disabled}
           className={`search-input ${error ? 'error' : ''} ${coordinates ? 'success' : ''}`}
           aria-label="Search location"
-          aria-describedby={error ? 'search-error' : coordinates ? 'search-coordinates' : 'search-help'}
+          aria-describedby={error ? 'search-error' : 'search-help'}
           aria-expanded={showSuggestions}
           aria-autocomplete="list"
           role="combobox"
         />
         
-        <button
-          type="button"
-          onClick={handleSearchClick}
-          disabled={disabled || isGeocoding || !searchQuery.trim()}
-          className="search-button"
-          aria-label="Search for driveways"
+        {/* Current Location Icon */}
+        <div
+          className="location-icon"
+          onClick={handleCurrentLocationClick}
+          style={{ 
+            cursor: disabled || isGettingCurrentLocation ? 'not-allowed' : 'pointer',
+            opacity: disabled || isGettingCurrentLocation ? 0.5 : 1
+          }}
+          title="Use current location"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleCurrentLocationClick();
+            }
+          }}
         >
-          {isGeocoding ? (
-            <div className="search-spinner" aria-hidden="true">
+          {isGettingCurrentLocation ? (
+            <div className="location-spinner" aria-hidden="true">
               <div className="spinner"></div>
             </div>
           ) : (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v8M8 12h8"/>
             </svg>
           )}
-        </button>
+        </div>
       </div>
 
-      {/* Debug info */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-          Debug: showSuggestions={showSuggestions.toString()}, suggestions.length={suggestions.length}, searchQuery="{searchQuery}"
-        </div>
-      )}
 
       {/* Suggestions dropdown */}
       {showSuggestions && (
@@ -366,15 +414,6 @@ const GeocodingSearch: React.FC<GeocodingSearchProps> = ({
         </div>
       )}
 
-      {coordinates && (
-        <div id="search-coordinates" className="search-coordinates">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
-          </svg>
-          <span>Location verified: {geocodingService.formatCoordinates(coordinates.latitude, coordinates.longitude)}</span>
-        </div>
-      )}
 
     </div>
   );

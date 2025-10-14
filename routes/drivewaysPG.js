@@ -177,15 +177,25 @@ router.get('/search', async (req, res) => {
     let searchDate, searchStartTime, searchEndTime;
     
     if (searchMode === 'now') {
-      // For "Park Now" mode, use current time + duration
+      // For "Park Now" mode, use current US time + duration
       const now = new Date();
       const durationMinutes = parseInt(duration) || 120; // Default 2 hours
       const endTime = new Date(now.getTime() + (durationMinutes * 60 * 1000));
       
-      // Format times for search
-      searchDate = now.toISOString().split('T')[0];
-      searchStartTime = now.toTimeString().slice(0, 5); // HH:MM format
-      searchEndTime = endTime.toTimeString().slice(0, 5); // HH:MM format
+      // Format times for search using US timezone
+      searchDate = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); // YYYY-MM-DD format
+      searchStartTime = now.toLocaleTimeString('en-US', { 
+        timeZone: 'America/New_York', 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }); // HH:MM format
+      searchEndTime = endTime.toLocaleTimeString('en-US', { 
+        timeZone: 'America/New_York', 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }); // HH:MM format
       
       console.log('Park Now mode:', { 
         searchDate, 
@@ -230,8 +240,8 @@ router.get('/search', async (req, res) => {
       return driveway.address && driveway.address.trim().length > 0;
     });
 
-    // Add coordinates and distance to each driveway
-    for (let driveway of driveways) {
+    // Add coordinates and distance to each driveway (optimized)
+    const geocodePromises = driveways.map(async (driveway) => {
       const coordinates = await geocodeAddress(driveway.address);
       driveway.coordinates = coordinates;
       
@@ -249,7 +259,11 @@ router.get('/search', async (req, res) => {
         console.log(`  Distance: ${driveway.distance}m`);
         console.log(`  User location: ${userLatitude}, ${userLongitude}`);
       }
-    }
+      return driveway;
+    });
+    
+    // Wait for all geocoding to complete
+    await Promise.all(geocodePromises);
 
     // Filter by radius if location is provided
     if (userLatitude && userLongitude && radius) {
@@ -265,7 +279,12 @@ router.get('/search', async (req, res) => {
     // Additional filter: Only show driveways that are actually available for booking
     const beforeAvailabilityFilter = driveways.length;
     driveways = driveways.filter(driveway => {
-      // Check if driveway has availability or is generally available
+      // For Park Now mode, be more lenient - show all generally available driveways
+      if (searchMode === 'now') {
+        return driveway.isAvailable === true;
+      }
+      
+      // For scheduled mode, check if driveway has availability data
       return driveway.isAvailable === true && 
              (driveway.availability || driveway.availability === null);
     });
@@ -295,7 +314,16 @@ router.get('/search', async (req, res) => {
       const searchDay = searchDateObj.getUTCDate();
 
       driveways = driveways.filter(driveway => {
-        // Check if driveway has availability for the requested date/time
+        // For Park Now mode, be much more lenient - show all available driveways
+        if (searchMode === 'now') {
+          // Just check if driveway is generally available and has some availability
+          return driveway.isAvailable === true && 
+                 driveway.availability && 
+                 Array.isArray(driveway.availability) && 
+                 driveway.availability.length > 0;
+        }
+
+        // For scheduled mode, use exact time matching
         if (!driveway.availability || !Array.isArray(driveway.availability)) {
           return false;
         }
@@ -306,8 +334,9 @@ router.get('/search', async (req, res) => {
             // Legacy format: day of week based availability
             const searchDayOfWeek = searchDateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
             const isDayMatch = avail.dayOfWeek === searchDayOfWeek;
-            const isTimeMatch = searchStartTime >= avail.startTime && searchEndTime <= avail.endTime;
             
+            // For scheduled mode, use exact time matching
+            const isTimeMatch = searchStartTime >= avail.startTime && searchEndTime <= avail.endTime;
             return isDayMatch && isTimeMatch && avail.isAvailable;
           } else if (avail.date) {
             // New format: specific date based availability
@@ -321,8 +350,9 @@ router.get('/search', async (req, res) => {
             const availDay = availDate.getUTCDate();
 
             const isDateMatch = (availYear === searchYear && availMonth === searchMonth && availDay === searchDay);
+            
+            // For scheduled mode, use exact time matching
             const isTimeMatch = searchStartTime >= avail.startTime && searchEndTime <= avail.endTime;
-
             return isDateMatch && isTimeMatch;
           }
           
@@ -368,14 +398,35 @@ router.get('/search', async (req, res) => {
     }
 
     // Enhanced response with search mode information
+    const now = new Date();
     const response = {
       driveways,
       searchMode,
       searchDate,
       searchStartTime,
       searchEndTime,
-      currentTime: new Date().toISOString(),
-      totalResults: driveways.length
+      currentTime: now.toISOString(),
+      currentUSTime: now.toLocaleString('en-US', { 
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }),
+      timezone: 'America/New_York',
+      totalResults: driveways.length,
+      userLocation: userLatitude && userLongitude ? { lat: userLatitude, lng: userLongitude } : null,
+      radius: radius,
+      debug: {
+        searchMode,
+        duration: duration,
+        hasUserLocation: !!(userLatitude && userLongitude),
+        drivewaysWithCoordinates: driveways.filter(d => d.coordinates).length,
+        drivewaysWithDistance: driveways.filter(d => d.distance).length
+      }
     };
     
     res.json(response);

@@ -63,6 +63,48 @@
     @apply px-10 py-5 text-xl min-h-[64px] gap-4;
   }
   
+  /* Professional Badge System */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium rounded-full;
+  }
+  
+  .badge-primary {
+    @apply bg-blue-100 text-blue-700;
+  }
+  
+  .badge-success {
+    @apply bg-green-100 text-green-700;
+  }
+  
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+  
+  .badge-error {
+    @apply bg-red-100 text-red-700;
+  }
+  
+  .badge-gray {
+    @apply bg-gray-100 text-gray-600;
+  }
+  
+  /* Professional Status Indicators */
+  .status-indicator {
+    @apply inline-flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-full;
+  }
+  
+  .status-available {
+    @apply bg-green-100 text-green-700;
+  }
+  
+  .status-unavailable {
+    @apply bg-red-100 text-red-700;
+  }
+  
+  .status-pending {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+  
   /* Professional Form Components */
   .form-group {
     @apply mb-8;
@@ -206,7 +248,7 @@
   }
   
   .modal-footer {
-    @apply p-6 border-t border-gray-100 flex gap-4 justify-end bg-gray-50;
+    @apply p-6 border-t border-gray-100 flex gap-4 justify-end bg-white;
   }
   
   /* Professional Loading States */

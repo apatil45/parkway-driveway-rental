@@ -109,11 +109,11 @@ const Nav: React.FC = () => {
 
       <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40" id="navigation" role="navigation" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center h-16">
             {/* Brand */}
             <Link 
               to="/" 
-              className="flex items-center space-x-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors duration-150"
+              className="flex items-center space-x-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors duration-150 flex-shrink-0"
               aria-label="Parkway - Go to homepage"
               onFocus={() => setFocusedElement('brand')}
               onBlur={() => setFocusedElement(null)}
@@ -129,17 +129,13 @@ const Nav: React.FC = () => {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8" role="menubar">
+            <div className="hidden md:flex items-center space-x-6 ml-8" role="menubar">
               {isAuthenticated ? (
                 <>
                   {user?.roles?.includes('driver') && (
                     <Link 
                       to="/driver-dashboard" 
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 ${
-                        isActiveRoute('/driver-dashboard') 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
+                      className={`btn ${isActiveRoute('/driver-dashboard') ? 'btn-primary' : 'btn-ghost'} btn-sm`}
                       role="menuitem"
                       aria-current={isActiveRoute('/driver-dashboard') ? 'page' : undefined}
                       onFocus={() => setFocusedElement('find-parking')}
@@ -152,11 +148,7 @@ const Nav: React.FC = () => {
                   {user?.roles?.includes('owner') && (
                     <Link 
                       to="/owner-dashboard" 
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 ${
-                        isActiveRoute('/owner-dashboard') 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
+                      className={`btn ${isActiveRoute('/owner-dashboard') ? 'btn-primary' : 'btn-ghost'} btn-sm`}
                       role="menuitem"
                       aria-current={isActiveRoute('/owner-dashboard') ? 'page' : undefined}
                       onFocus={() => setFocusedElement('my-driveways')}
@@ -169,11 +161,7 @@ const Nav: React.FC = () => {
               ) : (
                 <Link 
                   to="/" 
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 ${
-                    isActiveRoute('/') 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`btn ${isActiveRoute('/') ? 'btn-primary' : 'btn-ghost'} btn-sm`}
                   role="menuitem"
                   aria-current={isActiveRoute('/') ? 'page' : undefined}
                   onFocus={() => setFocusedElement('home')}
@@ -185,11 +173,7 @@ const Nav: React.FC = () => {
               
               <Link 
                 to="/help" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 ${
-                  isActiveRoute('/help') 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
+                className={`btn ${isActiveRoute('/help') ? 'btn-primary' : 'btn-ghost'} btn-sm`}
                 role="menuitem"
                 aria-current={isActiveRoute('/help') ? 'page' : undefined}
                 onFocus={() => setFocusedElement('help')}
@@ -200,14 +184,14 @@ const Nav: React.FC = () => {
             </div>
 
             {/* User Actions */}
-            <div className="flex items-center space-x-4" id="user-menu">
+            <div className="flex items-center space-x-4 ml-auto" id="user-menu">
               {isAuthenticated && <NotificationCenter />}
               {isAuthenticated ? (
                 <>
                   <RoleSwitcher />
                   <div className="relative" ref={dropdownRef}>
                     <button 
-                      className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-150"
+                      className="btn btn-ghost btn-sm flex items-center space-x-2"
                       onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                       aria-expanded={showProfileDropdown}
                       aria-haspopup="true"
@@ -278,7 +262,7 @@ const Nav: React.FC = () => {
 
             {/* Mobile Menu Toggle */}
             <button 
-              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-150"
+              className="md:hidden btn btn-ghost btn-sm"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               aria-expanded={showMobileMenu}
               aria-controls="mobile-menu"

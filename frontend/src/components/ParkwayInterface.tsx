@@ -5,37 +5,11 @@ import EnhancedMapView from './EnhancedMapView';
 import SimpleBookingModal from './SimpleBookingModal';
 import QuickActions from './QuickActions';
 import ProfessionalDrivewayList from './ProfessionalDrivewayList';
-import RealMapView from './RealMapView';
+import UnifiedMapView from './UnifiedMapView';
+import { Driveway, UserLocation } from '../types/map';
 // CSS import removed - now using Tailwind CSS
 
-interface Driveway {
-  id: string;
-  address: string;
-  description: string;
-  pricePerHour: number | string;
-  images: string[];
-  rating: number;
-  distance?: number;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-  amenities?: string[];
-  features?: string[];
-  owner?: {
-    name: string;
-    rating: number;
-  };
-  availability?: {
-    startTime: string;
-    endTime: string;
-  };
-}
-
-interface UserLocation {
-  lat: number;
-  lng: number;
-}
+// Using unified types from ../types/map
 
 interface SearchData {
   location: string;
@@ -53,32 +27,120 @@ const ParkwayInterface: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingDriveways, setIsLoadingDriveways] = useState(false);
 
-  // Get user location on component mount
+  // Load all available driveways by default
+  const loadAllAvailableDriveways = async (userLat?: number, userLng?: number, isRefresh: boolean = false) => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingDriveways && !isRefresh) {
+      console.log('⏳ Already loading driveways, skipping...');
+      return;
+    }
+    
+    try {
+      setIsLoadingDriveways(true);
+      if (isRefresh) {
+        setIsRefreshing(true);
+      }
+      console.log('🔄 Loading all available driveways...', { userLat, userLng, isRefresh });
+      
+      // Use current time for "Park Now" mode to show all currently available slots
+      const now = new Date();
+      const currentTime = now.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      const currentDate = now.toISOString().split('T')[0];
+      
+      const searchParams = new URLSearchParams({
+        searchMode: 'now',
+        duration: '120' // 2 hours default
+      });
+      
+      // Add user location if available
+      if (userLat && userLng) {
+        searchParams.append('latitude', userLat.toString());
+        searchParams.append('longitude', userLng.toString());
+      } else {
+        // Default to Jersey City area
+        searchParams.append('latitude', '40.7178');
+        searchParams.append('longitude', '-74.0431');
+      }
+      
+      const response = await fetch(`/api/driveways/search?${searchParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Loaded all available driveways:', {
+          count: data.driveways.length,
+          searchMode: data.searchMode,
+          debug: data.debug,
+          userLocation: data.userLocation
+        });
+        setDriveways(data.driveways || []);
+        setSearchError(null);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to load driveways');
+      }
+    } catch (error) {
+      console.error('❌ Error loading all driveways:', error);
+      setSearchError('Failed to load available parking spots');
+      setDriveways([]);
+    } finally {
+      setIsLoadingDriveways(false);
+      if (isRefresh) {
+        setIsRefreshing(false);
+      }
+    }
+  };
+
+  // Refresh available spots
+  const refreshAvailableSpots = () => {
+    if (userLocation) {
+      loadAllAvailableDriveways(userLocation.lat, userLocation.lng, true);
+    }
+  };
+
+  // Get user location and load all driveways on component mount
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
-          });
+          };
+          setUserLocation(location);
+          // Load all available driveways with user location
+          loadAllAvailableDriveways(location.lat, location.lng);
         },
         (error) => {
           console.error('Geolocation error:', error);
-          // Set default location (Jersey City)
-          setUserLocation({
+          // Set default location (Jersey City) and load driveways
+          const defaultLocation = {
             lat: 40.7178,
             lng: -74.0431
-          });
+          };
+          setUserLocation(defaultLocation);
+          loadAllAvailableDriveways(defaultLocation.lat, defaultLocation.lng);
         }
       );
     } else {
-      // Set default location if geolocation is not supported
-      setUserLocation({
+      // Set default location (Jersey City) and load driveways
+      const defaultLocation = {
         lat: 40.7178,
         lng: -74.0431
-      });
+      };
+      setUserLocation(defaultLocation);
+      loadAllAvailableDriveways(defaultLocation.lat, defaultLocation.lng);
     }
   }, []);
 
@@ -156,11 +218,21 @@ const ParkwayInterface: React.FC = () => {
     }
   };
 
-  const handleDrivewaySelect = (driveway: Driveway) => {
-    console.log('handleDrivewaySelect called with:', driveway);
+  const [clickPosition, setClickPosition] = useState<{ x: number; y: number } | undefined>();
+
+  const handleDrivewaySelect = (driveway: Driveway, clickPos?: { x: number; y: number }) => {
+    console.log('🎯 handleDrivewaySelect called with:', {
+      id: driveway.id,
+      address: driveway.address,
+      pricePerHour: driveway.pricePerHour,
+      isAvailable: driveway.isAvailable,
+      coordinates: driveway.coordinates,
+      clickPosition: clickPos
+    });
     setSelectedDriveway(driveway);
+    setClickPosition(clickPos);
     setShowBookingModal(true);
-    console.log('Booking modal should now be open');
+    console.log('✅ Booking modal should now be open');
   };
 
   const handleDrivewayFocus = (driveway: Driveway) => {
@@ -252,47 +324,25 @@ const ParkwayInterface: React.FC = () => {
                 </div>
               )}
 
-              {!searchData && (
-                <div className="card">
-                  <div className="card-body text-center py-16">
-                    <div className="text-blue-600 mb-6">
-                      <svg className="w-20 h-20 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Find Your Perfect Parking Spot</h2>
-                    <p className="text-lg text-gray-600">Enter your destination to discover available parking options near you.</p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Map Panel - 3/5 width */}
           <div className="lg:col-span-3">
             <div className="sticky top-24">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 h-[600px]">
-                <div className="p-6 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold text-gray-900">Interactive Map</h3>
-                    <div className="flex items-center gap-3">
-                      <button className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-md">
-                        Reserve Parking
-                      </button>
-                      <button className="px-4 py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
-                        Search Zones
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 h-[700px]">
                 <div className="p-0">
-                  <div className="h-[500px] rounded-b-2xl overflow-hidden">
-                    <RealMapView
+                  <div className="h-[700px] rounded-2xl overflow-hidden">
+                    <UnifiedMapView
                       driveways={driveways}
                       userLocation={userLocation}
                       onDrivewaySelect={handleDrivewaySelect}
                       selectedDriveway={selectedDriveway}
+                      height={500}
+                      showLegend={true}
+                      showControls={true}
+                      onRefresh={refreshAvailableSpots}
+                      isRefreshing={isRefreshing}
                     />
                   </div>
                 </div>
@@ -312,6 +362,7 @@ const ParkwayInterface: React.FC = () => {
             onClose={handleCancel}
             driveway={selectedDriveway}
             onBookingSuccess={handleBookingSuccess}
+            clickPosition={clickPosition}
           />
         )}
     </div>

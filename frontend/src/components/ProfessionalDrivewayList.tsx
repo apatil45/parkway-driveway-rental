@@ -1,26 +1,5 @@
 import React from 'react';
-
-interface Driveway {
-  id: string;
-  owner: string;
-  address: string;
-  latitude?: number;
-  longitude?: number;
-  description?: string;
-  images: string[];
-  availability: any[];
-  isAvailable: boolean;
-  carSizeCompatibility: string[];
-  drivewaySize: 'small' | 'medium' | 'large' | 'extra-large';
-  amenities: string[];
-  pricePerHour: number;
-  specificSlots: any[];
-  created_at: string;
-  updated_at: string;
-  // Additional computed fields
-  distance?: string;
-  rating?: number;
-}
+import { Driveway } from '../types/map';
 
 interface ProfessionalDrivewayListProps {
   driveways: Driveway[];
@@ -38,17 +17,26 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
   // Helper function to get driveway size color
   const getSizeColor = (size: string) => {
     switch (size) {
-      case 'small': return 'bg-red-100 text-red-700';
-      case 'medium': return 'bg-yellow-100 text-yellow-700';
-      case 'large': return 'bg-green-100 text-green-700';
-      case 'extra-large': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'small': return 'badge-error';
+      case 'medium': return 'badge-warning';
+      case 'large': return 'badge-success';
+      case 'extra-large': return 'badge-primary';
+      default: return 'badge-gray';
     }
   };
 
   // Helper function to get car size compatibility
   const getCarSizeText = (sizes: string[]) => {
+    if (!sizes || sizes.length === 0) return 'All sizes';
     return sizes.map(size => size.charAt(0).toUpperCase() + size.slice(1)).join(', ');
+  };
+
+  // Helper function to format price safely
+  const formatPrice = (price: number | string | undefined) => {
+    if (price === undefined || price === null) return 'N/A';
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(numPrice)) return 'N/A';
+    return `$${numPrice.toFixed(2)}/hr`;
   };
 
   // Handler for View Details button
@@ -65,6 +53,37 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
     }
   };
 
+  // Handler for Quick Book buttons
+  const handleQuickBook = (driveway: Driveway, durationMinutes: number) => {
+    console.log('Quick book clicked for:', driveway, 'Duration:', durationMinutes);
+    
+    // Create a pre-filled booking object
+    const now = new Date();
+    const endTime = new Date(now.getTime() + (durationMinutes * 60 * 1000));
+    
+    const quickBookingData = {
+      driveway,
+      duration: durationMinutes,
+      startTime: now.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      endTime: endTime.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      date: now.toISOString().split('T')[0],
+      totalAmount: (Number(driveway.pricePerHour) * (durationMinutes / 60)).toFixed(2)
+    };
+    
+    console.log('Quick booking data:', quickBookingData);
+    
+    // Trigger the booking modal with pre-filled data
+    onDrivewaySelect(driveway);
+  };
+
   // Helper function to calculate distance (simplified)
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
     if (!lat1 || !lng1 || !lat2 || !lng2) return 'Distance unknown';
@@ -79,6 +98,37 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
     const distance = R * c;
     
     return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`;
+  };
+
+  // Helper function to get availability status
+  const getAvailabilityStatus = (driveway: Driveway) => {
+    if (!driveway.isAvailable) {
+      return { status: 'closed', text: 'Unavailable', color: '#E53E3E' };
+    }
+
+    // Check day-specific availability
+    const now = new Date();
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const currentDayName = dayNames[now.getDay()];
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    // Find today's availability
+    const todayAvailability = driveway.availability?.find(day => 
+      day.dayOfWeek.toLowerCase() === currentDayName
+    );
+    
+    if (!todayAvailability || !todayAvailability.isAvailable) {
+      return { status: 'closed', text: 'Closed Today', color: '#E53E3E' };
+    }
+    
+    // Check if current time is within available hours
+    if (currentTime >= todayAvailability.startTime && currentTime <= todayAvailability.endTime) {
+      return { status: 'available', text: 'Available Now', color: '#00D4AA' };
+    } else if (currentTime < todayAvailability.startTime) {
+      return { status: 'opens-later', text: `Opens at ${todayAvailability.startTime}`, color: '#FFB800' };
+    } else {
+      return { status: 'closed', text: 'Closed for Today', color: '#E53E3E' };
+    }
   };
 
   return (
@@ -101,14 +151,21 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
           </div>
         ) : (
           driveways.map((driveway) => {
-            const distance = searchLocation && driveway.latitude && driveway.longitude 
-              ? calculateDistance(searchLocation.lat, searchLocation.lng, driveway.latitude, driveway.longitude)
-              : 'Distance unknown';
+            const distance = searchLocation && driveway.coordinates 
+              ? calculateDistance(searchLocation.lat, searchLocation.lng, driveway.coordinates.lat, driveway.coordinates.lng)
+              : driveway.distance ? `${Math.round(driveway.distance)}m` : 'Distance unknown';
+            const availability = getAvailabilityStatus(driveway);
 
             return (
               <div
                 key={driveway.id}
-                className="p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
+                className={`p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 cursor-pointer ${
+                  selectedDriveway?.id === driveway.id ? 'bg-blue-50 border-blue-200' : ''
+                }`}
+                onClick={() => {
+                  console.log('Driveway card clicked:', driveway);
+                  onDrivewaySelect(driveway);
+                }}
               >
                 <div className="flex items-start gap-4">
                   {/* Image Thumbnail */}
@@ -139,7 +196,7 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-green-600 mb-1">
-                          ${driveway.pricePerHour}/hr
+                          {formatPrice(driveway.pricePerHour)}
                         </div>
                         <div className="text-sm text-gray-500">{distance}</div>
                       </div>
@@ -147,23 +204,23 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
 
                     {/* Features */}
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSizeColor(driveway.drivewaySize)}`}>
+                      <span className={`badge ${getSizeColor(driveway.drivewaySize)}`}>
                         {driveway.drivewaySize.charAt(0).toUpperCase() + driveway.drivewaySize.slice(1)}
                       </span>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                        {getCarSizeText(driveway.carSizeCompatibility)}
+                      <span className="badge badge-primary">
+                        {getCarSizeText(driveway.features || [])}
                       </span>
-                      {driveway.amenities.slice(0, 2).map((amenity, index) => (
+                      {(driveway.amenities || []).slice(0, 2).map((amenity, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs"
+                          className="badge badge-gray"
                         >
                           {amenity}
                         </span>
                       ))}
-                      {driveway.amenities.length > 2 && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
-                          +{driveway.amenities.length - 2} more
+                      {(driveway.amenities || []).length > 2 && (
+                        <span className="badge badge-gray">
+                          +{(driveway.amenities || []).length - 2} more
                         </span>
                       )}
                     </div>
@@ -171,38 +228,46 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
                     {/* Availability and Actions */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${driveway.isAvailable ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                        <span className="text-sm text-gray-600">
-                          {driveway.isAvailable ? 'Available now' : 'Currently occupied'}
+                        <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: availability.color }}></div>
+                        <span className="text-sm text-gray-600" style={{ color: availability.color }}>
+                          {availability.text}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        {/* Quick Booking Buttons */}
                         <button 
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full hover:bg-green-700 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuickBook(driveway, 60); // 1 hour
+                          }}
+                        >
+                          1hr - ${(Number(driveway.pricePerHour) * 1).toFixed(0)}
+                        </button>
+                        <button 
+                          className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full hover:bg-blue-700 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuickBook(driveway, 120); // 2 hours
+                          }}
+                        >
+                          2hr - ${(Number(driveway.pricePerHour) * 2).toFixed(0)}
+                        </button>
+                        <button 
+                          className="text-primary-600 hover:text-primary-700 text-xs font-medium"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleViewDetails(driveway);
                           }}
                         >
-                          View Details
-                        </button>
-                        <button 
-                          className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log('Book Now clicked for driveway:', driveway);
-                            onDrivewaySelect(driveway);
-                          }}
-                          disabled={!driveway.isAvailable}
-                        >
-                          Book Now
+                          More
                         </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Parking Icon */}
-                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                     </svg>
@@ -216,13 +281,24 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
 
       {/* Footer */}
       <div className="p-4 bg-gray-50 border-t border-gray-200">
-        <button 
-          className="w-full btn btn-primary"
-          onClick={handleBookDriveway}
-          disabled={!selectedDriveway}
-        >
-          Book Driveway
-        </button>
+        {selectedDriveway ? (
+          <button 
+            className="w-full btn btn-primary"
+            onClick={() => {
+              console.log('Book Driveway button clicked for:', selectedDriveway);
+              onDrivewaySelect(selectedDriveway);
+            }}
+          >
+            Book {selectedDriveway.address.split(',')[0] || 'Selected Driveway'}
+          </button>
+        ) : (
+          <button 
+            className="w-full btn btn-primary opacity-50 cursor-not-allowed"
+            disabled
+          >
+            Select a driveway to book
+          </button>
+        )}
       </div>
     </div>
   );

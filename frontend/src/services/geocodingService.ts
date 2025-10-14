@@ -211,19 +211,36 @@ class GeocodingService {
 
   /**
    * Get a human-readable address from coordinates (reverse geocoding)
-   * Note: This would require a reverse geocoding service
    * @param latitude - Latitude coordinate
    * @param longitude - Longitude coordinate
    * @returns Promise with formatted address
    */
-  async reverseGeocode(latitude: number, longitude: number): Promise<string> {
-    // This would typically call a reverse geocoding service
-    // For now, we'll return the coordinates as a string
+  async reverseGeocode(latitude: number, longitude: number): Promise<{ address: string }> {
     if (!this.isValidCoordinates(latitude, longitude)) {
       throw new Error('Invalid coordinates for reverse geocoding');
     }
-    
-    return this.formatCoordinates(latitude, longitude);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/reverse`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ latitude, longitude }),
+      });
+
+      if (!response.ok) {
+        // If reverse geocoding fails, fall back to coordinates
+        return { address: this.formatCoordinates(latitude, longitude) };
+      }
+
+      const data = await response.json();
+      return { address: data.address || this.formatCoordinates(latitude, longitude) };
+    } catch (error) {
+      console.warn('Reverse geocoding failed, using coordinates:', error);
+      // Fall back to coordinates if reverse geocoding fails
+      return { address: this.formatCoordinates(latitude, longitude) };
+    }
   }
 }
 

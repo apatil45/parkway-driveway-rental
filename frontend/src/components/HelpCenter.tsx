@@ -181,197 +181,255 @@ const HelpCenter: React.FC = () => {
   };
 
   return (
-    <div className="help-center">
-      <div className="help-header">
-        <h1>Help Center</h1>
-        <p>Find answers to common questions and get support</p>
-      </div>
-
-      {/* Search Bar */}
-      <div className="help-search">
-        <div className="search-container">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search for help..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="container mx-auto px-6 py-12">
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Help Center</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">Find answers to common questions and get support</p>
         </div>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="quick-help-actions">
-        <div className="help-action-card">
-          <div className="action-icon">📞</div>
-          <h3>Contact Support</h3>
-          <p>Get personalized help from our support team</p>
-          <button className="action-button">Contact Us</button>
-        </div>
-        
-        <div className="help-action-card">
-          <div className="action-icon">📧</div>
-          <h3>Email Support</h3>
-          <p>Send us an email and we'll respond within 24 hours</p>
-          <a href="mailto:support@parkway.com" className="action-button">Send Email</a>
-        </div>
-        
-        <div className="help-action-card">
-          <div className="action-icon">💬</div>
-          <h3>Live Chat</h3>
-          <p>Chat with our support team in real-time</p>
-          <button className="action-button">Start Chat</button>
-        </div>
-      </div>
-
-      {/* Category Tabs */}
-      <div className="help-categories">
-        <button
-          className={`category-tab ${activeCategory === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveCategory('all')}
-        >
-          All Questions
-        </button>
-        {categories.map(category => (
-          <button
-            key={category.id}
-            className={`category-tab ${activeCategory === category.id ? 'active' : ''}`}
-            onClick={() => setActiveCategory(category.id)}
-          >
-            <span className="category-icon">
-              <Icon name={category.icon} size={18} />
-            </span>
-            {category.name}
-          </button>
-        ))}
-      </div>
-
-      {/* FAQ Section */}
-      <div className="faq-section">
-        <h2>Frequently Asked Questions</h2>
-        <div className="faq-list">
-          {filteredFAQs.length > 0 ? (
-            filteredFAQs.map(faq => (
-              <div key={faq.id} className="faq-item">
-                <button
-                  className="faq-question"
-                  onClick={() => toggleFAQ(faq.id)}
-                  aria-expanded={expandedFAQ === faq.id}
-                >
-                  <span className="faq-text">{faq.question}</span>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className={`faq-arrow ${expandedFAQ === faq.id ? 'expanded' : ''}`}
-                  >
-                    <polyline points="6,9 12,15 18,9"/>
-                  </svg>
-                </button>
-                {expandedFAQ === faq.id && (
-                  <div className="faq-answer">
-                    <p>{faq.answer}</p>
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="no-results">
-              <p>No questions found matching your search.</p>
-              <button onClick={() => setSearchQuery('')} className="clear-search">
-                Clear Search
-              </button>
+        {/* Search Bar */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Additional Resources */}
-      <div className="additional-resources">
-        <h2>Additional Resources</h2>
-        <div className="resources-grid">
-          <div className="resource-card">
-            <h3>Getting Started Guide</h3>
-            <p>Step-by-step guide for new users</p>
-            <Link to="/help/getting-started" className="resource-link">
-              Read Guide →
-            </Link>
-          </div>
-          
-          <div className="resource-card">
-            <h3>Safety & Security</h3>
-            <p>Learn about our safety measures</p>
-            <Link to="/help/safety" className="resource-link">
-              Learn More →
-            </Link>
-          </div>
-          
-          <div className="resource-card">
-            <h3>Terms of Service</h3>
-            <p>Read our terms and conditions</p>
-            <Link to="/help/terms" className="resource-link">
-              View Terms →
-            </Link>
-          </div>
-          
-          <div className="resource-card">
-            <h3>Privacy Policy</h3>
-            <p>How we protect your data</p>
-            <Link to="/help/privacy" className="resource-link">
-              View Policy →
-            </Link>
+            <input
+              type="text"
+              placeholder="Search for help..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="form-input pl-12"
+            />
           </div>
         </div>
-      </div>
 
-      {/* User-specific help */}
-      {isAuthenticated && (
-        <div className="user-specific-help">
-          <h2>Personalized Help</h2>
-          <div className="user-help-actions">
-            {user?.roles?.includes('driver') && (
-              <Link to="/driver-dashboard" className="user-help-link">
-                <span className="help-icon">
-                  <Icon name="car" size={20} />
-                </span>
-                <div>
-                  <h4>Driver Dashboard</h4>
-                  <p>Manage your bookings and find parking</p>
-                </div>
-              </Link>
-            )}
-            
-            {user?.roles?.includes('owner') && (
-              <Link to="/owner-dashboard" className="user-help-link">
-                <span className="help-icon">
-                  <Icon name="home" size={20} />
-                </span>
-                <div>
-                  <h4>Owner Dashboard</h4>
-                  <p>Manage your driveways and earnings</p>
-                </div>
-              </Link>
-            )}
-            
-            <Link to="/profile" className="user-help-link">
-              <span className="help-icon">
-                <Icon name="user" size={20} />
-              </span>
-              <div>
-                <h4>Profile Settings</h4>
-                <p>Update your account information</p>
+        {/* Contact Support Section */}
+        <div className="card mb-12">
+          <div className="card-body">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
               </div>
-            </Link>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Contact Support</h2>
+                <p className="text-gray-600">Get personalized help from our support team</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Email Support */}
+              <div className="card-compact">
+                <div className="card-body">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Email Support</h3>
+                  </div>
+                  <p className="text-gray-600 mb-4">Send us an email and we'll respond within 24 hours</p>
+                  <a href="mailto:support@parkway.com" className="btn btn-secondary btn-sm">
+                    Send Email
+                  </a>
+                </div>
+              </div>
+
+              {/* Live Chat */}
+              <div className="card-compact">
+                <div className="card-body">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Live Chat</h3>
+                  </div>
+                  <p className="text-gray-600 mb-4">Chat with our support team in real-time</p>
+                  <button className="btn btn-secondary btn-sm">
+                    Start Chat
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Category Tabs */}
+        <div className="flex flex-wrap gap-2 mb-8 justify-center">
+          <button
+            className={`btn ${activeCategory === 'all' ? 'btn-primary' : 'btn-outline'} btn-sm`}
+            onClick={() => setActiveCategory('all')}
+          >
+            All Questions
+          </button>
+          {categories.map(category => (
+            <button
+              key={category.id}
+              className={`btn ${activeCategory === category.id ? 'btn-primary' : 'btn-outline'} btn-sm`}
+              onClick={() => setActiveCategory(category.id)}
+            >
+              <span className="flex items-center gap-2">
+                <Icon name={category.icon} size={16} />
+                {category.name}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* FAQ Section */}
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Frequently Asked Questions</h2>
+          <div className="space-y-4">
+            {filteredFAQs.length > 0 ? (
+              filteredFAQs.map(faq => (
+                <div key={faq.id} className="card">
+                  <div className="card-body p-0">
+                    <button
+                      className="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleFAQ(faq.id)}
+                      aria-expanded={expandedFAQ === faq.id}
+                    >
+                      <span className="text-lg font-semibold text-gray-900">{faq.question}</span>
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className={`text-gray-400 transition-transform ${expandedFAQ === faq.id ? 'rotate-180' : ''}`}
+                      >
+                        <polyline points="6,9 12,15 18,9"/>
+                      </svg>
+                    </button>
+                    {expandedFAQ === faq.id && (
+                      <div className="px-6 pb-6">
+                        <div className="border-t border-gray-200 pt-4">
+                          <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="card text-center py-12">
+                <div className="card-body">
+                  <p className="text-gray-600 mb-4">No questions found matching your search.</p>
+                  <button onClick={() => setSearchQuery('')} className="btn btn-outline btn-sm">
+                    Clear Search
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Additional Resources */}
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Additional Resources</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card-compact">
+              <div className="card-body">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Getting Started Guide</h3>
+                <p className="text-gray-600 mb-4">Step-by-step guide for new users</p>
+                <Link to="/help/getting-started" className="btn btn-outline btn-sm w-full">
+                  Read Guide →
+                </Link>
+              </div>
+            </div>
+            
+            <div className="card-compact">
+              <div className="card-body">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Safety & Security</h3>
+                <p className="text-gray-600 mb-4">Learn about our safety measures</p>
+                <Link to="/help/safety" className="btn btn-outline btn-sm w-full">
+                  Learn More →
+                </Link>
+              </div>
+            </div>
+            
+            <div className="card-compact">
+              <div className="card-body">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Terms of Service</h3>
+                <p className="text-gray-600 mb-4">Read our terms and conditions</p>
+                <Link to="/help/terms" className="btn btn-outline btn-sm w-full">
+                  View Terms →
+                </Link>
+              </div>
+            </div>
+            
+            <div className="card-compact">
+              <div className="card-body">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Privacy Policy</h3>
+                <p className="text-gray-600 mb-4">How we protect your data</p>
+                <Link to="/help/privacy" className="btn btn-outline btn-sm w-full">
+                  View Policy →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* User-specific help */}
+        {isAuthenticated && (
+          <div className="card">
+            <div className="card-body">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Personalized Help</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {user?.roles?.includes('driver') && (
+                  <Link to="/driver-dashboard" className="card-compact hover:shadow-lg transition-shadow">
+                    <div className="card-body">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Icon name="car" size={20} />
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-900">Driver Dashboard</h4>
+                      </div>
+                      <p className="text-gray-600">Manage your bookings and find parking</p>
+                    </div>
+                  </Link>
+                )}
+                
+                {user?.roles?.includes('owner') && (
+                  <Link to="/owner-dashboard" className="card-compact hover:shadow-lg transition-shadow">
+                    <div className="card-body">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <Icon name="home" size={20} />
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-900">Owner Dashboard</h4>
+                      </div>
+                      <p className="text-gray-600">Manage your driveways and earnings</p>
+                    </div>
+                  </Link>
+                )}
+                
+                <Link to="/profile" className="card-compact hover:shadow-lg transition-shadow">
+                  <div className="card-body">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <Icon name="user" size={20} />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900">Profile Settings</h4>
+                    </div>
+                    <p className="text-gray-600">Update your account information</p>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

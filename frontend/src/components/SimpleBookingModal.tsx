@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import './SimpleBookingModal.css';
 
 // Stripe configuration
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
@@ -36,26 +37,77 @@ interface SimpleBookingModalProps {
   onClose: () => void;
   driveway: Driveway;
   onBookingSuccess?: (bookingId: string) => void;
+  clickPosition?: { x: number; y: number };
 }
 
 const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
   isOpen,
   onClose,
   driveway,
-  onBookingSuccess
+  onBookingSuccess,
+  clickPosition
 }) => {
   const [formData, setFormData] = useState({
-    date: '',
-    startTime: '',
-    endTime: '',
+    date: new Date().toISOString().split('T')[0], // Today's date
+    startTime: '09:00', // Default start time
+    endTime: '17:00', // Default end time (8 hours later)
     specialRequests: ''
   });
+  const [quickDuration, setQuickDuration] = useState<number | null>(null);
   const [currentStep, setCurrentStep] = useState<'form' | 'payment' | 'success'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // Handle quick duration selection
+  useEffect(() => {
+    if (quickDuration) {
+      const now = new Date();
+      const endTime = new Date(now.getTime() + (quickDuration * 60 * 1000));
+      
+      setFormData(prev => ({
+        ...prev,
+        date: now.toISOString().split('T')[0],
+        startTime: now.toLocaleTimeString('en-US', { 
+          hour12: false, 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        endTime: endTime.toLocaleTimeString('en-US', { 
+          hour12: false, 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
+      }));
+    }
+  }, [quickDuration]);
+
+  // Scroll to top when modal opens to ensure it's visible
+  useEffect(() => {
+    if (isOpen) {
+      // Scroll to top of page to ensure modal is visible
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isOpen]);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -66,14 +118,27 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
   };
 
   const calculateTotal = () => {
-    if (!formData.startTime || !formData.endTime) return 0;
+    if (!formData.startTime || !formData.endTime) {
+      console.log('calculateTotal: Missing startTime or endTime', { startTime: formData.startTime, endTime: formData.endTime });
+      return 0;
+    }
     
     const start = new Date(`2000-01-01T${formData.startTime}`);
     const end = new Date(`2000-01-01T${formData.endTime}`);
     const diffMs = end.getTime() - start.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
+    const pricePerHour = Number(driveway.pricePerHour || 0);
+    const total = diffHours * pricePerHour;
     
-    return diffHours * Number(driveway.pricePerHour || 0);
+    console.log('calculateTotal:', { 
+      startTime: formData.startTime, 
+      endTime: formData.endTime, 
+      diffHours, 
+      pricePerHour, 
+      total 
+    });
+    
+    return total;
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -140,12 +205,29 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
 
     const handlePaymentSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!stripe || !elements) return;
+      
+      // Check if Stripe and Elements are properly loaded
+      if (!stripe || !elements) {
+        setError('Payment system not ready. Please try again.');
+        return;
+      }
+
+      // Get the payment element to ensure it's mounted
+      const paymentElement = elements.getElement('payment');
+      if (!paymentElement) {
+        setError('Payment form not ready. Please refresh and try again.');
+        return;
+      }
+
+      // Add a small delay to ensure Elements are fully ready
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       setIsProcessing(true);
       setError(null);
 
       try {
+        console.log('Starting payment confirmation...');
+        
         const { error, paymentIntent } = await stripe.confirmPayment({
           elements,
           confirmParams: {
@@ -154,9 +236,14 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
           redirect: 'if_required',
         });
 
+        console.log('Payment result:', { error, paymentIntent });
+
         if (error) {
+          console.error('Stripe payment error:', error);
           setError(error.message || 'Payment failed');
         } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+          console.log('Payment succeeded, creating booking...');
+          
           // Create booking with payment confirmation
           const bookingData = {
             driveway: driveway.id,
@@ -166,6 +253,14 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
             specialRequests: formData.specialRequests,
             stripePaymentId: paymentIntent.id
           };
+
+          console.log('🎯 Creating booking with data:', bookingData);
+          console.log('🎯 Driveway details:', {
+            id: driveway.id,
+            address: driveway.address,
+            pricePerHour: driveway.pricePerHour,
+            isAvailable: driveway.isAvailable
+          });
 
           const response = await fetch('/api/bookings', {
             method: 'POST',
@@ -178,13 +273,20 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
 
           if (response.ok) {
             const booking = await response.json();
-            console.log('Booking created successfully:', booking);
+            console.log('✅ Booking created successfully:', booking);
             setCurrentStep('success');
             onBookingSuccess?.(booking.id);
           } else {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to create booking');
+            console.error('❌ Booking creation failed:', {
+              status: response.status,
+              statusText: response.statusText,
+              error: errorData
+            });
+            throw new Error(errorData.message || errorData.error || 'Failed to create booking');
           }
+        } else {
+          setError('Payment was not completed. Please try again.');
         }
       } catch (error) {
         console.error('Payment processing failed:', error);
@@ -224,6 +326,7 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
 
         <form onSubmit={handlePaymentSubmit} className="payment-form">
           <PaymentElement 
+            key={clientSecret} // Force re-mount when client secret changes
             onReady={() => {
               console.log('PaymentElement is ready');
               setIsElementsReady(true);
@@ -239,6 +342,30 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
           {error && (
             <div className="error-message">
               {error}
+              {error.includes('Payment form not ready') && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setIsElementsReady(false);
+                    // Force re-render of PaymentElement
+                    setTimeout(() => setIsElementsReady(true), 1000);
+                  }}
+                  className="retry-button"
+                  style={{ 
+                    marginTop: '8px', 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Retry
+                </button>
+              )}
             </div>
           )}
           
@@ -260,8 +387,14 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
                      type="submit" 
                      className={`btn-primary ${isProcessing ? 'btn-loading' : ''}`}
                      disabled={!stripe || !isElementsReady || isProcessing}
+                     onClick={(e) => {
+                       if (!isElementsReady) {
+                         e.preventDefault();
+                         setError('Payment form is still loading. Please wait a moment and try again.');
+                       }
+                     }}
                    >
-                     {isProcessing ? 'Processing...' : isElementsReady ? `Pay $${totalAmount.toFixed(2)}` : 'Loading...'}
+                     {isProcessing ? 'Processing...' : isElementsReady ? `Pay $${totalAmount.toFixed(2)}` : 'Loading Payment Form...'}
                    </button>
           </div>
         </form>
@@ -299,9 +432,35 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
     </div>
   );
 
+  // Calculate modal position based on click location
+  const getModalStyle = () => {
+    if (!clickPosition) {
+      return {}; // Default positioning
+    }
+    
+    const { x, y } = clickPosition;
+    const modalWidth = 500; // Approximate modal width
+    const modalHeight = 600; // Approximate modal height
+    
+    // Ensure modal stays within viewport bounds
+    const left = Math.min(Math.max(x - modalWidth / 2, 16), window.innerWidth - modalWidth - 16);
+    const top = Math.min(Math.max(y - modalHeight / 2, 16), window.innerHeight - modalHeight - 16);
+    
+    return {
+      position: 'absolute' as const,
+      left: `${left}px`,
+      top: `${top}px`,
+      transform: 'none'
+    };
+  };
+
   return (
     <div className="simple-booking-modal-overlay" onClick={onClose}>
-      <div className="simple-booking-modal" onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="simple-booking-modal" 
+        onClick={(e) => e.stopPropagation()}
+        style={getModalStyle()}
+      >
         <div className="modal-header">
           <h2>Book Parking Spot</h2>
           <button onClick={onClose} className="close-button" aria-label="Close booking modal">
@@ -324,6 +483,41 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
                   {driveway.distance && (
                     <span className="distance">{driveway.distance.toFixed(0)}m away</span>
                   )}
+                </div>
+              </div>
+
+              {/* Quick Duration Selection */}
+              <div className="quick-duration-section">
+                <h4>Quick Book</h4>
+                <div className="duration-buttons">
+                  <button 
+                    type="button"
+                    className="duration-btn"
+                    onClick={() => setQuickDuration(60)}
+                  >
+                    1 Hour - ${(Number(driveway.pricePerHour) * 1).toFixed(0)}
+                  </button>
+                  <button 
+                    type="button"
+                    className="duration-btn"
+                    onClick={() => setQuickDuration(120)}
+                  >
+                    2 Hours - ${(Number(driveway.pricePerHour) * 2).toFixed(0)}
+                  </button>
+                  <button 
+                    type="button"
+                    className="duration-btn"
+                    onClick={() => setQuickDuration(240)}
+                  >
+                    4 Hours - ${(Number(driveway.pricePerHour) * 4).toFixed(0)}
+                  </button>
+                  <button 
+                    type="button"
+                    className="duration-btn"
+                    onClick={() => setQuickDuration(480)}
+                  >
+                    All Day - ${(Number(driveway.pricePerHour) * 8).toFixed(0)}
+                  </button>
                 </div>
               </div>
 
@@ -413,8 +607,9 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
                            type="submit" 
                            className={`btn-primary ${isSubmitting ? 'btn-loading' : ''}`}
                            disabled={isSubmitting || totalAmount <= 0}
+                           onClick={() => console.log('Continue to Payment clicked', { totalAmount, isSubmitting, disabled: isSubmitting || totalAmount <= 0 })}
                          >
-                           {isSubmitting ? 'Processing...' : 'Continue to Payment'}
+                           {isSubmitting ? 'Processing...' : `Continue to Payment ($${totalAmount.toFixed(2)})`}
                          </button>
                 </div>
               </form>

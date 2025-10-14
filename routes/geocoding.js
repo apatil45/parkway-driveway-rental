@@ -156,4 +156,54 @@ router.get('/autocomplete', async (req, res) => {
   }
 });
 
+// @route   POST api/geocoding/reverse
+// @desc    Reverse geocode coordinates to address
+// @access  Public
+router.post('/reverse', async (req, res) => {
+  const { latitude, longitude } = req.body;
+
+  if (!latitude || !longitude) {
+    return res.status(400).json({ msg: 'Latitude and longitude are required for reverse geocoding' });
+  }
+
+  if (!geocoder) {
+    return res.status(503).json({ msg: 'Geocoding service not configured' });
+  }
+
+  try {
+    // Use OpenCage's reverse geocoding
+    const results = await geocoder.reverse({ lat: latitude, lng: longitude });
+
+    if (!results || results.length === 0) {
+      return res.status(400).json({ msg: 'Could not reverse geocode coordinates' });
+    }
+
+    const result = results[0];
+    
+    // Create a clean, consistent address format
+    const streetNumber = result.streetNumber || '';
+    const streetName = result.streetName || '';
+    const city = result.city || '';
+    const state = result.state || '';
+    const zipcode = result.zipcode || '';
+    
+    // Build address parts
+    const streetAddress = [streetNumber, streetName].filter(Boolean).join(' ');
+    const fullAddress = [streetAddress, city, state, zipcode].filter(Boolean).join(', ');
+    
+    res.json({ 
+      address: fullAddress || result.formattedAddress || `${latitude}, ${longitude}`,
+      formattedAddress: result.formattedAddress,
+      city: city,
+      state: state,
+      zipcode: zipcode,
+      country: result.country
+    });
+
+  } catch (err) {
+    console.error('Reverse geocoding error:', err.message);
+    res.status(500).json({ msg: 'Server Error during reverse geocoding' });
+  }
+});
+
 module.exports = router;

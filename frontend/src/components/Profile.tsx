@@ -22,7 +22,7 @@ const Profile: React.FC = () => {
       setFormData({
         name: user.name || '',
         email: user.email || '',
-        phone: user.phone || '',
+        phone: user.phoneNumber || '',
         address: user.address || '',
         carSize: user.carSize || 'medium',
         drivewaySize: user.drivewaySize || 'medium'
@@ -64,7 +64,7 @@ const Profile: React.FC = () => {
       setFormData({
         name: user.name || '',
         email: user.email || '',
-        phone: user.phone || '',
+        phone: user.phoneNumber || '',
         address: user.address || '',
         carSize: user.carSize || 'medium',
         drivewaySize: user.drivewaySize || 'medium'
@@ -74,142 +74,156 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="profile-container">
-      <div className="profile-header">
-        <h2 className="profile-title">Parkway.com - My Account</h2>
-        <div className="profile-nav">
-          <button 
-            className={`nav-button ${activeSection === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveSection('profile')}
-          >
-            My Profile
-          </button>
-          <button 
-            className={`nav-button ${activeSection === 'contact' ? 'active' : ''}`}
-            onClick={() => setActiveSection('contact')}
-          >
-            Contact Info
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="container mx-auto px-6 py-12">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-6">Parkway.com - My Account</h1>
+          <div className="flex gap-2">
+            <button 
+              className={`btn ${activeSection === 'profile' ? 'btn-primary' : 'btn-outline'} btn-sm`}
+              onClick={() => setActiveSection('profile')}
+            >
+              My Profile
+            </button>
+            <button 
+              className={`btn ${activeSection === 'contact' ? 'btn-primary' : 'btn-outline'} btn-sm`}
+              onClick={() => setActiveSection('contact')}
+            >
+              Contact Info
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="profile-content">
+        {/* Profile Content */}
         {activeSection === 'profile' && (
-          <div className="profile-section">
-            <div className="section-header">
-              <h3 className="section-title">Personal Information</h3>
-              {!isEditing && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit Profile
-                </Button>
-              )}
-            </div>
-
-            <div className="profile-info">
-              <div className="profile-avatar-large">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+          <div className="card">
+            <div className="card-body">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Personal Information</h2>
+                {!isEditing && (
+                  <button 
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit Profile
+                  </button>
+                )}
               </div>
-              
-              <div className="info-grid">
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="form-input"
-                    />
-                  ) : (
-                    <div className="info-value">{user?.name || 'Not provided'}</div>
-                  )}
+
+              <div className="flex items-start gap-6">
+                {/* Avatar */}
+                <div className="w-20 h-20 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Email Address</label>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="form-input"
-                    />
-                  ) : (
-                    <div className="info-value">{user?.email || 'Not provided'}</div>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Role</label>
-                  <div className="info-value role-badge">
-                    {user?.roles.includes('driver') && user?.roles.includes('owner') 
-                      ? 'Driver & Owner' 
-                      : user?.roles.includes('driver') 
-                        ? 'Driver' 
-                        : 'Property Owner'}
-                  </div>
-                </div>
-
-                {/* Role Switcher for users with multiple roles */}
-                <ProfileRoleSwitcher />
-
-                {user?.roles.includes('driver') && (
+                
+                {/* User Info */}
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="form-group">
-                    <label className="form-label">Car Size</label>
+                    <label className="form-label">Full Name</label>
                     {isEditing ? (
-                      <select
-                        name="carSize"
-                        value={formData.carSize}
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
                         onChange={handleInputChange}
-                        className="form-select"
-                      >
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
-                        <option value="extra-large">Extra Large</option>
-                      </select>
+                        className="form-input"
+                      />
                     ) : (
-                      <div className="info-value">{user?.carSize || 'Medium'}</div>
+                      <div className="text-gray-900 font-medium">{user?.name || 'Not provided'}</div>
                     )}
                   </div>
-                )}
 
-                {user?.roles.includes('owner') && (
                   <div className="form-group">
-                    <label className="form-label">Driveway Size</label>
+                    <label className="form-label">Email Address</label>
                     {isEditing ? (
-                      <select
-                        name="drivewaySize"
-                        value={formData.drivewaySize}
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
                         onChange={handleInputChange}
-                        className="form-select"
-                      >
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
-                        <option value="extra-large">Extra Large</option>
-                      </select>
+                        className="form-input"
+                      />
                     ) : (
-                      <div className="info-value">{user?.drivewaySize || 'Medium'}</div>
+                      <div className="text-gray-900 font-medium">{user?.email || 'Not provided'}</div>
                     )}
                   </div>
-                )}
+
+                  <div className="form-group">
+                    <label className="form-label">Role</label>
+                    <div className="flex items-center gap-2">
+                      {user?.roles?.includes('driver') && user?.roles?.includes('owner') ? (
+                        <>
+                          <span className="badge badge-primary">Driver</span>
+                          <span className="badge badge-success">Owner</span>
+                        </>
+                      ) : user?.roles?.includes('driver') ? (
+                        <span className="badge badge-primary">Driver</span>
+                      ) : user?.roles?.includes('owner') ? (
+                        <span className="badge badge-success">Owner</span>
+                      ) : (
+                        <span className="text-gray-500">Not specified</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Role Switcher for users with multiple roles */}
+                  <div className="form-group">
+                    <ProfileRoleSwitcher />
+                  </div>
+
+                  {user?.roles?.includes('driver') && (
+                    <div className="form-group">
+                      <label className="form-label">Car Size</label>
+                      {isEditing ? (
+                        <select
+                          name="carSize"
+                          value={formData.carSize}
+                          onChange={handleInputChange}
+                          className="form-select"
+                        >
+                          <option value="small">Small</option>
+                          <option value="medium">Medium</option>
+                          <option value="large">Large</option>
+                          <option value="extra-large">Extra Large</option>
+                        </select>
+                      ) : (
+                        <div className="text-gray-900 font-medium">{user?.carSize || 'Medium'}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {user?.roles?.includes('owner') && (
+                    <div className="form-group">
+                      <label className="form-label">Driveway Size</label>
+                      {isEditing ? (
+                        <select
+                          name="drivewaySize"
+                          value={formData.drivewaySize}
+                          onChange={handleInputChange}
+                          className="form-select"
+                        >
+                          <option value="small">Small</option>
+                          <option value="medium">Medium</option>
+                          <option value="large">Large</option>
+                          <option value="extra-large">Extra Large</option>
+                        </select>
+                      ) : (
+                        <div className="text-gray-900 font-medium">{user?.drivewaySize || 'Medium'}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {isEditing && (
-                <div className="form-actions">
-                  <Button variant="primary" onClick={handleSave}>
+                <div className="flex gap-4 mt-6">
+                  <button className="btn btn-primary" onClick={handleSave}>
                     Save Changes
-                  </Button>
-                  <Button variant="secondary" onClick={handleCancel}>
+                  </button>
+                  <button className="btn btn-outline" onClick={handleCancel}>
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>
@@ -217,22 +231,21 @@ const Profile: React.FC = () => {
         )}
 
         {activeSection === 'contact' && (
-          <div className="contact-section">
-            <div className="section-header">
-              <h3 className="section-title">Contact Information</h3>
-              {!isEditing && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit Contact
-                </Button>
-              )}
-            </div>
+          <div className="card">
+            <div className="card-body">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Contact Information</h2>
+                {!isEditing && (
+                  <button 
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit Contact
+                  </button>
+                )}
+              </div>
 
-            <div className="contact-info">
-              <div className="info-grid">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="form-group">
                   <label className="form-label">Phone Number</label>
                   {isEditing ? (
@@ -245,7 +258,7 @@ const Profile: React.FC = () => {
                       placeholder="Enter your phone number"
                     />
                   ) : (
-                    <div className="info-value">{user?.phone || 'Not provided'}</div>
+                    <div className="text-gray-900 font-medium">{user?.phoneNumber || 'Not provided'}</div>
                   )}
                 </div>
 
@@ -260,24 +273,24 @@ const Profile: React.FC = () => {
                       className="form-input"
                     />
                   ) : (
-                    <div className="info-value">{user?.address || 'Not provided'}</div>
+                    <div className="text-gray-900 font-medium">{user?.address || 'Not provided'}</div>
                   )}
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Email Address</label>
-                  <div className="info-value">{user?.email || 'Not provided'}</div>
+                  <div className="text-gray-900 font-medium">{user?.email || 'Not provided'}</div>
                 </div>
               </div>
 
               {isEditing && (
-                <div className="form-actions">
-                  <Button variant="primary" onClick={handleSave}>
+                <div className="flex gap-4 mt-6">
+                  <button className="btn btn-primary" onClick={handleSave}>
                     Save Changes
-                  </Button>
-                  <Button variant="secondary" onClick={handleCancel}>
+                  </button>
+                  <button className="btn btn-outline" onClick={handleCancel}>
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>

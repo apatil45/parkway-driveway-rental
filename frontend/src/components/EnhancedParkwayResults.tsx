@@ -1,41 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import RealMapView from './RealMapView';
+import UnifiedMapView from './UnifiedMapView';
+import { Driveway, UserLocation } from '../types/map';
 import { getESTTime, getCurrentDayOfWeek, formatTimeForAvailability } from '../utils/timeUtils';
 
-interface Driveway {
-  id: string;
-  address: string;
-  description: string;
-  pricePerHour: number | string;
-  images: string[];
-  rating: number;
-  distance?: number;
-  isAvailable?: boolean;
-  owner?: {
-    name: string;
-    rating: number;
-  };
-  features?: string[];
-  amenities?: string[];
-  availability?: {
-    startTime: string;
-    endTime: string;
-  } | Array<{
-    dayOfWeek: string;
-    isAvailable: boolean;
-    startTime: string;
-    endTime: string;
-  }>;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-}
-
-interface UserLocation {
-  lat: number;
-  lng: number;
-}
+// Using unified types from ../types/map
 
 interface EnhancedParkwayResultsProps {
   driveways: Driveway[];
@@ -389,13 +357,15 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
         {(viewMode === 'list' || viewMode === 'split') && (
           <div 
             ref={listRef}
-            className={`list-panel ${listExpanded ? 'expanded' : ''}`}
+            className={`flex-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden ${
+              listExpanded ? 'fixed inset-4 z-50' : ''
+            }`}
           >
-            <div className="list-header">
-              <h3>Available Spots</h3>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Available Spots</h3>
               {viewMode === 'split' && (
                 <button 
-                  className="expand-button"
+                  className="btn btn-ghost btn-sm"
                   onClick={toggleListExpansion}
                   aria-label={listExpanded ? 'Collapse list' : 'Expand list'}
                 >
@@ -476,13 +446,15 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
         {(viewMode === 'map' || viewMode === 'split') && (
           <div 
             ref={mapRef}
-            className={`map-panel ${mapExpanded ? 'expanded' : ''}`}
+            className={`flex-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden ${
+              mapExpanded ? 'fixed inset-4 z-50' : ''
+            }`}
           >
-            <div className="map-header">
-              <h3>Map View</h3>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Map View</h3>
               {viewMode === 'split' && (
                 <button 
-                  className="expand-button"
+                  className="btn btn-ghost btn-sm"
                   onClick={toggleMapExpansion}
                   aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}
                 >
@@ -497,12 +469,15 @@ const EnhancedParkwayResults: React.FC<EnhancedParkwayResultsProps> = ({
               )}
             </div>
             
-            <div className="map-container">
-              <RealMapView
+            <div className="h-full">
+              <UnifiedMapView
                 driveways={filteredDriveways}
                 userLocation={userLocation}
                 onDrivewaySelect={onDrivewayFocus}
                 selectedDriveway={selectedDriveway}
+                height={400}
+                showLegend={true}
+                showControls={false}
               />
             </div>
           </div>

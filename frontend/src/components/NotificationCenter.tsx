@@ -208,10 +208,10 @@ const NotificationCenter: React.FC = () => {
   }
 
   return (
-    <div className="notification-center">
+    <div className="relative">
       {/* Notification Bell Button */}
       <button
-        className="notification-bell"
+        className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
         aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
         aria-expanded={isOpen}
@@ -221,7 +221,7 @@ const NotificationCenter: React.FC = () => {
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
         {unreadCount > 0 && (
-          <span className="notification-badge" aria-label={`${unreadCount} unread notifications`}>
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" aria-label={`${unreadCount} unread notifications`}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -229,117 +229,129 @@ const NotificationCenter: React.FC = () => {
 
       {/* Notification Panel */}
       {isOpen && (
-        <div className="notification-panel" role="dialog" aria-label="Notifications">
-          <div className="notification-header">
-            <h3>Notifications</h3>
-            <div className="notification-actions">
-              {unreadCount > 0 && (
+        <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50" role="dialog" aria-label="Notifications">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={markAllAsRead}
+                    aria-label="Mark all notifications as read"
+                  >
+                    Mark all read
+                  </button>
+                )}
                 <button
-                  className="mark-all-read"
-                  onClick={markAllAsRead}
-                  aria-label="Mark all notifications as read"
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                  aria-label="Close notifications"
                 >
-                  Mark all read
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
                 </button>
-              )}
-              <button
-                className="close-panel"
-                onClick={() => setIsOpen(false)}
-                aria-label="Close notifications"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
+              </div>
             </div>
           </div>
 
           {/* Filter Tabs */}
-          <div className="notification-filters">
-            {[
-              { key: 'all', label: 'All', count: notifications.length },
-              { key: 'unread', label: 'Unread', count: unreadCount },
-              { key: 'booking', label: 'Bookings', count: notifications.filter(n => n.type === 'booking').length },
-              { key: 'payment', label: 'Payments', count: notifications.filter(n => n.type === 'payment').length },
-              { key: 'system', label: 'System', count: notifications.filter(n => n.type === 'system').length }
-            ].map(filterOption => (
-              <button
-                key={filterOption.key}
-                className={`filter-tab ${filter === filterOption.key ? 'active' : ''}`}
-                onClick={() => setFilter(filterOption.key as any)}
-              >
-                {filterOption.label}
-                {filterOption.count > 0 && (
-                  <span className="filter-count">{filterOption.count}</span>
-                )}
-              </button>
-            ))}
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: 'all', label: 'All', count: notifications.length },
+                { key: 'unread', label: 'Unread', count: unreadCount },
+                { key: 'booking', label: 'Bookings', count: notifications.filter(n => n.type === 'booking').length },
+                { key: 'payment', label: 'Payments', count: notifications.filter(n => n.type === 'payment').length },
+                { key: 'system', label: 'System', count: notifications.filter(n => n.type === 'system').length }
+              ].map(filterOption => (
+                <button
+                  key={filterOption.key}
+                  className={`btn ${filter === filterOption.key ? 'btn-primary' : 'btn-outline'} btn-sm`}
+                  onClick={() => setFilter(filterOption.key as any)}
+                >
+                  <span className="flex items-center gap-2">
+                    {filterOption.label}
+                    {filterOption.count > 0 && (
+                      <span className="badge badge-gray">{filterOption.count}</span>
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Notifications List */}
-          <div className="notifications-list">
+          <div className="max-h-96 overflow-y-auto">
             {isLoading ? (
-              <div className="loading-state">
-                <div className="spinner"></div>
-                <p>Loading notifications...</p>
+              <div className="p-8 text-center">
+                <div className="loading-spinner mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading notifications...</p>
               </div>
             ) : filteredNotifications.length > 0 ? (
-              filteredNotifications.map(notification => (
-                <div
-                  key={notification.id}
-                  className={`notification-item ${notification.read ? 'read' : 'unread'} priority-${notification.priority}`}
-                >
-                  <div className="notification-content">
-                    <div className="notification-icon" style={{ backgroundColor: getNotificationColor(notification.type) }}>
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="notification-details">
-                      <div className="notification-title">
-                        {notification.title}
-                        {!notification.read && <div className="unread-indicator"></div>}
+              <div className="divide-y divide-gray-200">
+                {filteredNotifications.map(notification => (
+                  <div
+                    key={notification.id}
+                    className={`p-4 hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50' : ''}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm" style={{ backgroundColor: getNotificationColor(notification.type) }}>
+                        {getNotificationIcon(notification.type)}
                       </div>
-                      <p className="notification-message">{notification.message}</p>
-                      <div className="notification-meta">
-                        <span className="notification-time">{formatTimestamp(notification.timestamp)}</span>
-                        {notification.actionUrl && notification.actionText && (
-                          <a href={notification.actionUrl} className="notification-action">
-                            {notification.actionText}
-                          </a>
-                        )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="text-sm font-semibold text-gray-900">{notification.title}</h4>
+                              {!notification.read && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-500">{formatTimestamp(notification.timestamp)}</span>
+                              {notification.actionUrl && notification.actionText && (
+                                <a href={notification.actionUrl} className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                                  {notification.actionText}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 ml-2">
+                            {!notification.read && (
+                              <button
+                                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                onClick={() => markAsRead(notification.id)}
+                                aria-label="Mark as read"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="20,6 9,17 4,12"/>
+                                </svg>
+                              </button>
+                            )}
+                            <button
+                              className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                              onClick={() => deleteNotification(notification.id)}
+                              aria-label="Delete notification"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3,6 5,6 21,6"/>
+                                <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className="notification-controls">
-                    {!notification.read && (
-                      <button
-                        className="mark-read"
-                        onClick={() => markAsRead(notification.id)}
-                        aria-label="Mark as read"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="20,6 9,17 4,12"/>
-                        </svg>
-                      </button>
-                    )}
-                    <button
-                      className="delete-notification"
-                      onClick={() => deleteNotification(notification.id)}
-                      aria-label="Delete notification"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3,6 5,6 21,6"/>
-                        <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
-              <div className="empty-state">
-                <div className="empty-icon">🔔</div>
-                <h4>No notifications</h4>
-                <p>
+              <div className="p-8 text-center">
+                <div className="text-4xl mb-4">🔔</div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">No notifications</h4>
+                <p className="text-gray-600">
                   {filter === 'unread' 
                     ? "You're all caught up! No unread notifications."
                     : `No ${filter === 'all' ? '' : filter} notifications found.`

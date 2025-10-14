@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import './RealMapView.css';
 
 // Fix for default markers in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -29,10 +30,13 @@ interface Driveway {
     name: string;
     rating: number;
   };
-  availability?: {
+  availability?: Array<{
+    dayOfWeek: string;
     startTime: string;
     endTime: string;
-  };
+    isAvailable: boolean;
+  }>;
+  isAvailable?: boolean;
 }
 
 interface UserLocation {
@@ -75,17 +79,20 @@ const createCustomIcon = (color: string, iconType: 'parking' | 'user' | 'pickup'
   };
 
   const statusColor = getStatusColor(status);
-  const markerSize = isSelected ? 50 : 40; // Larger markers for better visibility
-  const pulseSize = isSelected ? 70 : 60;
+  // Make available slots more prominent
+  const isAvailable = status === 'available';
+  const markerSize = isSelected ? 50 : (isAvailable ? 45 : 40);
+  const pulseSize = isSelected ? 70 : (isAvailable ? 65 : 60);
 
   return L.divIcon({
-    className: `custom-marker ${isSelected ? 'selected' : ''}`,
+    className: `custom-marker ${isSelected ? 'selected' : ''} ${isAvailable ? 'available-slot' : ''}`,
     html: `
-      <div class="marker-container ${iconType} ${isSelected ? 'selected' : ''}" style="background-color: ${statusColor}; width: ${markerSize}px; height: ${markerSize}px;">
-        <div class="marker-icon" style="width: ${isSelected ? '22px' : '18px'}; height: ${isSelected ? '22px' : '18px'}; color: white;">${iconMap[iconType]}</div>
-        <div class="marker-pulse" style="width: ${pulseSize}px; height: ${pulseSize}px;"></div>
+      <div class="marker-container ${iconType} ${isSelected ? 'selected' : ''} ${isAvailable ? 'available-slot' : ''}" style="background-color: ${statusColor}; width: ${markerSize}px; height: ${markerSize}px;">
+        <div class="marker-icon" style="width: ${isSelected ? '22px' : (isAvailable ? '20px' : '18px')}; height: ${isSelected ? '22px' : (isAvailable ? '20px' : '18px')}; color: white;">${iconMap[iconType]}</div>
+        ${isAvailable ? '<div class="available-pulse" style="width: ' + pulseSize + 'px; height: ' + pulseSize + 'px;"></div>' : ''}
         ${status ? `<div class="status-indicator ${status}"></div>` : ''}
         ${isSelected ? '<div class="selection-ring"></div>' : ''}
+        ${isAvailable ? '<div class="available-ring"></div>' : ''}
         <div class="marker-shadow"></div>
       </div>
     `,
@@ -185,18 +192,77 @@ const RealMapView: React.FC<RealMapViewProps> = ({
   };
 
   const getAvailabilityStatus = (driveway: Driveway) => {
-    const now = new Date();
-    const availability = driveway.availability || { startTime: '06:00', endTime: '22:00' };
-    const startTime = new Date(`2000-01-01T${availability.startTime}`);
-    const endTime = new Date(`2000-01-01T${availability.endTime}`);
-    const currentTime = new Date(`2000-01-01T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+    console.log('getAvailabilityStatus called for:', driveway.address, {
+      isAvailable: driveway.isAvailable,
+      availability: driveway.availability
+    });
     
-    if (currentTime >= startTime && currentTime <= endTime) {
-      return { status: 'available', text: 'Available Now', color: '#00D4AA' };
-    } else if (currentTime < startTime) {
-      return { status: 'opens-later', text: `Opens at ${availability.startTime}`, color: '#FFB800' };
+    // Check if driveway is globally available
+    if (driveway.isAvailable === false) {
+      console.log('Driveway globally unavailable');
+      return { 
+        status: 'closed', 
+        text: 'Unavailable', 
+        color: '#E53E3E',
+        isAvailable: false,
+        priority: 'low'
+      };
+    }
+
+    // Check day-specific availability
+    const now = new Date();
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const currentDayName = dayNames[now.getDay()];
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    console.log('Current day:', currentDayName, 'Current time:', currentTime);
+    
+    // Find today's availability
+    const todayAvailability = driveway.availability?.find(day => 
+      day.dayOfWeek.toLowerCase() === currentDayName
+    );
+    
+    console.log('Today availability:', todayAvailability);
+    
+    if (!todayAvailability || !todayAvailability.isAvailable) {
+      console.log('No availability for today or not available');
+      return { 
+        status: 'closed', 
+        text: 'Closed Today', 
+        color: '#E53E3E',
+        isAvailable: false,
+        priority: 'low'
+      };
+    }
+    
+    // Check if current time is within available hours
+    if (currentTime >= todayAvailability.startTime && currentTime <= todayAvailability.endTime) {
+      console.log('Available now!');
+      return { 
+        status: 'available', 
+        text: 'Available Now', 
+        color: '#00D4AA',
+        isAvailable: true,
+        priority: 'high'
+      };
+    } else if (currentTime < todayAvailability.startTime) {
+      console.log('Opens later');
+      return { 
+        status: 'opens-later', 
+        text: `Opens at ${todayAvailability.startTime}`, 
+        color: '#FFB800',
+        isAvailable: false,
+        priority: 'medium'
+      };
     } else {
-      return { status: 'closed', text: 'Closed', color: '#E53E3E' };
+      console.log('Closed for today');
+      return { 
+        status: 'closed', 
+        text: 'Closed for Today', 
+        color: '#E53E3E',
+        isAvailable: false,
+        priority: 'low'
+      };
     }
   };
 
@@ -277,6 +343,15 @@ const RealMapView: React.FC<RealMapViewProps> = ({
             const isSelected = selectedDriveway?.id === driveway.id;
             const markerColor = availability.color;
             
+            // Debug logging
+            console.log('Driveway:', driveway.address, {
+              availability: driveway.availability,
+              isAvailable: driveway.isAvailable,
+              status: availability.status,
+              color: availability.color,
+              availabilityIsAvailable: availability.isAvailable
+            });
+            
             return (
               <Marker
                 key={driveway.id}
@@ -294,10 +369,10 @@ const RealMapView: React.FC<RealMapViewProps> = ({
                 }}
               >
                 <Popup>
-                  <div className="p-3 min-w-[200px]">
-                    <div className="mb-2">
+                  <div className="p-4 min-w-[250px]">
+                    <div className="mb-3">
                       <h4 className="font-semibold text-gray-900 text-sm mb-1">{driveway.address}</h4>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 mb-2">
                         {[...Array(5)].map((_, i) => (
                           <span
                             key={i}
@@ -308,42 +383,74 @@ const RealMapView: React.FC<RealMapViewProps> = ({
                             </svg>
                           </span>
                         ))}
-                        <span className="rating-value">{driveway.rating || 4.5}</span>
+                        <span className="rating-value text-sm text-gray-600">{driveway.rating || 4.5}</span>
+                      </div>
+                      
+                      {/* Availability Status Badge */}
+                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        availability.isAvailable 
+                          ? 'bg-green-100 text-green-800' 
+                          : availability.status === 'opens-later'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full mr-1 ${
+                          availability.isAvailable ? 'bg-green-500' : availability.status === 'opens-later' ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}></div>
+                        {availability.text}
                       </div>
                     </div>
                     
-                    <div className="space-y-1 mb-3">
+                    <div className="space-y-2 mb-4">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Price:</span>
-                        <span className="font-medium text-green-600">{formatPrice(driveway.pricePerHour)}</span>
+                        <span className="font-semibold text-green-600 text-lg">{formatPrice(driveway.pricePerHour)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Distance:</span>
                         <span className="font-medium text-gray-900">{formatDistance(driveway.distance)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Status:</span>
-                        <span className="font-medium" style={{ color: availability.color }}>
-                          {availability.text}
-                        </span>
-                      </div>
+                      {driveway.amenities && driveway.amenities.length > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Amenities:</span>
+                          <span className="font-medium text-gray-900 text-xs">{driveway.amenities.slice(0, 2).join(', ')}</span>
+                        </div>
+                      )}
                     </div>
                     
-                    <div className="flex gap-2">
+                    <div className="space-y-2">
+                      {availability.isAvailable ? (
+                        <button 
+                          className="w-full px-4 py-3 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                          onClick={() => onDrivewaySelect(driveway)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-2">
+                            <path d="M9 12l2 2 4-4"/>
+                            <circle cx="12" cy="12" r="10"/>
+                          </svg>
+                          Book This Spot
+                        </button>
+                      ) : (
+                        <button 
+                          className="w-full px-4 py-3 bg-gray-400 text-white text-sm font-semibold rounded-lg cursor-not-allowed"
+                          disabled
+                        >
+                          {availability.status === 'opens-later' ? 'Opens Later' : 'Currently Closed'}
+                        </button>
+                      )}
+                      
                       <button 
-                        className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                        className="w-full px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                         onClick={() => {
                           const url = `https://www.google.com/maps/dir/?api=1&destination=${driveway.coordinates?.lat},${driveway.coordinates?.lng}`;
                           window.open(url, '_blank');
                         }}
                       >
-                        Directions
-                      </button>
-                      <button 
-                        className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                        onClick={() => onDrivewaySelect(driveway)}
-                      >
-                        Book Now
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        Get Directions
                       </button>
                     </div>
                   </div>
@@ -358,6 +465,28 @@ const RealMapView: React.FC<RealMapViewProps> = ({
         <div className="map-info">
           <span>Showing {driveways.length} parking spots</span>
           {userLocation && <span>• Your location detected</span>}
+        </div>
+        
+        {/* Map Legend */}
+        <div className="map-legend">
+          <div className="legend-item">
+            <div className="legend-marker available">
+              <div className="marker-dot" style={{ backgroundColor: '#00D4AA' }}></div>
+            </div>
+            <span>Available Now</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-marker">
+              <div className="marker-dot" style={{ backgroundColor: '#FFB800' }}></div>
+            </div>
+            <span>Opens Later</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-marker">
+              <div className="marker-dot" style={{ backgroundColor: '#E53E3E' }}></div>
+            </div>
+            <span>Closed</span>
+          </div>
         </div>
       </div>
     </div>
