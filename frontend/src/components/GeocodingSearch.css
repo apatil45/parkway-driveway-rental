@@ -6,6 +6,20 @@
   flex-direction: column;
 }
 
+/* Search icon within search input group */
+.geocoding-search .search-icon {
+  position: absolute;
+  left: 12px; /* Position at the left edge */
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  pointer-events: none; /* Don't interfere with input clicks */
+}
+
 /* Location icon within search input group */
 .geocoding-search .location-icon {
   position: absolute;
@@ -40,7 +54,7 @@
 
 .search-input {
   width: 100%;
-  padding: 12px 48px 12px 16px; /* Add right padding for location icon only */
+  padding: 12px 48px 12px 48px; /* Add padding for both search icon (left) and location icon (right) */
   font-size: 16px; /* Standard size */
   font-weight: 400;
   color: #1f2937;
@@ -275,7 +289,7 @@
 /* Responsive Design */
 @media (max-width: 640px) {
   .search-input {
-    padding: 14px 48px 14px 16px; /* Standard padding on mobile with space for location icon */
+    padding: 14px 48px 14px 48px; /* Standard padding on mobile with space for both icons */
     font-size: 16px; /* Prevent zoom on iOS */
   }
   
