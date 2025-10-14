@@ -7,7 +7,7 @@ async function addOnboardingField() {
     // Add the onboarding_completed column
     await sequelize.query(`
       ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE NOT NULL;
+      ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
     `);
     
     console.log('✅ Successfully added onboarding_completed field to users table');

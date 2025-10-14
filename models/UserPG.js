@@ -57,7 +57,7 @@ const User = sequelize.define('User', {
   },
   onboardingCompleted: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
+    allowNull: true,
     defaultValue: false,
     field: 'onboarding_completed'
   }
