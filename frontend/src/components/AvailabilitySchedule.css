@@ -81,7 +81,7 @@
   }
   
   .schedule-day-label {
-    @apply min-w-auto justify-center;
+    @apply w-full justify-center;
   }
   
   .schedule-time-inputs {
