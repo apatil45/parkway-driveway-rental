@@ -1,9 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const helmet = require('helmet');
 const { sequelize, testConnection } = require('./models/database'); // PostgreSQL connection
 const { setupAssociations } = require('./models/associations');
 const SocketService = require('./services/socketService');
+const cacheService = require('./services/cacheService');
+const { 
+  generalLimiter, 
+  authLimiter, 
+  bookingLimiter, 
+  searchLimiter,
+  uploadLimiter 
+} = require('./middleware/rateLimiting');
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +28,10 @@ global.socketService = socketService;
 const startServer = async () => {
   try {
     console.log('🚀 Starting Parkway.com server...');
+    
+    // Initialize Redis Cache Service
+    console.log('🔗 Initializing cache service...');
+    await cacheService.initialize();
     
     // Database Connection - PostgreSQL only
     if (process.env.DATABASE_URL) {
@@ -53,6 +66,27 @@ const startServer = async () => {
   }
 };
 
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate limiting middleware
+app.use('/api/', generalLimiter);
+
 // Robust middleware setup with better error handling
 app.use(express.json({ 
   extended: false,
@@ -74,12 +108,13 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-// Security headers
+// Additional security headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   next();
 });
 
@@ -151,13 +186,13 @@ if (process.env.NODE_ENV === 'production') {
   }));
 }
 
-// Define Routes - PostgreSQL only
-app.use('/api/driveways', require('./routes/drivewaysPG'));
-app.use('/api/bookings', require('./routes/bookingsPG'));
-app.use('/api/auth', require('./routes/authPG'));
+// Define Routes - PostgreSQL only with rate limiting
+app.use('/api/auth', authLimiter, require('./routes/authPG'));
+app.use('/api/bookings', bookingLimiter, require('./routes/bookingsPG'));
+app.use('/api/driveways', searchLimiter, require('./routes/drivewaysPG'));
 app.use('/api/payments', require('./routes/paymentsPG'));
 app.use('/api/geocoding', require('./routes/geocoding'));
-app.use('/api/upload', require('./routes/upload'));
+app.use('/api/upload', uploadLimiter, require('./routes/upload'));
 app.use('/api/errors', require('./routes/errors')); // Add error reporting route
 app.use('/api/notifications', require('./routes/notificationsPG')); // Add notifications route
 
@@ -200,6 +235,11 @@ const gracefulShutdown = (signal) => {
   
   server.close(() => {
     console.log('✅ HTTP server closed');
+    
+    // Close cache service
+    cacheService.close()
+      .then(() => console.log('✅ Cache service closed'))
+      .catch(err => console.error('❌ Error closing cache service:', err));
     
     // Close database connection
     if (process.env.DATABASE_URL) {

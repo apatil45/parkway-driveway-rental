@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const Driveway = require('../models/DrivewayPG');
 const User = require('../models/UserPG');
 const { authenticateToken: auth } = require('../middleware/auth');
+const cacheService = require('../services/cacheService');
 // const { validateDriveway } = require('../middleware/validation'); // Not used anymore
 
 const router = express.Router();
@@ -50,7 +51,7 @@ async function geocodeAddress(address) {
 // @route   GET /api/driveways
 // @desc    Get all available driveways
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', cacheService.cacheMiddleware(300, () => 'driveways:all'), async (req, res) => {
   try {
     const driveways = await Driveway.findAll({
       where: { isAvailable: true },
@@ -158,7 +159,7 @@ router.post('/:id/availability', async (req, res) => {
 // @route   GET /api/driveways/search
 // @desc    Search for available driveways by location, date, and time
 // @access  Public
-router.get('/search', async (req, res) => {
+router.get('/search', cacheService.cacheMiddleware(180, cacheService.generateDrivewaySearchKey), async (req, res) => {
   const {
     latitude,
     longitude,

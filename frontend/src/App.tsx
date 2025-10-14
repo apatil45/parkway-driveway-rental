@@ -1,17 +1,20 @@
 // CSS imports removed - now using Tailwind CSS
-import React, { useState } from 'react';
-import Register from './components/Register';
-import Login from './components/Login';
-import OwnerDashboard from './components/OwnerDashboard';
-import DriverDashboardNew from './components/DriverDashboardNew';
-import ParkwayInterface from './components/ParkwayInterface';
-import Home from './components/Home'; // Import the Home component
-import Profile from './components/Profile'; // Import the Profile component
-import HelpCenter from './components/HelpCenter'; // Import the HelpCenter component
-import ErrorBoundary from './components/ErrorBoundary'; // Import the ErrorBoundary component
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary'; // Import the ErrorBoundary component
 import PrivateRoute from './components/PrivateRoute';
 import Nav from "./components/Nav"; // Import the navigation component
+import LoadingSpinner from './components/LoadingSpinner';
+
+// Lazy load components for code splitting
+const Register = lazy(() => import('./components/Register'));
+const Login = lazy(() => import('./components/Login'));
+const OwnerDashboard = lazy(() => import('./components/OwnerDashboard'));
+const DriverDashboardNew = lazy(() => import('./components/DriverDashboardNew'));
+const ParkwayInterface = lazy(() => import('./components/ParkwayInterface'));
+const Home = lazy(() => import('./components/Home'));
+const Profile = lazy(() => import('./components/Profile'));
+const HelpCenter = lazy(() => import('./components/HelpCenter'));
 // Debug components - only imported when needed
 // import AuthDebug from "./components/dev/AuthDebug";
 // import ConnectionTest from "./components/dev/ConnectionTest";
@@ -64,21 +67,23 @@ const App: React.FC = () => {
             </>
           ) */}
           <main id="main-content" className="app-content" role="main" aria-label="Main content">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/help" element={<HelpCenter />} />
-              <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
-                       <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><ParkwayInterface /></PrivateRoute>} />
-              <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
-              {/* Development-only test route */}
-              {process.env.NODE_ENV === 'development' && (
-                <Route path="/responsive-test" element={<ResponsiveTestPage />} />
-              )}
-              {/* Catch-all route for 404 */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/help" element={<HelpCenter />} />
+                <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
+                <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><ParkwayInterface /></PrivateRoute>} />
+                <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
+                {/* Development-only test route */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Route path="/responsive-test" element={<ResponsiveTestPage />} />
+                )}
+                {/* Catch-all route for 404 */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </main>
         </Router>
           {/* ToastContainer removed - using ProfessionalNotificationSystem instead */}
