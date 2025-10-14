@@ -20,6 +20,7 @@ import { ErrorProvider } from './context/ErrorContext';
 import ProfessionalNotificationSystem from './components/ProfessionalNotificationSystem';
 import PerformanceOptimizer from './components/PerformanceOptimizer';
 import PerformanceMonitor from './components/PerformanceMonitor';
+import OnboardingWrapper from './components/OnboardingWrapper';
 // ToastContainer removed - using ProfessionalNotificationSystem instead
 
 const App: React.FC = () => {
@@ -39,19 +40,21 @@ const App: React.FC = () => {
               <AuthDebug />
             </>
           ) */}
-          <main id="main-content" className="app-content" role="main" aria-label="Main content">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/help" element={<HelpCenter />} />
-              <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
-                       <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><ParkwayInterface /></PrivateRoute>} />
-              <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
-              {/* Catch-all route for 404 */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
+          <OnboardingWrapper>
+            <main id="main-content" className="app-content" role="main" aria-label="Main content">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/help" element={<HelpCenter />} />
+                <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
+                         <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><ParkwayInterface /></PrivateRoute>} />
+                <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
+                {/* Catch-all route for 404 */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+          </OnboardingWrapper>
         </Router>
           {/* ToastContainer removed - using ProfessionalNotificationSystem instead */}
           <PWAInstallPrompt />
