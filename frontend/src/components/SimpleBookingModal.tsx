@@ -54,12 +54,87 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
     specialRequests: ''
   });
   const [quickDuration, setQuickDuration] = useState<number | null>(null);
+  const [smartSuggestions, setSmartSuggestions] = useState<any[]>([]);
   const [currentStep, setCurrentStep] = useState<'form' | 'payment' | 'success'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // Generate smart time suggestions
+  const generateSmartSuggestions = () => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const today = now.toISOString().split('T')[0];
+    const selectedDate = formData.date;
+    
+    const suggestions = [];
+    
+    // If booking for today, suggest next available hour
+    if (selectedDate === today) {
+      const nextHour = new Date(now);
+      nextHour.setHours(currentHour + 1, 0, 0, 0);
+      
+      suggestions.push({
+        id: 'next-hour',
+        label: 'Next available hour',
+        startTime: nextHour.toTimeString().slice(0, 5),
+        endTime: new Date(nextHour.getTime() + 2 * 60 * 60 * 1000).toTimeString().slice(0, 5),
+        description: 'Perfect for quick errands',
+        price: Number(driveway.pricePerHour) * 2
+      });
+      
+      // If it's morning, suggest work day
+      if (currentHour < 10) {
+        suggestions.push({
+          id: 'work-day',
+          label: 'Work day (9 AM - 5 PM)',
+          startTime: '09:00',
+          endTime: '17:00',
+          description: 'Full work day parking',
+          price: Number(driveway.pricePerHour) * 8
+        });
+      }
+    }
+    
+    // Common scenarios based on time of day
+    if (currentHour >= 8 && currentHour <= 10) {
+      suggestions.push({
+        id: 'morning-meeting',
+        label: 'Morning meeting (2 hours)',
+        startTime: '10:00',
+        endTime: '12:00',
+        description: 'Perfect for morning appointments',
+        price: Number(driveway.pricePerHour) * 2
+      });
+    }
+    
+    if (currentHour >= 11 && currentHour <= 14) {
+      suggestions.push({
+        id: 'lunch-shopping',
+        label: 'Lunch & shopping (2 hours)',
+        startTime: '12:00',
+        endTime: '14:00',
+        description: 'Great for lunch and quick shopping',
+        price: Number(driveway.pricePerHour) * 2
+      });
+    }
+    
+    if (currentHour >= 16 && currentHour <= 18) {
+      suggestions.push({
+        id: 'evening-out',
+        label: 'Evening out (4 hours)',
+        startTime: '18:00',
+        endTime: '22:00',
+        description: 'Perfect for dinner and entertainment',
+        price: Number(driveway.pricePerHour) * 4
+      });
+    }
+    
+    return suggestions.slice(0, 3); // Limit to 3 suggestions
+  };
 
   // Handle quick duration selection
   useEffect(() => {
@@ -83,6 +158,12 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
       }));
     }
   }, [quickDuration]);
+
+  // Generate smart suggestions when modal opens or date changes
+  useEffect(() => {
+    const suggestions = generateSmartSuggestions();
+    setSmartSuggestions(suggestions);
+  }, [formData.date, driveway.pricePerHour]);
 
   // Scroll to top when modal opens to ensure it's visible
   useEffect(() => {
@@ -115,6 +196,15 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleSmartSuggestion = (suggestion: any) => {
+    setFormData(prev => ({
+      ...prev,
+      startTime: suggestion.startTime,
+      endTime: suggestion.endTime
+    }));
+    setQuickDuration(null); // Clear quick duration selection
   };
 
   const calculateTotal = () => {
@@ -488,6 +578,35 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Smart Time Suggestions */}
+              {smartSuggestions.length > 0 && (
+                <div className="smart-suggestions-section">
+                  <h4>💡 Smart Suggestions</h4>
+                  <p className="suggestions-subtitle">Based on current time and common scenarios</p>
+                  <div className="suggestions-grid">
+                    {smartSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion.id}
+                        type="button"
+                        className="suggestion-card"
+                        onClick={() => handleSmartSuggestion(suggestion)}
+                      >
+                        <div className="suggestion-header">
+                          <span className="suggestion-label">{suggestion.label}</span>
+                          <span className="suggestion-price">${suggestion.price.toFixed(0)}</span>
+                        </div>
+                        <div className="suggestion-time">
+                          {suggestion.startTime} - {suggestion.endTime}
+                        </div>
+                        <div className="suggestion-description">
+                          {suggestion.description}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Quick Duration Selection */}
               <div className="quick-duration-section">

@@ -884,3 +884,67 @@
     @apply border-2 border-black;
   }
 }
+
+/* Smart Suggestions Styles */
+.smart-suggestions-section {
+  @apply mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200;
+}
+
+.smart-suggestions-section h4 {
+  @apply text-lg font-semibold text-blue-900 mb-1;
+}
+
+.suggestions-subtitle {
+  @apply text-sm text-blue-700 mb-4;
+}
+
+.suggestions-grid {
+  @apply grid grid-cols-1 gap-3;
+}
+
+.suggestion-card {
+  @apply p-4 bg-white rounded-lg border border-blue-200 hover:border-blue-400 hover:shadow-md transition-all duration-200 text-left cursor-pointer;
+}
+
+.suggestion-card:hover {
+  @apply transform -translate-y-0.5;
+}
+
+.suggestion-header {
+  @apply flex justify-between items-start mb-2;
+}
+
+.suggestion-label {
+  @apply font-semibold text-gray-900 text-sm;
+}
+
+.suggestion-price {
+  @apply font-bold text-blue-600 text-sm;
+}
+
+.suggestion-time {
+  @apply text-xs text-gray-600 mb-1 font-medium;
+}
+
+.suggestion-description {
+  @apply text-xs text-gray-500;
+}
+
+/* Mobile optimizations for suggestions */
+@media (max-width: 640px) {
+  .suggestions-grid {
+    @apply grid-cols-1;
+  }
+  
+  .suggestion-card {
+    @apply p-3;
+  }
+  
+  .suggestion-header {
+    @apply flex-col items-start gap-1;
+  }
+  
+  .suggestion-price {
+    @apply text-base;
+  }
+}
