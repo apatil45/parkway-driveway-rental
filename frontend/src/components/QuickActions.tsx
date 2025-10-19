@@ -237,11 +237,11 @@ const QuickActions: React.FC = () => {
   const actions = getActionsForUser();
 
   return (
-    <section className="section-spacing bg-gray-800">
+    <section className="section-spacing bg-white">
       <div className="container-spacing">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">Quick Actions</h2>
-          <p className="text-lg text-gray-400 font-medium">Jump to the most common tasks</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">Quick Actions</h2>
+          <p className="text-lg text-gray-600 font-medium">Jump to the most common tasks</p>
         </div>
       
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -249,7 +249,7 @@ const QuickActions: React.FC = () => {
             <Link
               key={action.id}
               to={action.link}
-              className="group bg-gray-700 rounded-xl hover:bg-gray-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden border border-gray-600"
+              className="group bg-white rounded-xl hover:bg-gray-50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden border border-gray-200 shadow-sm"
             >
               <div className="flex items-center gap-4 p-6">
                 <div 
@@ -259,14 +259,14 @@ const QuickActions: React.FC = () => {
                   <Icon name={action.icon} size={20} />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-lg font-semibold text-white mb-1 group-hover:text-gray-200 transition-colors">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-gray-700 transition-colors">
                     {action.title}
                   </h4>
-                  <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                  <p className="text-sm text-gray-600 group-hover:text-gray-500 transition-colors">
                     {action.description}
                   </p>
                 </div>
-                <div className="text-gray-500 group-hover:text-gray-300 transition-colors">
+                <div className="text-gray-400 group-hover:text-gray-600 transition-colors">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="9,18 15,12 9,6"/>
                   </svg>

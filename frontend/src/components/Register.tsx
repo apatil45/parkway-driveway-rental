@@ -128,7 +128,7 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -141,49 +141,49 @@ const Register: React.FC = () => {
               </svg>
             </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Join Parkway</h1>
-          <p className="text-lg text-gray-400">Create your account to get started</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Join Parkway</h1>
+          <p className="text-lg text-gray-600">Create your account to get started</p>
         </div>
 
         {/* Registration Form */}
-        <div className="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-8">
+        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300">Full Name</label>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name</label>
               <input
                 type="text"
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                className={`w-full px-4 py-3 bg-white border rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter your full name"
                 disabled={isLoading}
               />
-              {errors.name && <span className="text-red-400 text-sm">{errors.name}</span>}
+              {errors.name && <span className="text-red-500 text-sm">{errors.name}</span>}
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                className={`w-full px-4 py-3 bg-white border rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter your email"
                 disabled={isLoading}
               />
-              {errors.email && <span className="text-red-400 text-sm">{errors.email}</span>}
+              {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
             </div>
 
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-300">I want to</label>
+              <label className="block text-sm font-medium text-gray-700">I want to</label>
               <div className="space-y-3">
                 <label className="flex items-center space-x-3 cursor-pointer">
                   <input
@@ -192,9 +192,9 @@ const Register: React.FC = () => {
                     checked={formData.roles.includes('driver')}
                     onChange={handleChange}
                     disabled={isLoading}
-                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded"
                   />
-                  <span className="text-gray-300">Find parking (Driver)</span>
+                  <span className="text-gray-700">Find parking (Driver)</span>
                 </label>
                 <label className="flex items-center space-x-3 cursor-pointer">
                   <input
@@ -203,48 +203,48 @@ const Register: React.FC = () => {
                     checked={formData.roles.includes('owner')}
                     onChange={handleChange}
                     disabled={isLoading}
-                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded"
                   />
-                  <span className="text-gray-300">Rent my driveway (Owner)</span>
+                  <span className="text-gray-700">Rent my driveway (Owner)</span>
                 </label>
               </div>
               {formData.roles.length === 0 && (
-                <span className="text-red-400 text-sm">Please select at least one role</span>
+                <span className="text-red-500 text-sm">Please select at least one role</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
               <input
                 type="password"
                 id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                className={`w-full px-4 py-3 bg-white border rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Create a password"
                 disabled={isLoading}
               />
-              {errors.password && <span className="text-red-400 text-sm">{errors.password}</span>}
+              {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">Confirm Password</label>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirm Password</label>
               <input
                 type="password"
                 id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                className={`w-full px-4 py-3 bg-white border rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Confirm your password"
                 disabled={isLoading}
               />
-              {errors.confirmPassword && <span className="text-red-400 text-sm">{errors.confirmPassword}</span>}
+              {errors.confirmPassword && <span className="text-red-500 text-sm">{errors.confirmPassword}</span>}
             </div>
 
             <div className="space-y-3">
@@ -255,18 +255,18 @@ const Register: React.FC = () => {
                   checked={formData.agreeToTerms}
                   onChange={handleChange}
                   disabled={isLoading}
-                  className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-700 mt-1"
+                  className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded mt-1"
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-sm text-gray-700">
                   I agree to the Terms of Service and Privacy Policy
                 </span>
               </label>
-              {errors.agreeToTerms && <span className="text-red-400 text-sm">{errors.agreeToTerms}</span>}
+              {errors.agreeToTerms && <span className="text-red-500 text-sm">{errors.agreeToTerms}</span>}
             </div>
 
             <button
               type="submit"
-              className="w-full bg-black text-white py-3 px-6 rounded-xl font-semibold text-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-semibold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -276,9 +276,9 @@ const Register: React.FC = () => {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-600">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-500 hover:text-blue-400 font-medium transition-colors duration-200">
+            <Link to="/login" className="text-blue-600 hover:text-blue-500 font-medium transition-colors duration-200">
               Sign in here
             </Link>
           </p>

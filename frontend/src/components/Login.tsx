@@ -73,7 +73,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -86,45 +86,45 @@ const Login: React.FC = () => {
               </svg>
             </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Welcome Back</h1>
-          <p className="text-lg text-gray-400">Sign in to your Parkway account</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Welcome Back</h1>
+          <p className="text-lg text-gray-600">Sign in to your Parkway account</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-8">
+        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                className={`w-full px-4 py-3 bg-white border rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter your email"
                 disabled={isLoading}
               />
-              {errors.email && <span className="text-red-400 text-sm">{errors.email}</span>}
+              {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
               <input
                 type="password"
                 id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                className={`w-full px-4 py-3 bg-white border rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter your password"
                 disabled={isLoading}
               />
-              {errors.password && <span className="text-red-400 text-sm">{errors.password}</span>}
+              {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
             </div>
 
             <div className="flex items-center justify-between">
@@ -136,9 +136,9 @@ const Login: React.FC = () => {
                   checked={formData.rememberMe}
                   onChange={handleChange}
                   disabled={isLoading}
-                  className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+                  className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-300">
+                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
                   Remember me
                 </label>
               </div>
@@ -146,7 +146,7 @@ const Login: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full bg-black text-white py-3 px-6 rounded-xl font-semibold text-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-semibold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? 'Signing In...' : 'Sign In'}
@@ -156,9 +156,9 @@ const Login: React.FC = () => {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-gray-400">
+          <p className="text-gray-600">
             Don't have an account?{' '}
-            <Link to="/register" className="text-blue-500 hover:text-blue-400 font-medium transition-colors duration-200">
+            <Link to="/register" className="text-blue-600 hover:text-blue-500 font-medium transition-colors duration-200">
               Sign up here
             </Link>
           </p>
