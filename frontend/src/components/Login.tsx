@@ -73,55 +73,61 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 sm:space-y-8">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 text-blue-600">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="flex justify-center mb-8">
+            <div className="w-16 h-16 text-blue-500">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
                 <line x1="8" y1="21" x2="16" y2="21"/>
                 <line x1="12" y1="17" x2="12" y2="21"/>
               </svg>
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-sm sm:text-base text-gray-600">Sign in to your Parkway account</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Welcome Back</h1>
+          <p className="text-lg text-gray-400">Sign in to your Parkway account</p>
         </div>
 
-        <div className="card">
-          <div className="card-body">
-            <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="email" className="form-label">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`form-input ${errors.email ? 'border-red-500' : ''}`}
-                  placeholder="Enter your email"
-                  disabled={isLoading}
-                />
-                {errors.email && <span className="text-red-600 text-sm mt-1">{errors.email}</span>}
-              </div>
+        {/* Login Form */}
+        <div className="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-8">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                }`}
+                placeholder="Enter your email"
+                disabled={isLoading}
+              />
+              {errors.email && <span className="text-red-400 text-sm">{errors.email}</span>}
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="password" className="form-label">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`form-input ${errors.password ? 'border-red-500' : ''}`}
-                  placeholder="Enter your password"
-                  disabled={isLoading}
-                />
-                {errors.password && <span className="text-red-600 text-sm mt-1">{errors.password}</span>}
-              </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                }`}
+                placeholder="Enter your password"
+                disabled={isLoading}
+              />
+              {errors.password && <span className="text-red-400 text-sm">{errors.password}</span>}
+            </div>
 
+            <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -130,28 +136,29 @@ const Login: React.FC = () => {
                   checked={formData.rememberMe}
                   onChange={handleChange}
                   disabled={isLoading}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
                 />
-                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-300">
                   Remember me
                 </label>
               </div>
+            </div>
 
-              <button
-                type="submit"
-                className="btn btn-primary w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Signing In...' : 'Sign In'}
-              </button>
-            </form>
-          </div>
+            <button
+              type="submit"
+              className="w-full bg-black text-white py-3 px-6 rounded-xl font-semibold text-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </button>
+          </form>
         </div>
 
+        {/* Footer */}
         <div className="text-center">
-          <p className="text-gray-600">
+          <p className="text-gray-400">
             Don't have an account?{' '}
-            <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+            <Link to="/register" className="text-blue-500 hover:text-blue-400 font-medium transition-colors duration-200">
               Sign up here
             </Link>
           </p>

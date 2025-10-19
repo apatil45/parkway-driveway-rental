@@ -250,10 +250,10 @@ const Nav: React.FC = () => {
                 </>
               ) : (
                 <div className="flex items-center space-x-3">
-                  <Link to="/login" className="btn-outline">
+                  <Link to="/login" className="btn btn-outline btn-sm">
                     Sign In
                   </Link>
-                  <Link to="/register" className="btn-primary">
+                  <Link to="/register" className="btn btn-primary btn-sm">
                     Sign Up
                   </Link>
                 </div>
