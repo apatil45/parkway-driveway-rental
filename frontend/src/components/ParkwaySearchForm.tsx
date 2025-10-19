@@ -305,7 +305,7 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
                     type="button"
                     className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       duration === option.value 
-                        ? 'bg-black text-white' 
+                        ? 'bg-blue-600 text-white' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                     onClick={() => setDuration(option.value)}
@@ -404,8 +404,8 @@ const ParkwaySearchForm: React.FC<ParkwaySearchFormProps> = ({
         <div className="flex items-center justify-between">
           <button
             type="submit"
-            className={`px-6 py-3 bg-black text-white font-semibold rounded-lg transition-colors ${
-              isLoading ? 'bg-gray-400 cursor-not-allowed' : 'hover:bg-gray-800'
+            className={`px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg transition-colors ${
+              isLoading ? 'bg-gray-400 cursor-not-allowed' : 'hover:bg-blue-700'
             }`}
             disabled={isLoading}
           >

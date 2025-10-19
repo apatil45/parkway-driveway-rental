@@ -279,7 +279,7 @@ const EnhancedMapView: React.FC<EnhancedMapViewProps> = ({
                         <path d="M9 9h6v6H9z"/>
                       </svg>
                     </div>
-                    <div className="text-xs font-bold text-white bg-gray-800 px-2 py-1 rounded mt-1 shadow-sm">
+                    <div className="text-xs font-bold text-white bg-blue-600 px-2 py-1 rounded mt-1 shadow-sm">
                       {formatPrice(driveway.pricePerHour)}
                     </div>
                     {isSelected && (

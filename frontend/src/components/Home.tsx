@@ -53,7 +53,7 @@ const Home: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button 
-                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white bg-black rounded-xl hover:bg-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                   onClick={handleGetStarted}
                 >
                   {isAuthenticated ? (
