@@ -948,3 +948,92 @@
     @apply text-base;
   }
 }
+
+/* Payment Fallback Styles */
+.payment-fallback {
+  @apply p-6 bg-gray-50 rounded-xl border border-gray-200;
+}
+
+.fallback-header {
+  @apply text-center mb-6;
+}
+
+.fallback-header h3 {
+  @apply text-xl font-semibold text-gray-900 mb-2;
+}
+
+.fallback-subtitle {
+  @apply text-gray-600 text-sm;
+}
+
+.fallback-info {
+  @apply mb-6;
+}
+
+.info-card {
+  @apply bg-white rounded-lg p-4 border border-gray-200;
+}
+
+.info-card h4 {
+  @apply font-semibold text-gray-900 mb-3;
+}
+
+.booking-summary {
+  @apply space-y-2;
+}
+
+.summary-row {
+  @apply flex justify-between items-center text-sm;
+}
+
+.summary-row span:first-child {
+  @apply text-gray-600;
+}
+
+.summary-row span:last-child {
+  @apply font-medium text-gray-900;
+}
+
+.summary-row.total {
+  @apply pt-2 border-t border-gray-200 font-semibold;
+}
+
+.summary-row.total span:last-child {
+  @apply text-blue-600 text-base;
+}
+
+.fallback-actions {
+  @apply flex gap-3 mb-4;
+}
+
+.fallback-actions .btn-secondary {
+  @apply flex-1;
+}
+
+.fallback-actions .btn-primary {
+  @apply flex-1;
+}
+
+.fallback-note {
+  @apply text-center;
+}
+
+.fallback-note p {
+  @apply text-xs text-gray-500 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200;
+}
+
+/* Mobile optimizations for payment fallback */
+@media (max-width: 640px) {
+  .payment-fallback {
+    @apply p-4;
+  }
+  
+  .fallback-actions {
+    @apply flex-col;
+  }
+  
+  .fallback-actions .btn-secondary,
+  .fallback-actions .btn-primary {
+    @apply w-full;
+  }
+}

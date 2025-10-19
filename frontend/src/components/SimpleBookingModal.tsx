@@ -6,15 +6,14 @@ import './SimpleBookingModal.css';
 // Stripe configuration
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 
-// Use a valid test key if environment variable is not set or is placeholder
-const validStripeKey = stripePublicKey && !stripePublicKey.includes('your_stripe_public_key_here') 
-  ? stripePublicKey 
-  : 'pk_test_51SG9Tc2MWNtZFiP8...'; // This should be replaced with your actual test key
+// Check if we have a valid Stripe key
+const isStripeConfigured = stripePublicKey && 
+  !stripePublicKey.includes('your_stripe_public_key_here') && 
+  !stripePublicKey.includes('...') &&
+  stripePublicKey.startsWith('pk_');
 
-// For development/testing, we'll disable Stripe if no valid key is available
-const isStripeConfigured = validStripeKey && !validStripeKey.includes('...');
-
-const stripePromise = loadStripe(validStripeKey);
+// Only load Stripe if properly configured
+const stripePromise = isStripeConfigured ? loadStripe(stripePublicKey) : null;
 
 interface Driveway {
   id: string;
@@ -762,23 +761,95 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
           )}
 
           {currentStep === 'payment' && (!clientSecret || !stripePromise || !isStripeConfigured) && (
-            <div className="error-message">
-              <p>Payment system is not properly configured. Stripe keys are missing or invalid.</p>
-              <p>For testing purposes, you can complete the booking without payment.</p>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+            <div className="payment-fallback">
+              <div className="fallback-header">
+                <h3>💳 Payment Processing</h3>
+                <p className="fallback-subtitle">Payment system is not configured for this environment.</p>
+              </div>
+              
+              <div className="fallback-info">
+                <div className="info-card">
+                  <h4>Booking Summary</h4>
+                  <div className="booking-summary">
+                    <div className="summary-row">
+                      <span>Location:</span>
+                      <span>{driveway.address}</span>
+                    </div>
+                    <div className="summary-row">
+                      <span>Date:</span>
+                      <span>{formData.date}</span>
+                    </div>
+                    <div className="summary-row">
+                      <span>Time:</span>
+                      <span>{formData.startTime} - {formData.endTime}</span>
+                    </div>
+                    <div className="summary-row total">
+                      <span>Total:</span>
+                      <span>${totalAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="fallback-actions">
                 <button onClick={() => setCurrentStep('form')} className="btn-secondary">
-                  Back to Form
+                  ← Back to Form
                 </button>
                 <button 
-                  onClick={() => {
-                    // Skip payment for testing
-                    setCurrentStep('success');
-                    onBookingSuccess?.('test-booking-id');
-                  }} 
+                  onClick={async () => {
+                    setIsSubmitting(true);
+                    setError(null);
+                    
+                    try {
+                      // Create booking without payment for testing/demo purposes
+                      const bookingData = {
+                        driver: 'demo-user', // Demo user for testing
+                        driveway: driveway.id,
+                        startDate: formData.date,
+                        endDate: formData.date,
+                        startTime: `${formData.date}T${formData.startTime}`,
+                        endTime: `${formData.date}T${formData.endTime}`,
+                        totalAmount: totalAmount,
+                        specialRequests: formData.specialRequests,
+                        paymentStatus: 'pending' // Mark as pending since no payment was processed
+                      };
+                      
+                      console.log('Creating demo booking:', bookingData);
+                      
+                      const response = await fetch('/api/bookings', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(bookingData),
+                      });
+                      
+                      if (response.ok) {
+                        const booking = await response.json();
+                        console.log('Demo booking created successfully:', booking);
+                        setCurrentStep('success');
+                        onBookingSuccess?.();
+                      } else {
+                        const errorData = await response.json();
+                        console.error('Booking creation failed:', errorData);
+                        setError(errorData.message || 'Failed to create booking');
+                      }
+                    } catch (error) {
+                      console.error('Booking creation error:', error);
+                      setError('Failed to create booking. Please try again.');
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
                   className="btn-primary"
+                  disabled={isSubmitting}
                 >
-                  Complete Booking (Test Mode)
+                  {isSubmitting ? 'Creating Booking...' : 'Complete Demo Booking'}
                 </button>
+              </div>
+              
+              <div className="fallback-note">
+                <p>ℹ️ This is a demo booking. In production, payment would be processed securely.</p>
               </div>
             </div>
           )}
