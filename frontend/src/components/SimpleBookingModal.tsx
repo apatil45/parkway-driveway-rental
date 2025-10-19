@@ -494,7 +494,7 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
   // Success step
   const SuccessStep = () => (
     <div className="success-step">
-      <div className="success-icon">✅</div>
+      <div className="success-icon">✓</div>
       <h3>Booking Confirmed!</h3>
       <p>Your parking spot has been successfully booked.</p>
       <div className="booking-details">
@@ -581,7 +581,7 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
               {/* Smart Time Suggestions */}
               {smartSuggestions.length > 0 && (
                 <div className="smart-suggestions-section">
-                  <h4>💡 Smart Suggestions</h4>
+                  <h4>Smart Suggestions</h4>
                   <p className="suggestions-subtitle">Based on current time and common scenarios</p>
                   <div className="suggestions-grid">
                     {smartSuggestions.map((suggestion) => (
@@ -763,7 +763,7 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
           {currentStep === 'payment' && (!clientSecret || !stripePromise || !isStripeConfigured) && (
             <div className="payment-fallback">
               <div className="fallback-header">
-                <h3>💳 Payment Processing</h3>
+                <h3>Payment Processing</h3>
                 <p className="fallback-subtitle">Payment system is not configured for this environment.</p>
               </div>
               
@@ -849,7 +849,7 @@ const SimpleBookingModal: React.FC<SimpleBookingModalProps> = ({
               </div>
               
               <div className="fallback-note">
-                <p>ℹ️ This is a demo booking. In production, payment would be processed securely.</p>
+                <p>This is a demo booking. In production, payment would be processed securely.</p>
               </div>
             </div>
           )}
