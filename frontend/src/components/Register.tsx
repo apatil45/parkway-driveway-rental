@@ -128,143 +128,157 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 sm:space-y-8">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 text-blue-600">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="flex justify-center mb-8">
+            <div className="w-16 h-16 text-blue-500">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
                 <line x1="8" y1="21" x2="16" y2="21"/>
                 <line x1="12" y1="17" x2="12" y2="21"/>
               </svg>
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Join Parkway</h1>
-          <p className="text-sm sm:text-base text-gray-600">Create your account to get started</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Join Parkway</h1>
+          <p className="text-lg text-gray-400">Create your account to get started</p>
         </div>
 
-        <div className="card">
-          <div className="card-body">
-            <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="name">Full Name</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className={errors.name ? 'error' : ''}
-              placeholder="Enter your full name"
-              disabled={isLoading}
-            />
-            {errors.name && <span className="error-message">{errors.name}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={errors.email ? 'error' : ''}
-              placeholder="Enter your email"
-              disabled={isLoading}
-            />
-            {errors.email && <span className="error-message">{errors.email}</span>}
-          </div>
-
-          <div className="form-group">
-            <label>I want to</label>
-            <div className="role-selection">
-              <label className="checkbox">
-                <input
-                  type="checkbox"
-                  name="driver"
-                  checked={formData.roles.includes('driver')}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-                <span>Find parking (Driver)</span>
-              </label>
-              <label className="checkbox">
-                <input
-                  type="checkbox"
-                  name="owner"
-                  checked={formData.roles.includes('owner')}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-                <span>Rent my driveway (Owner)</span>
-              </label>
-            </div>
-            {formData.roles.length === 0 && (
-              <span className="error-message">Please select at least one role</span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={errors.password ? 'error' : ''}
-              placeholder="Create a password"
-              disabled={isLoading}
-            />
-            {errors.password && <span className="error-message">{errors.password}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className={errors.confirmPassword ? 'error' : ''}
-              placeholder="Confirm your password"
-              disabled={isLoading}
-            />
-            {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
-          </div>
-
-          <div className="form-options">
-            <label className="checkbox">
+        {/* Registration Form */}
+        <div className="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-8">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-300">Full Name</label>
               <input
-                type="checkbox"
-                name="agreeToTerms"
-                checked={formData.agreeToTerms}
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
+                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                }`}
+                placeholder="Enter your full name"
                 disabled={isLoading}
               />
-              <span>I agree to the Terms of Service and Privacy Policy</span>
-            </label>
-            {errors.agreeToTerms && <span className="error-message">{errors.agreeToTerms}</span>}
-          </div>
+              {errors.name && <span className="text-red-400 text-sm">{errors.name}</span>}
+            </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
-          </button>
-            </form>
-          </div>
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                }`}
+                placeholder="Enter your email"
+                disabled={isLoading}
+              />
+              {errors.email && <span className="text-red-400 text-sm">{errors.email}</span>}
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-300">I want to</label>
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="driver"
+                    checked={formData.roles.includes('driver')}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+                  />
+                  <span className="text-gray-300">Find parking (Driver)</span>
+                </label>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="owner"
+                    checked={formData.roles.includes('owner')}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+                  />
+                  <span className="text-gray-300">Rent my driveway (Owner)</span>
+                </label>
+              </div>
+              {formData.roles.length === 0 && (
+                <span className="text-red-400 text-sm">Please select at least one role</span>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                }`}
+                placeholder="Create a password"
+                disabled={isLoading}
+              />
+              {errors.password && <span className="text-red-400 text-sm">{errors.password}</span>}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">Confirm Password</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 bg-gray-700 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-600'
+                }`}
+                placeholder="Confirm your password"
+                disabled={isLoading}
+              />
+              {errors.confirmPassword && <span className="text-red-400 text-sm">{errors.confirmPassword}</span>}
+            </div>
+
+            <div className="space-y-3">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="agreeToTerms"
+                  checked={formData.agreeToTerms}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 rounded bg-gray-700 mt-1"
+                />
+                <span className="text-sm text-gray-300">
+                  I agree to the Terms of Service and Privacy Policy
+                </span>
+              </label>
+              {errors.agreeToTerms && <span className="text-red-400 text-sm">{errors.agreeToTerms}</span>}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-black text-white py-3 px-6 rounded-xl font-semibold text-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
         </div>
 
+        {/* Footer */}
         <div className="text-center">
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-gray-400">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+            <Link to="/login" className="text-blue-500 hover:text-blue-400 font-medium transition-colors duration-200">
               Sign in here
             </Link>
           </p>
