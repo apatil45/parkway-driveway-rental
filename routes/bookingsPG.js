@@ -188,6 +188,18 @@ router.post('/', auth, isDriver, async (req, res) => {
         type: 'status_change',
         status: bookingStatus
       });
+
+      // Broadcast booking update to all users
+      global.socketService.broadcastBookingUpdate({
+        ...newBooking.toJSON(),
+        userId: driverId,
+        driveway: drivewayFound
+      }, 'created');
+      
+      // Broadcast availability change if booking is confirmed
+      if (stripePaymentId) {
+        global.socketService.broadcastAvailabilityChange(driveway, false);
+      }
     }
 
     res.status(201).json({
@@ -437,6 +449,18 @@ router.put('/:id/cancel', auth, isDriver, async (req, res) => {
         type: 'status_change',
         status: 'cancelled'
       });
+
+      // Broadcast booking update to all users
+      global.socketService.broadcastBookingUpdate({
+        ...booking.toJSON(),
+        userId: booking.driver,
+        driveway: driveway
+      }, 'cancelled');
+      
+      // Broadcast availability change - driveway becomes available again
+      if (driveway) {
+        global.socketService.broadcastAvailabilityChange(booking.driveway, true);
+      }
     }
 
     res.json(booking);

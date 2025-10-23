@@ -64,4 +64,5 @@ export interface MapViewProps {
   showControls?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  onCenterMapOnDriveway?: (driveway: Driveway) => void;
 }

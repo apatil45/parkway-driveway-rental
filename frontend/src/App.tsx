@@ -21,6 +21,7 @@ const HelpCenter = lazy(() => import('./components/HelpCenter'));
 import PWAInstallPrompt from './components/PWAInstallPrompt'; // Import PWA install prompt
 import { AuthProvider } from './context/AuthContext';
 import { ErrorProvider } from './context/ErrorContext';
+import { BookingProvider } from './context/BookingContext';
 import ProfessionalNotificationSystem from './components/ProfessionalNotificationSystem';
 import PerformanceOptimizer from './components/PerformanceOptimizer';
 import PerformanceMonitor from './components/PerformanceMonitor';
@@ -35,7 +36,8 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <ErrorProvider>
         <AuthProvider>
-        <Router>
+          <BookingProvider>
+            <Router>
           <PerformanceOptimizer />
           <Nav />
           <ProfessionalNotificationSystem />
@@ -85,9 +87,10 @@ const App: React.FC = () => {
               </Routes>
             </Suspense>
           </main>
-        </Router>
-          {/* ToastContainer removed - using ProfessionalNotificationSystem instead */}
-          <PWAInstallPrompt />
+            </Router>
+            {/* ToastContainer removed - using ProfessionalNotificationSystem instead */}
+            <PWAInstallPrompt />
+          </BookingProvider>
         </AuthProvider>
       </ErrorProvider>
     </ErrorBoundary>

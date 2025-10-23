@@ -161,6 +161,7 @@ const RealMapView: React.FC<RealMapViewProps> = ({
   selectedDriveway
 }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   
   // Calculate dynamic height based on number of results
   const getMapHeight = () => {
@@ -300,7 +301,17 @@ const RealMapView: React.FC<RealMapViewProps> = ({
           center={center}
           zoom={13}
           style={{ height: '100%', width: '100%' }}
-          whenReady={() => setMapLoaded(true)}
+          whenReady={(map) => {
+            setMapLoaded(true);
+            setMapInstance(map.target);
+          }}
+          eventHandlers={{
+            click: (e) => {
+              // Close all popups when clicking on empty map areas
+              const map = e.target;
+              map.closePopup();
+            }
+          }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -368,7 +379,10 @@ const RealMapView: React.FC<RealMapViewProps> = ({
                   }
                 }}
               >
-                <Popup>
+                <Popup
+                  autoClose={true}
+                  closeOnClick={true}
+                >
                   <div className="p-4 min-w-[250px]">
                     <div className="mb-3">
                       <h4 className="font-semibold text-gray-900 text-sm mb-1">{driveway.address}</h4>

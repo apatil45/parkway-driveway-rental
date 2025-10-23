@@ -1,8 +1,9 @@
 import React from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Driveway, UserLocation, AvailabilityStatus } from '../types/map';
 import { getAvailabilityStatus, formatDistance, formatPrice, ensureCoordinates, calculateWalkingTime, formatWalkingTime } from '../utils/mapUtils';
+import './EnhancedMapStyles.css';
 
 interface MapMarkerProps {
   driveway: Driveway;
@@ -12,8 +13,9 @@ interface MapMarkerProps {
   center: [number, number];
 }
 
-// Create minimalistic professional icon for markers
-const createCustomIcon = (color: string, iconType: 'parking' | 'user', status?: string, isSelected?: boolean) => {
+
+// Create enhanced icon with price display for parking markers
+const createCustomIcon = (color: string, iconType: 'parking' | 'user', status?: string, isSelected?: boolean, price?: number) => {
   const iconMap = {
     parking: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -40,6 +42,64 @@ const createCustomIcon = (color: string, iconType: 'parking' | 'user', status?: 
   const markerSize = isSelected ? 36 : 32;
   const iconSize = isSelected ? '18px' : '16px';
 
+  // For parking markers, show price if available
+  if (iconType === 'parking' && price !== undefined) {
+    return L.divIcon({
+      className: `price-marker ${isSelected ? 'selected' : ''} ${isAvailable ? 'available' : 'unavailable'}`,
+      html: `
+        <div style="
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        ">
+          <div class="minimal-marker-container" style="
+            background-color: ${statusColor}; 
+            width: ${markerSize}px; 
+            height: ${markerSize}px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            ${isAvailable ? 'animation: pulse 2s infinite;' : ''}
+          ">
+            <div style="
+              color: white; 
+              width: ${iconSize}; 
+              height: ${iconSize};
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            ">${iconMap[iconType]}</div>
+          </div>
+          <div style="
+            background: white;
+            border: 1px solid ${statusColor};
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            color: ${statusColor};
+            margin-top: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            white-space: nowrap;
+            min-width: 40px;
+            text-align: center;
+          ">
+            $${price.toFixed(0)}/hr
+          </div>
+        </div>
+      `,
+      iconSize: [markerSize + 20, markerSize + 20],
+      iconAnchor: [markerSize / 2 + 10, markerSize / 2 + 10],
+      popupAnchor: [0, -markerSize / 2 - 10]
+    });
+  }
+  
+  // Default marker for user location
   return L.divIcon({
     className: `minimal-marker ${isSelected ? 'selected' : ''}`,
     html: `
@@ -78,6 +138,8 @@ const MapMarker: React.FC<MapMarkerProps> = ({
   onDrivewaySelect,
   center
 }) => {
+  const map = useMap();
+  
   // Ensure coordinates exist using the utility function
   const coordinates = ensureCoordinates(driveway, center);
   
@@ -97,7 +159,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
     <Marker
       key={driveway.id}
       position={[coordinates.lat, coordinates.lng]}
-      icon={createCustomIcon(availability.color, 'parking', availability.status, isSelected)}
+      icon={createCustomIcon(availability.color, 'parking', availability.status, isSelected, Number(driveway.pricePerHour || 0))}
       eventHandlers={{
         click: () => {
           console.log('🖱️ Marker clicked - showing popup for:', {
@@ -106,8 +168,8 @@ const MapMarker: React.FC<MapMarkerProps> = ({
             isAvailable: availability.isAvailable,
             status: availability.status
           });
-          // Don't open booking modal directly - let the popup handle it
-          // Just scroll to the corresponding list item
+          
+          // Scroll to the corresponding list item
           const listItem = document.querySelector(`[data-driveway-id="${driveway.id}"]`);
           if (listItem) {
             listItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -116,107 +178,101 @@ const MapMarker: React.FC<MapMarkerProps> = ({
       }}
     >
             <Popup 
-              className="custom-popup"
-              closeButton={false}
-              autoClose={false}
-              closeOnClick={false}
+              className="enhanced-popup"
+              closeButton={true}
+              autoClose={true}
+              closeOnClick={true}
             >
-              <div className="p-4 min-w-[220px] relative bg-white rounded-lg shadow-lg">
-                {/* Close button */}
-                <button 
-                  className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Close the popup by clicking outside or using Leaflet's close method
-                    const popup = e.target.closest('.leaflet-popup');
-                    if (popup) {
-                      popup.style.display = 'none';
-                    }
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                  </svg>
-                </button>
+              <div className="popup-content">
+                {/* Header */}
+                <div className="popup-header">
+                  <h3 className="popup-title">{driveway.address}</h3>
+                </div>
                 
-                <div className="mb-3">
-                  <h4 className="font-semibold text-gray-900 text-sm mb-2 pr-6">{driveway.address}</h4>
-                  
-                  {/* Minimalistic Status Badge */}
-                  <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                    availability.isAvailable 
-                      ? 'bg-green-50 text-green-700 border border-green-200' 
-                      : availability.status === 'opens-later'
-                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                    <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                      availability.isAvailable ? 'bg-green-500' : availability.status === 'opens-later' ? 'bg-amber-500' : 'bg-red-500'
-                    }`}></div>
+                {/* Price and Status */}
+                <div className="popup-info">
+                  <div className="popup-price">
+                    <span>{formatPrice(driveway.pricePerHour)}</span>
+                  </div>
+                  <div className={`popup-status ${availability.status.replace(' ', '-')}`}>
                     {availability.text}
                   </div>
                 </div>
-                
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Price</span>
-                    <span className="font-semibold text-gray-900">{formatPrice(driveway.pricePerHour)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Distance</span>
-                    <span className="font-medium text-gray-700">
-                      {driveway.distance ? formatDistance(driveway.distance) : 'N/A'}
-                    </span>
-                  </div>
+
+                {/* Details */}
+                <div className="popup-details">
+                  {driveway.distance && (
+                    <div className="popup-detail-item">
+                      <svg className="popup-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      <span>{formatDistance(driveway.distance)} away</span>
+                    </div>
+                  )}
                   {walkingTime > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Walk time</span>
-                      <span className="font-medium text-gray-700">{formatWalkingTime(walkingTime)}</span>
+                    <div className="popup-detail-item">
+                      <svg className="popup-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                      </svg>
+                      <span>{formatWalkingTime(walkingTime)} walk</span>
+                    </div>
+                  )}
+                  {driveway.rating && (
+                    <div className="popup-detail-item">
+                      <svg className="popup-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                      </svg>
+                      <span>{driveway.rating.toFixed(1)} rating</span>
                     </div>
                   )}
                 </div>
                 
-                <div className="space-y-2">
-                  {availability.isAvailable ? (
-                    <button 
-                      className="w-full px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                      onClick={(e) => {
-                        console.log('🎯 Popup "Book Now" button clicked for:', {
-                          address: driveway.address,
-                          id: driveway.id,
-                          isAvailable: availability.isAvailable
-                        });
-                        
-                        // Get click position relative to viewport
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const clickPosition = {
-                          x: rect.left + rect.width / 2,
-                          y: rect.top + rect.height / 2
-                        };
-                        
-                        // Pass click position to the driveway selection
-                        onDrivewaySelect(driveway, clickPosition);
-                      }}
-                    >
-                      Book Now
-                    </button>
-                  ) : (
-                    <button 
-                      className="w-full px-3 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-md cursor-not-allowed"
-                      disabled
-                    >
-                      {availability.status === 'opens-later' ? 'Opens Later' : 'Unavailable'}
-                    </button>
-                  )}
+                {/* Actions */}
+                <div className="popup-actions">
+                  <button 
+                    className="popup-book-btn"
+                    disabled={!availability.isAvailable}
+                    onClick={(e) => {
+                      console.log('🎯 Popup "Book Now" button clicked for:', {
+                        address: driveway.address,
+                        id: driveway.id,
+                        isAvailable: availability.isAvailable
+                      });
+                      
+                      // Get click position relative to viewport
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const clickPosition = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                      };
+                      
+                      // Pass click position to the driveway selection
+                      onDrivewaySelect(driveway, clickPosition);
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 12l2 2 4-4"/>
+                      <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                      <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                      <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3"/>
+                      <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3"/>
+                    </svg>
+                    {availability.isAvailable ? 'Book Now' : (availability.status === 'opens-later' ? 'Opens Later' : 'Unavailable')}
+                  </button>
                   
                   <button 
-                    className="w-full px-3 py-2 bg-gray-50 text-gray-600 text-sm font-medium rounded-md hover:bg-gray-100 transition-colors border border-gray-200"
+                    className="popup-directions-btn"
                     onClick={() => {
                       const url = `https://www.google.com/maps/dir/?api=1&destination=${coordinates.lat},${coordinates.lng}`;
                       window.open(url, '_blank');
                     }}
+                    aria-label="Get directions"
                   >
-                    Directions
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
                   </button>
                 </div>
               </div>

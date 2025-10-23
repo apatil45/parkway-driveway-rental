@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ParkwaySearchForm from './ParkwaySearchForm';
 import EnhancedParkwayResults from './EnhancedParkwayResults';
 import EnhancedMapView from './EnhancedMapView';
-import SimpleBookingModal from './SimpleBookingModal';
+import UnifiedBookingModal from './UnifiedBookingModal';
 import QuickActions from './QuickActions';
 import ProfessionalDrivewayList from './ProfessionalDrivewayList';
 import UnifiedMapView from './UnifiedMapView';
+import { useBooking } from '../context/BookingContext';
+import { useRealtimeUpdates } from '../hooks/useRealtimeUpdates';
 import { Driveway, UserLocation } from '../types/map';
 // CSS import removed - now using Tailwind CSS
 
@@ -19,6 +21,7 @@ interface SearchData {
 }
 
 const ParkwayInterface: React.FC = () => {
+  const { openBookingModal } = useBooking();
   const [activeTab, setActiveTab] = useState<'search' | 'reserve' | 'prices' | 'explore' | 'airport'>('search');
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [driveways, setDriveways] = useState<Driveway[]>([]);
@@ -26,9 +29,61 @@ const ParkwayInterface: React.FC = () => {
   const [selectedDriveway, setSelectedDriveway] = useState<Driveway | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [showBookingModal, setShowBookingModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingDriveways, setIsLoadingDriveways] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [centerMapOnDriveway, setCenterMapOnDriveway] = useState<((driveway: Driveway) => void) | null>(null);
+
+  // Real-time update handlers
+  const handleDrivewayUpdate = useCallback((updatedDriveway: Driveway) => {
+    console.log('🔄 Updating driveway from real-time:', updatedDriveway);
+    setDriveways(prevDriveways => 
+      prevDriveways.map(driveway => 
+        driveway.id === updatedDriveway.id ? { ...driveway, ...updatedDriveway } : driveway
+      )
+    );
+    setLastUpdateTime(new Date());
+  }, []);
+
+  const handleAvailabilityChange = useCallback((drivewayId: string, isAvailable: boolean) => {
+    console.log('🔄 Updating availability from real-time:', { drivewayId, isAvailable });
+    setDriveways(prevDriveways => 
+      prevDriveways.map(driveway => 
+        driveway.id === drivewayId ? { ...driveway, isAvailable } : driveway
+      )
+    );
+    setLastUpdateTime(new Date());
+  }, []);
+
+  const handleBookingUpdate = useCallback((booking: any) => {
+    console.log('📅 Booking update received:', booking);
+    // Refresh driveways to get updated availability
+    if (userLocation) {
+      loadAllAvailableDriveways(userLocation.lat, userLocation.lng, true);
+    }
+    setLastUpdateTime(new Date());
+  }, [userLocation]);
+
+  const handleRealtimeError = useCallback((error: any) => {
+    console.error('❌ Real-time service error:', error);
+    // Could show a toast notification here
+  }, []);
+
+  // Initialize real-time updates with error handling
+  let isConnected = false;
+  // Temporarily disable real-time updates to fix initialization error
+  // try {
+  //   const realtimeResult = useRealtimeUpdates({
+  //     onDrivewayUpdate: handleDrivewayUpdate,
+  //     onDrivewayAvailabilityChange: handleAvailabilityChange,
+  //     onBookingUpdate: handleBookingUpdate,
+  //     onError: handleRealtimeError
+  //   });
+  //   isConnected = realtimeResult.isConnected;
+  // } catch (error) {
+  //   console.error('❌ Failed to initialize real-time updates:', error);
+  //   // Continue without real-time updates
+  // }
 
   // Load all available driveways by default
   const loadAllAvailableDriveways = async (userLat?: number, userLng?: number, isRefresh: boolean = false) => {
@@ -218,8 +273,6 @@ const ParkwayInterface: React.FC = () => {
     }
   };
 
-  const [clickPosition, setClickPosition] = useState<{ x: number; y: number } | undefined>();
-
   const handleDrivewaySelect = (driveway: Driveway, clickPos?: { x: number; y: number }) => {
     console.log('🎯 handleDrivewaySelect called with:', {
       id: driveway.id,
@@ -230,26 +283,18 @@ const ParkwayInterface: React.FC = () => {
       clickPosition: clickPos
     });
     setSelectedDriveway(driveway);
-    setClickPosition(clickPos);
-    setShowBookingModal(true);
+    openBookingModal(driveway, clickPos);
     console.log('✅ Booking modal should now be open');
   };
 
   const handleDrivewayFocus = (driveway: Driveway) => {
     // Only select for map focus, don't open booking modal
     setSelectedDriveway(driveway);
-    setShowBookingModal(false);
   };
 
   const handleBookingSuccess = () => {
-    setShowBookingModal(false);
     setSelectedDriveway(null);
     // Optionally refresh the search results
-  };
-
-  const handleCancel = () => {
-    setShowBookingModal(false);
-    setSelectedDriveway(null);
   };
 
   return (
@@ -306,6 +351,7 @@ const ParkwayInterface: React.FC = () => {
                   onDrivewaySelect={handleDrivewaySelect}
                   searchLocation={userLocation}
                   selectedDriveway={selectedDriveway}
+                  onCenterMapOnDriveway={centerMapOnDriveway}
                 />
               )}
 
@@ -343,6 +389,7 @@ const ParkwayInterface: React.FC = () => {
                       showControls={true}
                       onRefresh={refreshAvailableSpots}
                       isRefreshing={isRefreshing}
+                      onCenterMapOnDriveway={setCenterMapOnDriveway}
                     />
                   </div>
                 </div>
@@ -352,19 +399,32 @@ const ParkwayInterface: React.FC = () => {
         </div>
       </div>
 
+      {/* Real-time Status Indicator */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg text-sm ${
+          isConnected 
+            ? 'bg-green-100 text-green-800 border border-green-200' 
+            : 'bg-red-100 text-red-800 border border-red-200'
+        }`}>
+          <div className={`w-2 h-2 rounded-full ${
+            isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+          }`}></div>
+          <span className="font-medium">
+            {isConnected ? 'Live Updates' : 'Offline'}
+          </span>
+          {lastUpdateTime && (
+            <span className="text-xs opacity-75">
+              {lastUpdateTime.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <QuickActions />
 
-        {/* Booking Modal */}
-        {showBookingModal && selectedDriveway && (
-          <SimpleBookingModal
-            isOpen={showBookingModal}
-            onClose={handleCancel}
-            driveway={selectedDriveway}
-            onBookingSuccess={handleBookingSuccess}
-            clickPosition={clickPosition}
-          />
-        )}
+      {/* Unified Booking Modal */}
+      <UnifiedBookingModal onBookingSuccess={handleBookingSuccess} />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -88,10 +88,24 @@ const UnifiedMapView: React.FC<MapViewProps> = ({
   showLegend = true,
   showControls = true,
   onRefresh,
-  isRefreshing = false
+  isRefreshing = false,
+  onCenterMapOnDriveway
 }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(13);
+  const mapRef = useRef<L.Map | null>(null);
+  
+  // Function to center map on a specific driveway
+  const centerMapOnDriveway = useCallback((driveway: any) => {
+    if (mapRef.current) {
+      const coordinates = ensureCoordinates(driveway, center);
+      console.log('🎯 Centering map on driveway:', driveway.address, 'at', coordinates);
+      mapRef.current.setView([coordinates.lat, coordinates.lng], 16, {
+        animate: true,
+        duration: 1.0
+      });
+    }
+  }, [center]);
   
   // Debug: Log when component loads
   console.log('🚀 ENHANCED MAP LOADED - Version with clustering and walking time!');
@@ -128,6 +142,13 @@ const UnifiedMapView: React.FC<MapViewProps> = ({
     height
   });
 
+  // Pass the centerMapOnDriveway function to parent
+  useEffect(() => {
+    if (onCenterMapOnDriveway) {
+      onCenterMapOnDriveway(centerMapOnDriveway);
+    }
+  }, [centerMapOnDriveway, onCenterMapOnDriveway]);
+
   return (
     <div className="unified-map-container">
       {/* Map Container */}
@@ -136,14 +157,20 @@ const UnifiedMapView: React.FC<MapViewProps> = ({
           center={center}
           zoom={13}
           style={{ height: '100%', width: '100%' }}
-          whenReady={() => {
+          whenReady={(map) => {
             console.log('✅ Map ready');
             setMapLoaded(true);
+            mapRef.current = map.target;
           }}
           eventHandlers={{
             zoomend: (e) => {
               const map = e.target;
               setZoomLevel(map.getZoom());
+            },
+            click: (e) => {
+              // Close all popups when clicking on empty map areas
+              const map = e.target;
+              map.closePopup();
             }
           }}
         >

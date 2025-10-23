@@ -61,6 +61,38 @@ class SocketService {
         socket.join(roleRoom);
       });
 
+      // Handle general room joining
+      socket.on('join:general', () => {
+        socket.join('general');
+        console.log(`🌐 User ${socket.userId} joined general room`);
+      });
+
+      // Handle driveway-specific subscriptions
+      socket.on('join:driveway', (drivewayId) => {
+        const drivewayRoom = `driveway_${drivewayId}`;
+        socket.join(drivewayRoom);
+        console.log(`🏠 User ${socket.userId} joined driveway room ${drivewayId}`);
+      });
+
+      socket.on('leave:driveway', (drivewayId) => {
+        const drivewayRoom = `driveway_${drivewayId}`;
+        socket.leave(drivewayRoom);
+        console.log(`🏠 User ${socket.userId} left driveway room ${drivewayId}`);
+      });
+
+      // Handle user booking subscriptions
+      socket.on('join:user_bookings', (userId) => {
+        const userBookingsRoom = `user_bookings_${userId}`;
+        socket.join(userBookingsRoom);
+        console.log(`📅 User ${socket.userId} joined user bookings room for ${userId}`);
+      });
+
+      socket.on('leave:user_bookings', (userId) => {
+        const userBookingsRoom = `user_bookings_${userId}`;
+        socket.leave(userBookingsRoom);
+        console.log(`📅 User ${socket.userId} left user bookings room for ${userId}`);
+      });
+
       // Handle booking events
       socket.on('join_booking_room', (bookingId) => {
         const bookingRoom = `booking_${bookingId}`;
@@ -165,6 +197,67 @@ class SocketService {
       timestamp: new Date().toISOString()
     });
     console.log(`🏠 Availability update sent for driveway ${drivewayId}:`, update.type);
+  }
+
+  // New real-time update methods
+  broadcastDrivewayUpdate(driveway) {
+    // Send to general room for all users
+    this.io.to('general').emit('driveway:updated', {
+      ...driveway,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Send to specific driveway room
+    const drivewayRoom = `driveway_${driveway.id}`;
+    this.io.to(drivewayRoom).emit('driveway:updated', {
+      ...driveway,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`🔄 Driveway update broadcasted for ${driveway.id}`);
+  }
+
+  broadcastAvailabilityChange(drivewayId, isAvailable) {
+    // Send to general room for all users
+    this.io.to('general').emit('driveway:availability_changed', {
+      drivewayId,
+      isAvailable,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Send to specific driveway room
+    const drivewayRoom = `driveway_${drivewayId}`;
+    this.io.to(drivewayRoom).emit('driveway:availability_changed', {
+      drivewayId,
+      isAvailable,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`🔄 Availability change broadcasted for driveway ${drivewayId}: ${isAvailable}`);
+  }
+
+  broadcastBookingUpdate(booking, eventType = 'updated') {
+    // Send to general room for all users
+    this.io.to('general').emit(`booking:${eventType}`, {
+      ...booking,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Send to user's booking room
+    const userBookingsRoom = `user_bookings_${booking.userId}`;
+    this.io.to(userBookingsRoom).emit(`booking:${eventType}`, {
+      ...booking,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Send to specific booking room
+    const bookingRoom = `booking_${booking.id}`;
+    this.io.to(bookingRoom).emit(`booking:${eventType}`, {
+      ...booking,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`📅 Booking ${eventType} broadcasted for booking ${booking.id}`);
   }
 
   broadcastToRole(role, notification) {

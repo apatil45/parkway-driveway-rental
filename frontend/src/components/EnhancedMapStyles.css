@@ -1,0 +1,274 @@
+/* Enhanced Map Styles - Simple UX Improvements */
+
+/* Pulse animation for available markers */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+}
+
+/* Enhanced popup styling */
+.enhanced-popup {
+  min-width: 280px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.enhanced-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  padding: 0 !important;
+}
+
+.enhanced-popup .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 16px !important;
+}
+
+.popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.popup-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.popup-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.popup-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.popup-price {
+  font-size: 18px;
+  font-weight: bold;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.popup-status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.popup-status.available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.popup-status.unavailable {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.popup-status.opens-later {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.popup-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.popup-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popup-detail-icon {
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.popup-book-btn {
+  flex: 1;
+  padding: 12px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.popup-book-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.popup-book-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.popup-directions-btn {
+  padding: 12px;
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-directions-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+/* Price marker styles */
+.price-marker {
+  transition: all 0.2s ease;
+}
+
+.price-marker:hover {
+  transform: scale(1.1);
+}
+
+.price-marker.available {
+  animation: pulse 2s infinite;
+}
+
+.price-marker.unavailable {
+  opacity: 0.7;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .enhanced-popup {
+    min-width: 260px !important;
+  }
+  
+  .enhanced-popup .leaflet-popup-content {
+    padding: 12px !important;
+  }
+  
+  .popup-title {
+    font-size: 15px;
+  }
+  
+  .popup-price {
+    font-size: 16px;
+  }
+  
+  .popup-actions {
+    flex-direction: column;
+  }
+  
+  .popup-book-btn,
+  .popup-directions-btn {
+    padding: 14px 16px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Accessibility improvements */
+.popup-book-btn:focus,
+.popup-directions-btn:focus,
+.popup-close-btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .enhanced-popup {
+    border: 2px solid #000 !important;
+  }
+  
+  .popup-status.available {
+    background: #000;
+    color: #fff;
+  }
+  
+  .popup-status.unavailable {
+    background: #000;
+    color: #fff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .price-marker.available {
+    animation: none;
+  }
+  
+  .popup-book-btn:hover {
+    transform: none;
+  }
+  
+  .price-marker:hover {
+    transform: none;
+  }
+}

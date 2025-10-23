@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import PaymentStatus from './PaymentStatus';
-import SmartBookingModal from './SmartBookingModal';
+import UnifiedBookingModal from './UnifiedBookingModal';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
 import QuickActions from './QuickActions';
@@ -27,8 +27,6 @@ const DriverDashboardNew: React.FC = () => {
   const navigate = useNavigate();
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [bookingsError, setBookingsError] = useState<string | null>(null);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [selectedDriveway, setSelectedDriveway] = useState<any>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -64,20 +62,8 @@ const DriverDashboardNew: React.FC = () => {
     }
   };
 
-  const handleBookDriveway = (driveway: any) => {
-    setSelectedDriveway(driveway);
-    setShowBookingModal(true);
-  };
-
   const handleBookingSuccess = () => {
-    setShowBookingModal(false);
-    setSelectedDriveway(null);
     fetchRecentBookings(); // Refresh bookings
-  };
-
-  const handleBookingCancel = () => {
-    setShowBookingModal(false);
-    setSelectedDriveway(null);
   };
 
   if (isLoading) {
@@ -173,15 +159,8 @@ const DriverDashboardNew: React.FC = () => {
         <QuickActions />
       </div>
 
-      {/* Booking Modal */}
-      {showBookingModal && selectedDriveway && (
-        <SmartBookingModal
-          isOpen={showBookingModal}
-          onClose={handleBookingCancel}
-          driveway={selectedDriveway}
-          onBookingSuccess={handleBookingSuccess}
-        />
-      )}
+      {/* Unified Booking Modal */}
+      <UnifiedBookingModal onBookingSuccess={handleBookingSuccess} />
     </div>
   );
 };

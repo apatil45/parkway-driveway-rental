@@ -107,8 +107,8 @@ const Nav: React.FC = () => {
         )}
       </div>
 
-      <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40" id="navigation" role="navigation" aria-label="Main navigation">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40 w-full overflow-x-hidden" id="navigation" role="navigation" aria-label="Main navigation">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center h-16">
             {/* Brand */}
             <Link 
@@ -291,23 +291,23 @@ const Nav: React.FC = () => {
         {/* Mobile Menu */}
         {showMobileMenu && (
           <div 
-            className="lg:hidden bg-white border-t border-gray-200 shadow-lg"
+            className="lg:hidden bg-white border-t border-gray-200 shadow-lg w-full"
             id="mobile-menu"
             ref={mobileMenuRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="mobile-menu-title"
           >
-            <div className="px-4 py-6 space-y-4">
+            <div className="px-4 py-6 space-y-4 w-full max-w-full overflow-hidden">
               <h2 id="mobile-menu-title" className="sr-only">Mobile Navigation Menu</h2>
             {isAuthenticated ? (
               <>
                 {/* User Info Section */}
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg mb-4">
-                  <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-lg font-semibold">
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg mb-4 w-full max-w-full overflow-hidden">
+                  <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-lg font-semibold flex-shrink-0">
                     {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="text-lg font-semibold text-gray-900 truncate">
                       {user?.name || 'User'}
                     </div>
@@ -318,7 +318,7 @@ const Nav: React.FC = () => {
                 </div>
 
                 {/* Navigation Links */}
-                <div className="space-y-2" role="menu">
+                <div className="space-y-2 w-full max-w-full overflow-hidden" role="menu">
                   {user?.roles?.includes('driver') && (
                     <Link 
                       to="/driver-dashboard" 
@@ -408,7 +408,7 @@ const Nav: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="space-y-2" role="menu">
+              <div className="space-y-2 w-full max-w-full overflow-hidden" role="menu">
                 <Link 
                   to="/" 
                   className={`flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors duration-150 ${

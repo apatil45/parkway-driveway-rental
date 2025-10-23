@@ -6,13 +6,15 @@ interface ProfessionalDrivewayListProps {
   onDrivewaySelect: (driveway: Driveway) => void;
   searchLocation?: { lat: number; lng: number };
   selectedDriveway?: Driveway | null;
+  onCenterMapOnDriveway?: (driveway: Driveway) => void;
 }
 
 const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
   driveways,
   onDrivewaySelect,
   searchLocation,
-  selectedDriveway
+  selectedDriveway,
+  onCenterMapOnDriveway
 }) => {
   // Helper function to get driveway size color
   const getSizeColor = (size: string) => {
@@ -165,6 +167,10 @@ const ProfessionalDrivewayList: React.FC<ProfessionalDrivewayListProps> = ({
                 onClick={() => {
                   console.log('Driveway card clicked:', driveway);
                   onDrivewaySelect(driveway);
+                  // Center map on this driveway
+                  if (onCenterMapOnDriveway) {
+                    onCenterMapOnDriveway(driveway);
+                  }
                 }}
               >
                 <div className="flex items-start gap-3 sm:gap-4">
