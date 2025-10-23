@@ -20,6 +20,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('frontend/dist'));
 app.use(express.static('public'));
 
+// Serve PWA files with proper headers
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.sendFile(path.resolve(__dirname, 'public/manifest.json'));
+});
+
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.resolve(__dirname, 'public/sw.js'));
+});
+
+app.get('/favicon.svg', (req, res) => {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.sendFile(path.resolve(__dirname, 'public/favicon.svg'));
+});
+
 // Simple auth middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];

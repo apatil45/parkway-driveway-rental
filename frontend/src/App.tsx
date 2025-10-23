@@ -12,9 +12,9 @@ const Login = lazy(() => import('./components/Login'));
 const OwnerDashboard = lazy(() => import('./components/OwnerDashboard'));
 const DriverDashboardNew = lazy(() => import('./components/DriverDashboardNew'));
 const ParkwayInterface = lazy(() => import('./components/ParkwayInterface'));
-const Home = lazy(() => import('./components/Home'));
+const HomeComponent = lazy(() => import('./components/Home'));
 const Profile = lazy(() => import('./components/Profile'));
-const HelpCenter = lazy(() => import('./components/HelpCenter'));
+const HelpCenterComponent = lazy(() => import('./components/HelpCenter'));
 // Debug components - only imported when needed
 // import AuthDebug from "./components/dev/AuthDebug";
 // import ConnectionTest from "./components/dev/ConnectionTest";
@@ -71,10 +71,10 @@ const App: React.FC = () => {
           <main id="main-content" className="app-content" role="main" aria-label="Main content">
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<HomeComponent />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/help" element={<HelpCenter />} />
+                <Route path="/help" element={<HelpCenterComponent />} />
                 <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
                 <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><ParkwayInterface /></PrivateRoute>} />
                 <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
