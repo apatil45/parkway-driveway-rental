@@ -1,35 +1,24 @@
 services:
   - type: web
-    name: parkway-driveway-rental
+    name: parkway-backend
     env: node
-    plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
-    healthCheckPath: /health
+    plan: starter
+    buildCommand: npm install
+    startCommand: node index.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
-      - key: DATABASE_URL
-        fromDatabase:
-          name: parkway-db
-          property: connectionString
-      - key: JWT_SECRET
-        generateValue: true
+      - key: SUPABASE_URL
+        value: https://aqjjgmmvviozmedjgxdy.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxampnbW12dmlvem1lZGpneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjA5MTUsImV4cCI6MjA3Njg5NjkxNX0.XCQQfVAGDTnDqC4W6RHMd8Rmj3C8UyFUmE-S18JVLWk
       - key: STRIPE_SECRET_KEY
-        sync: false
+        value: your_stripe_secret_key_here
       - key: CLOUDINARY_CLOUD_NAME
-        sync: false
+        value: your_cloudinary_cloud_name_here
       - key: CLOUDINARY_API_KEY
-        sync: false
+        value: your_cloudinary_api_key_here
       - key: CLOUDINARY_API_SECRET
-        sync: false
-      - key: OPENCAGE_API_KEY
-        sync: false
-
-databases:
-  - name: parkway-db
-    plan: free
-    databaseName: parkway_db
-    user: parkway_user
+        value: your_cloudinary_api_secret_here
+    healthCheckPath: /health
+    autoDeploy: true

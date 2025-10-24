@@ -2,8 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const helmet = require('helmet');
-const { sequelize, testConnection } = require('./models/database'); // PostgreSQL connection
-const { setupAssociations } = require('./models/associations');
+const { supabase, db, testConnection } = require('./models/supabase'); // Supabase connection
 const SocketService = require('./services/socketService');
 const cacheService = require('./services/cacheService');
 const { 
@@ -33,29 +32,14 @@ const startServer = async () => {
     console.log('🔗 Initializing cache service...');
     await cacheService.initialize();
     
-    // Database Connection - PostgreSQL only
-    if (process.env.DATABASE_URL) {
-      console.log('🔗 Connecting to PostgreSQL...');
-      const connected = await testConnection();
-      if (!connected) {
-        throw new Error('Failed to connect to PostgreSQL after retries');
-      }
-      
-      // Setup model associations
-      setupAssociations();
-      
-      // Sync database models with better error handling
-      console.log('📋 Synchronizing database models...');
-      await sequelize.sync({ 
-        force: false, // Changed from true to false to prevent data loss
-        alter: false // Back to false for production safety
-      });
-      console.log('✅ Database models synchronized');
-      
-    } else {
-      console.log('⚠️  No database connection configured. Please set DATABASE_URL.');
-      console.log('💡 This application requires PostgreSQL. MongoDB support has been removed.');
+    // Database Connection - Supabase
+    console.log('🔗 Connecting to Supabase...');
+    const connected = await testConnection();
+    if (!connected) {
+      throw new Error('Failed to connect to Supabase');
     }
+    
+    console.log('✅ Supabase connection established');
 
   } catch (error) {
     console.error('❌ Server startup failed:', error.message);
@@ -194,7 +178,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Define Routes - PostgreSQL only with rate limiting
-app.use('/api/auth', authLimiter, require('./routes/authPG'));
+app.use('/api/auth', authLimiter, require('./routes/authSupabase'));
 app.use('/api/bookings', bookingLimiter, require('./routes/bookingsPG'));
 app.use('/api/driveways', searchLimiter, require('./routes/drivewaysPG'));
 app.use('/api/payments', require('./routes/paymentsPG'));
