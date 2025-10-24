@@ -3,7 +3,7 @@
  * Handles driveway listing and creation
  */
 
-const { db, auth } = require('../../lib/supabase.js')
+const { db, auth } = require('../lib/supabase.js')
 
 module.exports = async function handler(req, res) {
   // Set CORS headers
