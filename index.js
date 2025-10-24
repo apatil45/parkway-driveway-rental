@@ -127,15 +127,22 @@ app.get('/health', async (req, res) => {
       environment: process.env.NODE_ENV || 'development'
     };
 
-    // Test database connection if available
-    if (process.env.DATABASE_URL) {
-      try {
-        await sequelize.authenticate();
-        healthData.database = 'connected';
-      } catch (dbError) {
+    // Test Supabase connection
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('count')
+        .limit(1);
+      
+      if (error) {
         healthData.database = 'disconnected';
-        healthData.databaseError = dbError.message;
+        healthData.databaseError = error.message;
+      } else {
+        healthData.database = 'connected';
       }
+    } catch (dbError) {
+      healthData.database = 'disconnected';
+      healthData.databaseError = dbError.message;
     }
 
     res.status(200).json(healthData);
@@ -232,12 +239,8 @@ const gracefulShutdown = (signal) => {
       .then(() => console.log('✅ Cache service closed'))
       .catch(err => console.error('❌ Error closing cache service:', err));
     
-    // Close database connection
-    if (process.env.DATABASE_URL) {
-      sequelize.close()
-        .then(() => console.log('✅ PostgreSQL connection closed'))
-        .catch(err => console.error('❌ Error closing PostgreSQL:', err));
-    }
+    // Supabase connection doesn't need explicit closing
+    console.log('✅ Supabase connection will be handled by the client');
     
     process.exit(0);
   });
