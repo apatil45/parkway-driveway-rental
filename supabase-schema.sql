@@ -80,7 +80,17 @@ ALTER TABLE driveways ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies
+-- Create RLS policies (drop existing ones first to avoid conflicts)
+DROP POLICY IF EXISTS "Users can read own data" ON users;
+DROP POLICY IF EXISTS "Users can update own data" ON users;
+DROP POLICY IF EXISTS "Driveways are publicly readable" ON driveways;
+DROP POLICY IF EXISTS "Owners can manage own driveways" ON driveways;
+DROP POLICY IF EXISTS "Users can read own bookings" ON bookings;
+DROP POLICY IF EXISTS "Users can create bookings" ON bookings;
+DROP POLICY IF EXISTS "Users can update own bookings" ON bookings;
+DROP POLICY IF EXISTS "Users can read own notifications" ON notifications;
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
+
 -- Users can read their own data
 CREATE POLICY "Users can read own data" ON users
   FOR SELECT USING (auth.uid() = id);
@@ -126,7 +136,11 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create triggers for updated_at
+-- Create triggers for updated_at (drop existing ones first)
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+DROP TRIGGER IF EXISTS update_driveways_updated_at ON driveways;
+DROP TRIGGER IF EXISTS update_bookings_updated_at ON bookings;
+
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
