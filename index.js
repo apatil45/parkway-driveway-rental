@@ -186,13 +186,14 @@ if (process.env.NODE_ENV === 'production') {
 
 // Define Routes - PostgreSQL only with rate limiting
 app.use('/api/auth', authLimiter, require('./routes/authSupabase'));
-app.use('/api/bookings', bookingLimiter, require('./routes/bookingsPG'));
-app.use('/api/driveways', searchLimiter, require('./routes/drivewaysPG'));
-app.use('/api/payments', require('./routes/paymentsPG'));
+// Temporarily disabled - will be replaced with Supabase versions
+// app.use('/api/bookings', bookingLimiter, require('./routes/bookingsPG'));
+// app.use('/api/driveways', searchLimiter, require('./routes/drivewaysPG'));
+// app.use('/api/payments', require('./routes/paymentsPG'));
 app.use('/api/geocoding', require('./routes/geocoding'));
 app.use('/api/upload', uploadLimiter, require('./routes/upload'));
 app.use('/api/errors', require('./routes/errors')); // Add error reporting route
-app.use('/api/notifications', require('./routes/notificationsPG')); // Add notifications route
+// app.use('/api/notifications', require('./routes/notificationsPG')); // Add notifications route
 
 // Global error handling middleware
 app.use((err, req, res, next) => {

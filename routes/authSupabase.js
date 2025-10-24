@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { supabase, db } = require('../models/supabase');
-const { authenticateToken: auth } = require('../middleware/auth');
+const { authenticateToken: auth } = require('../middleware/authSupabase');
 const { validateUserRegistration, validateUserLogin } = require('../middleware/validation');
 
 const router = express.Router();
