@@ -12,7 +12,7 @@
     "remove-indexes": "node scripts/add-performance-indexes.js down",
     "optimize-db": "npm run add-indexes",
     "test-performance": "node scripts/performance-test.js",
-    "postinstall": "npm run migrate:prod || echo 'Migration failed, continuing...'",
+    "postinstall": "echo 'Skipping migration - using Supabase'",
     "check-env": "node scripts/check-render-env.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:backend": "jest",
