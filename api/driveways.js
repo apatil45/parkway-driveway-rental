@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
       let driveways
       if (ownerId) {
         // Get driveways by owner
-        const { data, error } = await supabase
+        const { data, error } = await db.supabase
           .from('driveways')
           .select(`
             *,
@@ -63,7 +63,7 @@ module.exports = async function handler(req, res) {
 
       // Verify user authentication
       const token = authHeader.replace('Bearer ', '')
-      const { user, error: authError } = await supabase.auth.getUser(token)
+      const { user, error: authError } = await db.supabase.auth.getUser(token)
       
       if (authError || !user) {
         return res.status(401).json({ error: 'Invalid token' })

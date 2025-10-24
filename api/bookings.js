@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
       }
 
       const token = authHeader.replace('Bearer ', '')
-      const { user, error: authError } = await supabase.auth.getUser(token)
+      const { user, error: authError } = await db.supabase.auth.getUser(token)
       
       if (authError || !user) {
         return res.status(401).json({ error: 'Invalid token' })
@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
       }
 
       const token = authHeader.replace('Bearer ', '')
-      const { user, error: authError } = await supabase.auth.getUser(token)
+      const { user, error: authError } = await db.supabase.auth.getUser(token)
       
       if (authError || !user) {
         return res.status(401).json({ error: 'Invalid token' })
@@ -86,7 +86,7 @@ module.exports = async function handler(req, res) {
       }
 
       // Check for overlapping bookings
-      const { data: existingBookings, error: checkError } = await supabase
+      const { data: existingBookings, error: checkError } = await db.supabase
         .from('bookings')
         .select('*')
         .eq('drivewayId', drivewayId)
