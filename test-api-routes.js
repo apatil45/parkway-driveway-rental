@@ -37,9 +37,9 @@ async function testRoutes() {
   
   const routes = [
     '/api/health',
-    '/api/auth/register',
-    '/api/auth/login',
-    '/api/auth/user',
+    '/api/register',
+    '/api/login',
+    '/api/user',
     '/api/driveways',
     '/api/bookings'
   ];
