@@ -10,14 +10,9 @@ const path = require('path');
 
 // Environment variables configuration
 const envConfig = {
-  // Database Configuration
-  DATABASE_URL: 'postgresql://parkway_user:5JEJVL2GX12E9mAQRPPoqI62QM2NNVFR@dpg-d3a95kndiees73d311vg-a.virginia-postgres.render.com/parkway_db',
-  DB_HOST: 'dpg-d3a95kndiees73d311vg-a.virginia-postgres.render.com',
-  DB_PORT: '5432',
-  DB_NAME: 'parkway_db',
-  DB_USER: 'parkway_user',
-  DB_PASSWORD: '5JEJVL2GX12E9mAQRPPoqI62QM2NNVFR',
-  DB_SSL: 'true',
+  // Supabase Database Configuration
+  SUPABASE_URL: 'https://aqjjgmmvviozmedjgxdy.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxampnbW12dmlvem1lZGpneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjA5MTUsImV4cCI6MjA3Njg5NjkxNX0.XCQQfVAGDTnDqC4W6RHMd8Rmj3C8UyFUmE-S18JVLWk',
   
   // JWT Configuration
   JWT_SECRET: 'supersecretjwtkey',

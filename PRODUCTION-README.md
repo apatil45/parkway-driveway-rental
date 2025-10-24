@@ -25,7 +25,8 @@ start-production.bat
 ```bash
 # Set environment variables (Windows)
 set JWT_SECRET=supersecretjwtkey
-set DATABASE_URL=postgresql://parkway_user:5JEJVL2GX12E9mAQRPPoqI62QM2NNVFR@dpg-d3a95kndiees73d311vg-a.virginia-postgres.render.com/parkway_db
+set SUPABASE_URL=https://aqjjgmmvviozmedjgxdy.supabase.co
+set SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxampnbW12dmlvem1lZGpneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjA5MTUsImV4cCI6MjA3Njg5NjkxNX0.XCQQfVAGDTnDqC4W6RHMd8Rmj3C8UyFUmE-S18JVLWk
 set STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
 set CLOUDINARY_CLOUD_NAME=deguirpcb
 set CLOUDINARY_API_KEY=969444696786874
