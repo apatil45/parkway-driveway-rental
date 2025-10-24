@@ -3,9 +3,9 @@
  * Handles driveway listing and creation
  */
 
-import { db, auth } from '../../lib/supabase.js'
+const { db, auth } = require('../../lib/supabase.js')
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
