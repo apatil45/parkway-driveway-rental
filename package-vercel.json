@@ -1,0 +1,35 @@
+{
+  "name": "parkway-vercel",
+  "version": "1.0.0",
+  "description": "Parkway.com - Smart Parking Solutions (Vercel Deployment)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "cd frontend && npm run build",
+    "start": "vercel start",
+    "deploy": "vercel --prod",
+    "preview": "vercel",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "sharp": "^0.34.4",
+    "stripe": "^18.5.0"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  },
+  "keywords": [
+    "parking",
+    "driveway",
+    "rental",
+    "vercel",
+    "serverless",
+    "supabase"
+  ],
+  "author": "Parkway Team",
+  "license": "MIT"
+}

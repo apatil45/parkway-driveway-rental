@@ -107,13 +107,13 @@ const UnifiedMapView: React.FC<MapViewProps> = ({
     }
   }, [center]);
   
-  // Debug: Log when component loads
-  console.log('🚀 ENHANCED MAP LOADED - Version with clustering and walking time!');
-  console.warn('🎯 ENHANCED MAP v2.0 IS ACTIVE! Look for the green banner at the top!');
-  
   // Default center (Jersey City area)
   const defaultCenter: [number, number] = [40.7178, -74.0431];
   const center = userLocation ? [userLocation.lat, userLocation.lng] as [number, number] : defaultCenter;
+  
+  // Debug: Log when component loads
+  console.log('🚀 ENHANCED MAP LOADED - Version with clustering and walking time!');
+  console.warn('🎯 ENHANCED MAP v2.0 IS ACTIVE! Look for the green banner at the top!');
   
   // For now, disable clustering to ensure all markers show up
   const shouldCluster = false; // Disable clustering temporarily

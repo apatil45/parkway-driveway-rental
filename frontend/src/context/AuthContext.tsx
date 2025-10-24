@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, type ReactNode } from 'react';
-import axios from 'axios';
+import apiService from '../services/apiService';
 import { notificationService } from '../services/notificationService';
 
 interface User {
@@ -61,10 +61,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLastUserValidation(now);
     
     try {
-      const res = await axios.get('/api/auth/user');
-      setUser(res.data);
+      const response = await apiService.getUser();
+      setUser(response.data);
     } catch (err: any) {
-      if (err.response?.status === 401) {
+      if (err.statusCode === 401) {
         clearAuthData();
       }
     } finally {
@@ -79,10 +79,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const rememberMe = localStorage.getItem('rememberMe') === 'true';
       
       if (token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         try {
-          const res = await axios.get('/api/auth/user');
-          setUser(res.data);
+          const response = await apiService.getUser();
+          setUser(response.data);
           setLastUserValidation(Date.now());
           
           // Set up token refresh if remember me is enabled
@@ -91,7 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         } catch (err: any) {
           // Only clear auth data if the token is invalid (401), not for network errors
-          if (err.response?.status === 401) {
+          if (err.statusCode === 401) {
             clearAuthData();
           } else {
             // Keep the token but don't set user data for network errors
@@ -126,7 +125,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('AuthContext - Clearing auth data');
     localStorage.removeItem('token');
     localStorage.removeItem('rememberMe');
-    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
 
@@ -134,18 +132,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       console.log('AuthContext - Attempting login for:', email);
-      const res = await axios.post('/api/auth/login', { email, password });
-      const token = res.data.token;
+      const response = await apiService.login(email, password);
+      const { token, user: userData } = response.data;
+      
       localStorage.setItem('token', token);
       localStorage.setItem('rememberMe', rememberMe.toString());
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      // Use user data from login response directly
-      const userData = res.data.user;
       console.log('AuthContext - Login successful, user:', userData);
       setUser(userData);
-
-      // Don't show welcome notification on login - user already knows they're logged in
 
       // Set up token refresh if remember me is enabled
       if (rememberMe) {
@@ -155,10 +149,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(false);
       return userData.roles?.[0] || 'driver'; // Return first role instead of single role
     } catch (err: any) {
-      console.error("AuthContext - Login error:", err.response?.data || err.message);
+      console.error("AuthContext - Login error:", err.message);
       
       // Show contextual error notification
-      const errorMessage = err.response?.data?.msg || err.response?.data?.message || 'Login failed. Please check your credentials.';
+      const errorMessage = err.message || 'Login failed. Please check your credentials.';
       notificationService.showAuthError(errorMessage);
       
       // Don't clear auth data on login failure - let other users stay logged in
@@ -170,14 +164,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (name: string, email: string, password: string, roles: ('driver' | 'owner')[]): Promise<string> => {
     setIsLoading(true);
     try {
-      const res = await axios.post('/api/auth/register', { name, email, password, roles });
-      const token = res.data.token;
+      const response = await apiService.register({ name, email, password, roles });
+      const { token, user: userData } = response.data;
+      
       localStorage.setItem('token', token);
       localStorage.setItem('rememberMe', 'true'); // Auto-remember on registration
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      // Use user data from register response directly
-      const userData = res.data.user;
       setUser(userData);
       
       // Don't show welcome notification on registration - redirect to login is enough feedback
@@ -191,7 +182,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error("AuthContext - Register error:", err.response?.data || err.message);
       
       // Show contextual error notification
-      const errorMessage = err.response?.data?.msg || err.response?.data?.message || 'Registration failed. Please try again.';
+      const errorMessage = err.message || 'Registration failed. Please try again.';
       notificationService.showAuthError(errorMessage);
       
       clearAuthData();
