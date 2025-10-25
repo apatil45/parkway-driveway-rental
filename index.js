@@ -9,8 +9,7 @@ const {
   generalLimiter, 
   authLimiter, 
   bookingLimiter, 
-  searchLimiter,
-  uploadLimiter 
+  searchLimiter
 } = require('./middleware/rateLimiting');
 
 const app = express();
