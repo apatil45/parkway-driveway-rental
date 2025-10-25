@@ -207,9 +207,12 @@ app.use((err, req, res, next) => {
 
 // 404 handler for API routes (handled by individual route modules)
 
-// Serve frontend for all non-API routes
+// Serve frontend static files
 const path = require('path');
 console.log('Setting up frontend routes');
+
+// Serve static files from frontend dist
+app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
 // Serve frontend for all non-API routes
 app.use((req, res, next) => {
   // Skip API routes
@@ -223,9 +226,7 @@ app.use((req, res, next) => {
   }
   
   console.log('Serving frontend for route:', req.path);
-  const indexPath = process.env.NODE_ENV === 'production' 
-    ? path.resolve(__dirname, 'public', 'index.html')
-    : path.resolve(__dirname, 'frontend', 'dist', 'index.html');
+  const indexPath = path.resolve(__dirname, 'frontend', 'dist', 'index.html');
   res.sendFile(indexPath);
 });
 
