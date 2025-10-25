@@ -20,7 +20,11 @@
     "socket.io": "^4.7.4",
     "redis": "^4.6.10",
     "axios": "^1.6.2",
-    "express-validator": "^7.0.1"
+    "express-validator": "^7.0.1",
+    "node-geocoder": "^4.2.0",
+    "cloudinary": "^1.41.0",
+    "sharp": "^0.33.0",
+    "stripe": "^14.9.0"
   },
   "engines": {
     "node": ">=18.0.0"
