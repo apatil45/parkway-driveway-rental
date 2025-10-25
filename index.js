@@ -190,8 +190,10 @@ app.use('/api/auth', authLimiter, require('./routes/authSupabase'));
 // app.use('/api/bookings', bookingLimiter, require('./routes/bookingsPG'));
 // app.use('/api/driveways', searchLimiter, require('./routes/drivewaysPG'));
 // app.use('/api/payments', require('./routes/paymentsPG'));
-app.use('/api/geocoding', require('./routes/geocoding'));
-app.use('/api/upload', uploadLimiter, require('./routes/upload'));
+// Temporarily disabled - requires node-geocoder dependency
+// app.use('/api/geocoding', require('./routes/geocoding'));
+// Temporarily disabled - requires cloudinary and sharp dependencies
+// app.use('/api/upload', uploadLimiter, require('./routes/upload'));
 app.use('/api/errors', require('./routes/errors')); // Add error reporting route
 // app.use('/api/notifications', require('./routes/notificationsPG')); // Add notifications route
 
