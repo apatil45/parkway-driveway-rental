@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "echo 'Build completed'",
+    "copy-frontend": "node scripts/copy-frontend.js",
     "start": "node index.js"
   },
   "dependencies": {

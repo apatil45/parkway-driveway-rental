@@ -211,8 +211,8 @@ app.use((err, req, res, next) => {
 const path = require('path');
 console.log('Setting up frontend routes');
 
-// Serve static files from frontend dist
-app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 // Serve frontend for all non-API routes
 app.use((req, res, next) => {
   // Skip API routes
@@ -226,7 +226,7 @@ app.use((req, res, next) => {
   }
   
   console.log('Serving frontend for route:', req.path);
-  const indexPath = path.resolve(__dirname, 'frontend', 'dist', 'index.html');
+  const indexPath = path.resolve(__dirname, 'public', 'index.html');
   res.sendFile(indexPath);
 });
 
