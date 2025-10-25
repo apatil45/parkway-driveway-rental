@@ -4,7 +4,7 @@
   "description": "Parkway.com - Driveway Rental Platform",
   "main": "index.js",
   "scripts": {
-    "build": "echo 'Build completed'",
+    "build": "npm install && cd frontend && npm install && npm run build && cd .. && npm run copy-frontend",
     "build-all": "npm install && cd frontend && npm install && npm run build && cd .. && npm run copy-frontend",
     "copy-frontend": "node scripts/copy-frontend.js",
     "start": "node index.js"
