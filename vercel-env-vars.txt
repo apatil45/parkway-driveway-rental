@@ -1,15 +1,12 @@
-# Vercel Environment Variables
-# Copy these to your Vercel project settings
-
-# API Configuration
-VITE_API_URL=https://your-render-backend-url.onrender.com/api
-
 # Supabase Configuration
 VITE_SUPABASE_URL=https://aqjjgmmvviozmedjgxdy.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxampnbW12dmlvem1lZGpneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjA5MTUsImV4cCI6MjA3Njg5NjkxNX0.XCQQfVAGDTnDqC4W6RHMd8Rmj3C8UyFUmE-S18JVLWk
 
+# API Configuration
+VITE_API_URL=https://parkway-driveway-rental.onrender.com/api
+
 # Stripe Configuration (if using payments)
-VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_public_key_here
 
 # Google Maps API (if using maps)
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key

@@ -58,7 +58,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://js.stripe.com", "https://checkout.stripe.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.stripe.com", "https://checkout.stripe.com", "ws://localhost:3000", "wss:"],
+      connectSrc: ["'self'", "https://api.stripe.com", "https://checkout.stripe.com", "https://parkway-driveway-rental.onrender.com", "ws://localhost:3000", "wss:"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
