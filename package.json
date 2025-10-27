@@ -1,6 +1,6 @@
 {
   "name": "parkway-driveway-rental",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Parkway.com - Driveway Rental Platform",
   "main": "index.js",
   "scripts": {

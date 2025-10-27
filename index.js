@@ -168,9 +168,8 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve static files - always from frontend/dist (since frontend is deployed separately on Vercel)
-console.log('Backend: Serving API only - Frontend deployed on Vercel');
-// Note: Frontend is deployed separately on Vercel, so we only serve API routes
+// API-only backend - Frontend served by Vercel
+console.log('🚀 Backend: API-only mode - Frontend served by Vercel');
 
 // Define Routes - Supabase with rate limiting
 app.use('/api/auth', authLimiter, require('./routes/authSupabase'));
@@ -195,10 +194,8 @@ app.use((err, req, res, next) => {
 
 // 404 handler for API routes (handled by individual route modules)
 
-// Serve frontend static files
-const path = require('path');
 // API-only backend - Frontend served by Vercel
-console.log('Backend: API-only mode - Frontend served by Vercel');
+console.log('🚀 Backend: API-only mode - Frontend served by Vercel');
 
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {
