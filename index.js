@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const helmet = require('helmet');
+const cors = require('cors');
 const { supabase, db, testConnection } = require('./models/supabase'); // Supabase connection
 const SocketService = require('./services/socketService');
 const cacheService = require('./services/cacheService');
@@ -72,6 +73,19 @@ app.use(helmet({
     microphone: [],
     camera: []
   }
+}));
+
+// CORS configuration for Vercel frontend
+app.use(cors({
+  origin: [
+    'http://localhost:5173', // Vite dev server
+    'http://localhost:3000', // Local development
+    'https://*.vercel.app', // Vercel preview deployments
+    'https://your-app-name.vercel.app' // Your production Vercel domain
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Rate limiting middleware

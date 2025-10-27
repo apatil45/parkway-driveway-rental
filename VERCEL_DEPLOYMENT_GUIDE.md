@@ -1,241 +1,191 @@
-# 🚀 Parkway.com - Vercel Deployment Guide
+# 🚀 **VERCEL FRONTEND DEPLOYMENT GUIDE**
 
-**Complete step-by-step guide for deploying Parkway.com to Vercel**
-
----
-
-## 📋 **PRE-DEPLOYMENT CHECKLIST**
-
-### **✅ Required Setup:**
-- [ ] GitHub repository with your code
-- [ ] Supabase account and project
-- [ ] Vercel account
-- [ ] Stripe account (for payments)
-- [ ] Cloudinary account (for image uploads)
+## **New Architecture:**
+- **Frontend**: Vercel (React + Vite)
+- **Backend**: Render (Express.js)
+- **Database**: Supabase (PostgreSQL)
 
 ---
 
-## 🗄️ **STEP 1: SET UP SUPABASE**
+## **📋 STEP 1: VERCEL PROJECT SETUP**
 
-### **1.1 Create Supabase Project:**
-1. Go to [supabase.com](https://supabase.com)
-2. Click "Start your project"
-3. Sign up/Login with GitHub
-4. Click "New Project"
-5. Choose organization and enter project details:
-   - **Name:** `parkway-driveway-rental`
-   - **Database Password:** Generate strong password
-   - **Region:** Choose closest to your users
-6. Click "Create new project"
-7. Wait for project to be ready (2-3 minutes)
-
-### **1.2 Set up Database Schema:**
-1. Go to your Supabase project dashboard
-2. Click "SQL Editor" in the left sidebar
-3. Click "New query"
-4. Copy and paste the contents of `supabase-schema.sql`
-5. Click "Run" to execute the schema
-6. Verify tables are created in "Table Editor"
-
-### **1.3 Get Supabase Credentials:**
-1. Go to "Settings" → "API"
-2. Copy the following values:
-   - **Project URL** (e.g., `https://your-project.supabase.co`)
-   - **Anon/Public Key** (starts with `eyJ...`)
-
----
-
-## 🔧 **STEP 2: CONFIGURE ENVIRONMENT VARIABLES**
-
-### **2.1 Create Frontend Environment File:**
-Create `frontend/.env.local` with:
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_API_URL=/api
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_key
-```
-
-### **2.2 Update API Routes:**
-The API routes are already configured for Supabase. Verify these files exist:
-- `api/auth/register.js`
-- `api/auth/login.js`
-- `api/auth/user.js`
-- `api/health.js`
-- `api/driveways/index.js`
-- `api/bookings/index.js`
-
----
-
-## 🚀 **STEP 3: DEPLOY TO VERCEL**
-
-### **3.1 Connect to Vercel:**
+### **1.1 Create Vercel Account**
 1. Go to [vercel.com](https://vercel.com)
-2. Sign up/Login with GitHub
-3. Click "New Project"
-4. Import your GitHub repository
-5. Configure project settings:
-   - **Framework Preset:** Vite
-   - **Root Directory:** `frontend`
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
+2. Sign up with GitHub account
+3. Connect your GitHub repository
 
-### **3.2 Set Environment Variables in Vercel:**
-In your Vercel project dashboard:
-1. Go to "Settings" → "Environment Variables"
-2. Add the following variables:
-
-```
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-CLOUDINARY_CLOUD_NAME=your_cloudinary_name
-CLOUDINARY_API_KEY=your_cloudinary_key
-CLOUDINARY_API_SECRET=your_cloudinary_secret
-OPENCAGE_API_KEY=your_opencage_key
-```
-
-### **3.3 Deploy:**
-1. Click "Deploy" in Vercel
-2. Wait for build to complete (5-10 minutes)
-3. Your app will be available at `https://your-project.vercel.app`
+### **1.2 Import Project**
+1. Click "New Project"
+2. Select your `driveway-rental` repository
+3. Choose "Import"
 
 ---
 
-## 🧪 **STEP 4: TEST DEPLOYMENT**
+## **📋 STEP 2: VERCEL CONFIGURATION**
 
-### **4.1 Health Check:**
-Visit: `https://your-project.vercel.app/api/health`
-Expected response:
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-10-24T...",
-  "uptime": 123.45,
-  "environment": "production"
-}
-```
+### **2.1 Build Settings**
+Vercel will auto-detect these settings from `vercel.json`:
+- **Framework Preset**: Vite
+- **Build Command**: `cd frontend && npm install && npm run build`
+- **Output Directory**: `frontend/dist`
+- **Install Command**: `cd frontend && npm install`
 
-### **4.2 Test API Endpoints:**
+### **2.2 Environment Variables**
+Add these in Vercel Dashboard → Settings → Environment Variables:
+
 ```bash
-# Test registration
-curl -X POST https://your-project.vercel.app/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test User","email":"test@example.com","password":"testpass123"}'
+# API Configuration
+VITE_API_URL=https://your-render-backend-url.onrender.com/api
 
-# Test login
-curl -X POST https://your-project.vercel.app/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"testpass123"}'
+# Supabase Configuration
+VITE_SUPABASE_URL=https://aqjjgmmvviozmedjgxdy.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxampnbW12dmlvem1lZGpneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjA5MTUsImV4cCI6MjA3Njg5NjkxNX0.XCQQfVAGDTnDqC4W6RHMd8Rmj3C8UyFUmE-S18JVLWk
 
-# Test driveways
-curl https://your-project.vercel.app/api/driveways
+# Stripe Configuration (if using payments)
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+
+# Google Maps API (if using maps)
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
-### **4.3 Test Frontend:**
+---
+
+## **📋 STEP 3: RENDER BACKEND CONFIGURATION**
+
+### **3.1 Update CORS Settings**
+Your backend is already configured to accept requests from Vercel domains.
+
+### **3.2 Environment Variables**
+Ensure your Render backend has these environment variables:
+```bash
+NODE_ENV=production
+SUPABASE_URL=https://aqjjgmmvviozmedjgxdy.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxampnbW12dmlvem1lZGpneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjA5MTUsImV4cCI6MjA3Njg5NjkxNX0.XCQQfVAGDTnDqC4W6RHMd8Rmj3C8UyFUmE-S18JVLWk
+JWT_SECRET=supersecretjwtkey
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=supersecretjwtrefreshkey
+```
+
+---
+
+## **📋 STEP 4: DEPLOYMENT PROCESS**
+
+### **4.1 Deploy to Vercel**
+1. Push your changes to GitHub
+2. Vercel will automatically deploy
+3. Get your Vercel URL (e.g., `https://your-app-name.vercel.app`)
+
+### **4.2 Update Backend CORS**
+1. Go to your Render backend dashboard
+2. Update the CORS origin in `index.js`:
+```javascript
+origin: [
+  'http://localhost:5173', // Vite dev server
+  'http://localhost:3000', // Local development
+  'https://*.vercel.app', // Vercel preview deployments
+  'https://your-actual-app-name.vercel.app' // Your actual Vercel domain
+]
+```
+
+### **4.3 Update Frontend API URL**
+1. In Vercel Dashboard → Settings → Environment Variables
+2. Update `VITE_API_URL` to your actual Render backend URL
+
+---
+
+## **📋 STEP 5: TESTING**
+
+### **5.1 Test Frontend**
 1. Visit your Vercel URL
-2. Try user registration
-3. Try user login
-4. Test driveway listing
-5. Test booking creation
+2. Test login/registration
+3. Test all major features
+
+### **5.2 Test Backend Integration**
+1. Check browser network tab
+2. Verify API calls go to Render backend
+3. Test authentication flow
 
 ---
 
-## 🔧 **STEP 5: CONFIGURE ADDITIONAL SERVICES**
+## **📋 STEP 6: CUSTOM DOMAIN (OPTIONAL)**
 
-### **5.1 Stripe Configuration:**
-1. Go to [stripe.com](https://stripe.com)
-2. Get your API keys from Dashboard
-3. Add to Vercel environment variables
-4. Update webhook endpoints if needed
+### **6.1 Add Custom Domain**
+1. Go to Vercel Dashboard → Settings → Domains
+2. Add your custom domain
+3. Update DNS records as instructed
 
-### **5.2 Cloudinary Configuration:**
-1. Go to [cloudinary.com](https://cloudinary.com)
-2. Get your cloud credentials
-3. Add to Vercel environment variables
-
-### **5.3 OpenCage Geocoding:**
-1. Go to [opencagedata.com](https://opencagedata.com)
-2. Get your API key
-3. Add to Vercel environment variables
-
----
-
-## 📊 **STEP 6: MONITORING AND MAINTENANCE**
-
-### **6.1 Vercel Dashboard:**
-- Monitor deployments
-- Check function logs
-- Monitor performance metrics
-- Set up alerts for failures
-
-### **6.2 Supabase Dashboard:**
-- Monitor database performance
-- Check authentication logs
-- Monitor real-time connections
-- Set up database backups
-
-### **6.3 Application Monitoring:**
-- Health check endpoint: `/api/health`
-- Error tracking in Vercel logs
-- Performance monitoring
-- User analytics
+### **6.2 Update CORS**
+Update backend CORS to include your custom domain:
+```javascript
+origin: [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://*.vercel.app',
+  'https://your-custom-domain.com'
+]
+```
 
 ---
 
-## 🎯 **SUCCESS CRITERIA**
+## **🎯 BENEFITS OF THIS SETUP**
 
-Your deployment is successful when:
-- ✅ **Health check returns "healthy"**
-- ✅ **Frontend loads without errors**
-- ✅ **User registration works**
-- ✅ **User login works**
-- ✅ **Driveway listing works**
-- ✅ **Booking creation works**
-- ✅ **All API endpoints respond correctly**
+### **✅ Frontend (Vercel)**
+- **Global CDN** - Faster loading worldwide
+- **Edge Functions** - Serverless functions at edge
+- **Automatic HTTPS** - SSL certificates
+- **Preview Deployments** - Test before production
+- **Analytics** - Built-in performance monitoring
+
+### **✅ Backend (Render)**
+- **Persistent Server** - Always running
+- **WebSocket Support** - Real-time features
+- **Database Connections** - Stable connections
+- **File Uploads** - Better for large files
+
+### **✅ Database (Supabase)**
+- **Real-time** - Live updates
+- **Authentication** - Built-in auth
+- **PostgreSQL** - Full SQL support
 
 ---
 
-## 🐛 **TROUBLESHOOTING**
+## **🚨 TROUBLESHOOTING**
 
 ### **Common Issues:**
 
-#### **Build Fails:**
-- Check Node.js version compatibility
-- Verify all dependencies in package.json
-- Check build logs for specific errors
+**1. CORS Errors**
+- Check backend CORS configuration
+- Verify Vercel domain is in allowed origins
 
-#### **API Routes Not Working:**
-- Verify environment variables are set
-- Check Supabase connection
-- Test individual endpoints
+**2. API Connection Issues**
+- Verify `VITE_API_URL` environment variable
+- Check Render backend is running
 
-#### **Database Connection Issues:**
-- Verify Supabase credentials
-- Check database schema is created
-- Test connection in Supabase dashboard
+**3. Authentication Issues**
+- Verify Supabase environment variables
+- Check JWT configuration
 
-#### **Frontend Not Loading:**
-- Check if build completed successfully
-- Verify static files are served
-- Check browser console for errors
+**4. Build Failures**
+- Check `vercel.json` configuration
+- Verify frontend build works locally
 
 ---
 
-## 🎉 **DEPLOYMENT COMPLETE!**
+## **📞 SUPPORT**
 
-**Your Parkway.com driveway rental platform is now live on Vercel!**
+If you encounter issues:
+1. Check Vercel deployment logs
+2. Check Render backend logs
+3. Check browser console for errors
+4. Verify environment variables
 
-### **Next Steps:**
-1. **Test all functionality** thoroughly
-2. **Set up monitoring** and alerts
-3. **Configure custom domain** (optional)
-4. **Set up SSL certificates** (automatic with Vercel)
-5. **Plan for scaling** as your user base grows
+---
 
-### **Your Application URLs:**
-- **Frontend:** `https://your-project.vercel.app`
-- **API:** `https://your-project.vercel.app/api`
-- **Health Check:** `https://your-project.vercel.app/api/health`
+## **🎉 SUCCESS!**
 
-**🚀 Congratulations! Your Parkway.com application is now deployed and ready for users!** 🎉
+Once deployed, you'll have:
+- **Frontend**: `https://your-app-name.vercel.app`
+- **Backend**: `https://your-backend-name.onrender.com`
+- **Database**: Supabase (managed)
+
+Your app is now running on a **professional, scalable architecture**! 🚀
