@@ -81,7 +81,7 @@ app.use(cors({
     'http://localhost:5173', // Vite dev server
     'http://localhost:3000', // Local development
     'https://*.vercel.app', // Vercel preview deployments
-    'https://your-app-name.vercel.app' // Your production Vercel domain
+    'https://parkwayai.vercel.app' // Your production Vercel domain
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
