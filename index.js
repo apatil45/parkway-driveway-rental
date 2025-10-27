@@ -168,34 +168,9 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve static files - production vs development
-if (process.env.NODE_ENV === 'production') {
-  console.log('Production: Serving from public directory');
-  app.use(express.static('public', {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      } else if (path.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
-      } else if (path.endsWith('.json')) {
-        res.setHeader('Content-Type', 'application/json');
-      }
-    }
-  }));
-} else {
-  console.log('Development: Serving from frontend/dist directory');
-  app.use(express.static('frontend/dist', {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      } else if (path.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
-      } else if (path.endsWith('.json')) {
-        res.setHeader('Content-Type', 'application/json');
-      }
-    }
-  }));
-}
+// Serve static files - always from frontend/dist (since frontend is deployed separately on Vercel)
+console.log('Backend: Serving API only - Frontend deployed on Vercel');
+// Note: Frontend is deployed separately on Vercel, so we only serve API routes
 
 // Define Routes - Supabase with rate limiting
 app.use('/api/auth', authLimiter, require('./routes/authSupabase'));
@@ -222,26 +197,8 @@ app.use((err, req, res, next) => {
 
 // Serve frontend static files
 const path = require('path');
-console.log('Setting up frontend routes');
-
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
-// Serve frontend for all non-API routes
-app.use((req, res, next) => {
-  // Skip API routes
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
-  
-  // Skip static file requests
-  if (req.path.includes('.')) {
-    return next();
-  }
-  
-  console.log('Serving frontend for route:', req.path);
-  const indexPath = path.resolve(__dirname, 'public', 'index.html');
-  res.sendFile(indexPath);
-});
+// API-only backend - Frontend served by Vercel
+console.log('Backend: API-only mode - Frontend served by Vercel');
 
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {

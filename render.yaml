@@ -3,7 +3,7 @@ services:
     name: parkway-backend
     env: node
     plan: starter
-    buildCommand: npm run build
+    buildCommand: npm install
     startCommand: node index.js
     envVars:
       - key: NODE_ENV
