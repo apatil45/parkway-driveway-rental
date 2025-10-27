@@ -14,11 +14,7 @@ const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  // Removed conflicting useEffect - navigation is handled in handleSubmit
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -63,8 +59,15 @@ const Login: React.FC = () => {
     try {
       const userRole = await login(formData.email, formData.password, formData.rememberMe);
       
-      // Navigate to homepage first, then user can choose their dashboard
-      navigate('/', { replace: true });
+      // Navigate directly to appropriate dashboard based on user role
+      if (userRole === 'driver') {
+        navigate('/driver-dashboard', { replace: true });
+      } else if (userRole === 'owner') {
+        navigate('/owner-dashboard', { replace: true });
+      } else {
+        // Fallback to homepage if role is unclear
+        navigate('/', { replace: true });
+      }
     } catch (error) {
       console.error('Login error:', error);
     } finally {

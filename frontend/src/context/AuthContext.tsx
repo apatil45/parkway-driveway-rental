@@ -103,6 +103,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loadInitialUser();
   }, []);
 
+  // Removed redirect logic from AuthContext to avoid initialization conflicts
+
   const setupTokenRefresh = () => {
     const refreshInterval = setInterval(async () => {
       if (user && localStorage.getItem('rememberMe') === 'true') {
@@ -140,6 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('AuthContext - Login successful, user:', userData);
       setUser(userData);
+      setLastUserValidation(Date.now()); // Set validation timestamp
 
       // Set up token refresh if remember me is enabled
       if (rememberMe) {
@@ -203,10 +206,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const refreshToken = async (): Promise<boolean> => {
     try {
-      const res = await axios.post('/api/auth/refresh');
-      const token = res.data.token;
+      const response = await apiService.refreshToken();
+      const token = response.data.token;
       localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       return true;
     } catch (err) {
       console.error("Token refresh failed:", err);
@@ -227,14 +229,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     try {
-      const res = await axios.get('/api/auth/user');
-      setUser(res.data);
+      const response = await apiService.getUser();
+      setUser(response.data);
       setLastUserValidation(now);
       console.log('AuthContext - User validated and cached');
       return true;
     } catch (err: any) {
       console.error("User validation failed:", err);
-      if (err.response?.status === 401) {
+      if (err.statusCode === 401) {
         clearAuthData();
       }
       return false;
@@ -247,7 +249,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     const token = localStorage.getItem('token');
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       const success = await validateUserCached();
       if (success) {
         console.log('AuthContext - Manual retry successful');

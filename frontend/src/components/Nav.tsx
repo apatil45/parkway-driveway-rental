@@ -13,11 +13,13 @@ const Nav: React.FC = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [focusedElement, setFocusedElement] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
         setShowProfileDropdown(false);
       }
     };
@@ -181,15 +183,27 @@ const Nav: React.FC = () => {
               >
                 Help
               </Link>
+              
+              <Link 
+                to="/contact" 
+                className={`btn ${isActiveRoute('/contact') ? 'btn-primary' : 'btn-ghost'} btn-sm`}
+                role="menuitem"
+                aria-current={isActiveRoute('/contact') ? 'page' : undefined}
+                onFocus={() => setFocusedElement('contact')}
+                onBlur={() => setFocusedElement(null)}
+              >
+                Contact
+              </Link>
             </div>
 
-            {/* User Actions */}
+            {/* Right Side Actions */}
             <div className="flex items-center space-x-2 sm:space-x-4 ml-auto" id="user-menu">
               {isAuthenticated && <NotificationCenter />}
               {isAuthenticated ? (
                 <>
                   <RoleSwitcher />
-                  <div className="relative" ref={dropdownRef}>
+                  {/* Desktop User Dropdown */}
+                  <div className="hidden lg:block relative" ref={dropdownRef}>
                     <button 
                       className="btn btn-ghost btn-sm flex items-center space-x-2"
                       onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -247,6 +261,54 @@ const Nav: React.FC = () => {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Mobile User Dropdown */}
+                  <div className="lg:hidden relative" ref={mobileDropdownRef}>
+                    <button 
+                      className="btn btn-ghost btn-sm p-2"
+                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                      aria-expanded={showProfileDropdown}
+                      aria-haspopup="true"
+                      aria-label={`User menu for ${user?.name || 'User'}. ${showProfileDropdown ? 'Close' : 'Open'} menu`}
+                      onFocus={() => setFocusedElement('mobile-profile-button')}
+                      onBlur={() => setFocusedElement(null)}
+                    >
+                      <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                        {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    </button>
+
+                    {showProfileDropdown && (
+                      <div 
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+                        role="menu"
+                        aria-label="User menu"
+                      >
+                        <Link
+                          to="/profile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                          role="menuitem"
+                          onClick={() => setShowProfileDropdown(false)}
+                          onFocus={() => setFocusedElement('mobile-profile-link')}
+                          onBlur={() => setFocusedElement(null)}
+                        >
+                          Profile
+                        </Link>
+                        
+                        <div className="border-t border-gray-100" role="separator"></div>
+                        
+                        <button
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                          role="menuitem"
+                          onClick={handleLogout}
+                          onFocus={() => setFocusedElement('mobile-logout-button')}
+                          onBlur={() => setFocusedElement(null)}
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <div className="flex items-center space-x-3">
@@ -258,33 +320,33 @@ const Nav: React.FC = () => {
                   </Link>
                 </div>
               )}
+              
+              {/* Mobile Hamburger Menu Button */}
+              <button
+                className="lg:hidden btn btn-ghost btn-sm p-2"
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                aria-expanded={showMobileMenu}
+                aria-haspopup="true"
+                aria-label={`${showMobileMenu ? 'Close' : 'Open'} mobile menu`}
+                onFocus={() => setFocusedElement('mobile-menu-button')}
+                onBlur={() => setFocusedElement(null)}
+              >
+                <svg 
+                  className="w-6 h-6" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  {showMobileMenu ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
             </div>
 
-            {/* Mobile Menu Toggle */}
-            <button 
-              className="lg:hidden btn btn-ghost btn-sm"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              aria-expanded={showMobileMenu}
-              aria-controls="mobile-menu"
-              aria-label={`${showMobileMenu ? 'Close' : 'Open'} mobile menu`}
-              onFocus={() => setFocusedElement('mobile-menu-toggle')}
-              onBlur={() => setFocusedElement(null)}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                {showMobileMenu ? (
-                  <>
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </>
-                ) : (
-                  <>
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                  </>
-                )}
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -390,6 +452,23 @@ const Nav: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Help
+                  </Link>
+                  
+                  <Link 
+                    to="/contact" 
+                    className={`flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors duration-150 ${
+                      isActiveRoute('/contact') 
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    role="menuitem"
+                    aria-current={isActiveRoute('/contact') ? 'page' : undefined}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Contact
                   </Link>
                   
                   {/* Divider */}

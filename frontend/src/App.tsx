@@ -1,10 +1,11 @@
 // CSS imports removed - now using Tailwind CSS
-import React, { useState, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import React, { useState, Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary'; // Import the ErrorBoundary component
 import PrivateRoute from './components/PrivateRoute';
 import Nav from "./components/Nav"; // Import the navigation component
 import LoadingSpinner from './components/LoadingSpinner';
+import { useAuth } from './context/AuthContext';
 
 // Lazy load components for code splitting
 const Register = lazy(() => import('./components/Register'));
@@ -29,6 +30,30 @@ import ResponsiveDesignTester from './components/ResponsiveDesignTester';
 import ResponsiveTestPage from './components/ResponsiveTestPage';
 // ToastContainer removed - using ProfessionalNotificationSystem instead
 
+// Component to handle authentication-based redirects
+const AuthRedirectHandler: React.FC = () => {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && user && isAuthenticated) {
+      const currentPath = location.pathname;
+      
+      // Only redirect if user is on home page or profile page
+      if (currentPath === '/' || currentPath === '/profile') {
+        // Determine appropriate dashboard based on user roles
+        if (user.roles?.includes('driver')) {
+          window.location.replace('/driver-dashboard');
+        } else if (user.roles?.includes('owner')) {
+          window.location.replace('/owner-dashboard');
+        }
+      }
+    }
+  }, [isLoading, user, isAuthenticated, location.pathname]);
+
+  return null; // This component doesn't render anything
+};
+
 const App: React.FC = () => {
   const [showResponsiveTester, setShowResponsiveTester] = useState(false);
 
@@ -38,6 +63,7 @@ const App: React.FC = () => {
         <AuthProvider>
           <BookingProvider>
             <Router>
+          <AuthRedirectHandler />
           <PerformanceOptimizer />
           <Nav />
           <ProfessionalNotificationSystem />

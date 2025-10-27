@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ParkwaySearchForm from './ParkwaySearchForm';
 import EnhancedParkwayResults from './EnhancedParkwayResults';
 import EnhancedMapView from './EnhancedMapView';
@@ -7,7 +7,7 @@ import QuickActions from './QuickActions';
 import ProfessionalDrivewayList from './ProfessionalDrivewayList';
 import UnifiedMapView from './UnifiedMapView';
 import { useBooking } from '../context/BookingContext';
-import { useRealtimeUpdates } from '../hooks/useRealtimeUpdates';
+// import { useRealtimeUpdates } from '../hooks/useRealtimeUpdates'; // Temporarily disabled
 import { Driveway, UserLocation } from '../types/map';
 // CSS import removed - now using Tailwind CSS
 
@@ -33,173 +33,118 @@ const ParkwayInterface: React.FC = () => {
   const [isLoadingDriveways, setIsLoadingDriveways] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [centerMapOnDriveway, setCenterMapOnDriveway] = useState<((driveway: Driveway) => void) | null>(null);
+  const isLoadingRef = useRef(false);
 
-  // Real-time update handlers
-  const handleDrivewayUpdate = useCallback((updatedDriveway: Driveway) => {
-    console.log('🔄 Updating driveway from real-time:', updatedDriveway);
-    setDriveways(prevDriveways => 
-      prevDriveways.map(driveway => 
-        driveway.id === updatedDriveway.id ? { ...driveway, ...updatedDriveway } : driveway
-      )
-    );
-    setLastUpdateTime(new Date());
-  }, []);
-
-  const handleAvailabilityChange = useCallback((drivewayId: string, isAvailable: boolean) => {
-    console.log('🔄 Updating availability from real-time:', { drivewayId, isAvailable });
-    setDriveways(prevDriveways => 
-      prevDriveways.map(driveway => 
-        driveway.id === drivewayId ? { ...driveway, isAvailable } : driveway
-      )
-    );
-    setLastUpdateTime(new Date());
-  }, []);
-
-  const handleBookingUpdate = useCallback((booking: any) => {
-    console.log('📅 Booking update received:', booking);
-    // Refresh driveways to get updated availability
-    if (userLocation) {
-      loadAllAvailableDriveways(userLocation.lat, userLocation.lng, true);
-    }
-    setLastUpdateTime(new Date());
-  }, [userLocation]);
-
-  const handleRealtimeError = useCallback((error: any) => {
-    console.error('❌ Real-time service error:', error);
-    // Could show a toast notification here
-  }, []);
-
-  // Initialize real-time updates with error handling
-  let isConnected = false;
-  // Temporarily disable real-time updates to fix initialization error
-  // try {
-  //   const realtimeResult = useRealtimeUpdates({
-  //     onDrivewayUpdate: handleDrivewayUpdate,
-  //     onDrivewayAvailabilityChange: handleAvailabilityChange,
-  //     onBookingUpdate: handleBookingUpdate,
-  //     onError: handleRealtimeError
-  //   });
-  //   isConnected = realtimeResult.isConnected;
-  // } catch (error) {
-  //   console.error('❌ Failed to initialize real-time updates:', error);
-  //   // Continue without real-time updates
-  // }
-
-  // Load all available driveways by default
-  const loadAllAvailableDriveways = async (userLat?: number, userLng?: number, isRefresh: boolean = false) => {
-    // Prevent multiple simultaneous calls
-    if (isLoadingDriveways && !isRefresh) {
-      console.log('⏳ Already loading driveways, skipping...');
-      return;
-    }
-    
+  // Define loadDriveways as a useCallback to avoid temporal dead zone issues
+  const loadDriveways = useCallback(async (lat?: number, lng?: number) => {
     try {
       setIsLoadingDriveways(true);
-      if (isRefresh) {
-        setIsRefreshing(true);
-      }
-      console.log('🔄 Loading all available driveways...', { userLat, userLng, isRefresh });
-      
-      // Use current time for "Park Now" mode to show all currently available slots
-      const now = new Date();
-      const currentTime = now.toLocaleTimeString('en-US', { 
-        hour12: false, 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-      const currentDate = now.toISOString().split('T')[0];
+      console.log('🔄 Loading driveways...', { lat, lng });
       
       const searchParams = new URLSearchParams({
         searchMode: 'now',
-        duration: '120' // 2 hours default
-      });
-      
-      // Add user location if available
-      if (userLat && userLng) {
-        searchParams.append('latitude', userLat.toString());
-        searchParams.append('longitude', userLng.toString());
-      } else {
-        // Default to Jersey City area
-        searchParams.append('latitude', '40.7178');
-        searchParams.append('longitude', '-74.0431');
-      }
-      
-      const response = await fetch(`/api/driveways/search?${searchParams}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        duration: '120'
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Loaded all available driveways:', {
-          count: data.driveways.length,
-          searchMode: data.searchMode,
-          debug: data.debug,
-          userLocation: data.userLocation
-        });
-        setDriveways(data.driveways || []);
+      if (lat && lng) {
+        searchParams.append('lat', lat.toString());
+        searchParams.append('lng', lng.toString());
+        searchParams.append('radius', '10');
+      }
+
+      const response = await fetch(`/api/driveways?${searchParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.driveways) {
+        console.log('✅ Loaded driveways:', data.driveways.length);
+        setDriveways(data.driveways);
         setSearchError(null);
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to load driveways');
+        console.log('⚠️ No driveways found');
+        setDriveways([]);
+        setSearchError(data.error || 'No driveways found');
       }
+      
     } catch (error) {
-      console.error('❌ Error loading all driveways:', error);
-      setSearchError('Failed to load available parking spots');
+      console.error('❌ Error loading driveways:', error);
+      setSearchError('Failed to load driveways. Please try again.');
       setDriveways([]);
     } finally {
       setIsLoadingDriveways(false);
-      if (isRefresh) {
-        setIsRefreshing(false);
-      }
     }
-  };
+  }, []); // Empty dependency array
 
-  // Refresh available spots
-  const refreshAvailableSpots = () => {
+  // Define refresh function as useCallback
+  const refreshAvailableSpots = useCallback(() => {
     if (userLocation) {
-      loadAllAvailableDriveways(userLocation.lat, userLocation.lng, true);
+      loadDriveways(userLocation.lat, userLocation.lng);
     }
-  };
+  }, [userLocation, loadDriveways]);
 
-  // Get user location and load all driveways on component mount
+  // Simple connection status (always true for now since we disabled realtime)
+  const isConnected = true;
+
+  // useEffect to load driveways on mount
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          setUserLocation(location);
-          // Load all available driveways with user location
-          loadAllAvailableDriveways(location.lat, location.lng);
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-          // Set default location (Jersey City) and load driveways
-          const defaultLocation = {
-            lat: 40.7178,
-            lng: -74.0431
-          };
-          setUserLocation(defaultLocation);
-          loadAllAvailableDriveways(defaultLocation.lat, defaultLocation.lng);
-        }
-      );
-    } else {
-      // Set default location (Jersey City) and load driveways
-      const defaultLocation = {
-        lat: 40.7178,
-        lng: -74.0431
-      };
-      setUserLocation(defaultLocation);
-      loadAllAvailableDriveways(defaultLocation.lat, defaultLocation.lng);
-    }
-  }, []);
+    console.log('🚀 ParkwayInterface mounted, loading driveways...');
+    
+    // Set default location and load driveways
+    const defaultLocation = {
+      lat: 40.7178,
+      lng: -74.0431
+    };
+    setUserLocation(defaultLocation);
+    
+    // Call loadDriveways directly instead of relying on dependency
+    const loadInitialDriveways = async () => {
+      try {
+        setIsLoadingDriveways(true);
+        console.log('🔄 Loading driveways...', { lat: defaultLocation.lat, lng: defaultLocation.lng });
+        
+        const searchParams = new URLSearchParams({
+          searchMode: 'now',
+          duration: '120',
+          lat: defaultLocation.lat.toString(),
+          lng: defaultLocation.lng.toString(),
+          radius: '10'
+        });
 
-  const handleSearch = async (data: SearchData) => {
+        const response = await fetch(`/api/driveways?${searchParams.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.driveways) {
+          console.log('✅ Loaded driveways:', data.driveways.length);
+          setDriveways(data.driveways);
+          setSearchError(null);
+        } else {
+          console.log('⚠️ No driveways found');
+          setDriveways([]);
+          setSearchError(data.error || 'No driveways found');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error loading driveways:', error);
+        setSearchError('Failed to load driveways. Please try again.');
+        setDriveways([]);
+      } finally {
+        setIsLoadingDriveways(false);
+      }
+    };
+    
+    loadInitialDriveways();
+  }, []); // Empty dependency array - only run on mount
+
+  const handleSearch = useCallback(async (data: SearchData) => {
     setSearchData(data);
     setIsSearching(true);
     setSearchError(null);
@@ -271,9 +216,9 @@ const ParkwayInterface: React.FC = () => {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [userLocation]);
 
-  const handleDrivewaySelect = (driveway: Driveway, clickPos?: { x: number; y: number }) => {
+  const handleDrivewaySelect = useCallback((driveway: Driveway, clickPos?: { x: number; y: number }) => {
     console.log('🎯 handleDrivewaySelect called with:', {
       id: driveway.id,
       address: driveway.address,
@@ -285,17 +230,17 @@ const ParkwayInterface: React.FC = () => {
     setSelectedDriveway(driveway);
     openBookingModal(driveway, clickPos);
     console.log('✅ Booking modal should now be open');
-  };
+  }, [openBookingModal]);
 
-  const handleDrivewayFocus = (driveway: Driveway) => {
+  const handleDrivewayFocus = useCallback((driveway: Driveway) => {
     // Only select for map focus, don't open booking modal
     setSelectedDriveway(driveway);
-  };
+  }, []);
 
-  const handleBookingSuccess = () => {
+  const handleBookingSuccess = useCallback(() => {
     setSelectedDriveway(null);
     // Optionally refresh the search results
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

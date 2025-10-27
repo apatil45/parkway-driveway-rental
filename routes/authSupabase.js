@@ -7,6 +7,18 @@ const { validateUserRegistration, validateUserLogin } = require('../middleware/v
 
 const router = express.Router();
 
+// @route   GET /api/auth/test
+// @desc    Test auth endpoint
+// @access  Public
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Auth endpoint working', 
+    timestamp: new Date().toISOString(),
+    status: 'healthy',
+    version: '1.0.0'
+  });
+});
+
 // @route   POST /api/auth/register
 // @desc    Register user
 // @access  Public
@@ -157,6 +169,36 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ 
       success: false,
       msg: 'Server error during login' 
+    });
+  }
+});
+
+// @route   POST /api/auth/refresh
+// @desc    Refresh JWT token
+// @access  Private
+router.post('/refresh', auth, async (req, res) => {
+  try {
+    // Generate new token with same user info
+    const token = jwt.sign(
+      { 
+        id: req.user.id, 
+        email: req.user.email,
+        roles: req.user.roles 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      msg: 'Token refreshed successfully',
+      token
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Token refresh failed' 
     });
   }
 });
