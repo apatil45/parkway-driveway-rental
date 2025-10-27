@@ -8,17 +8,47 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: SUPABASE_URL
         value: https://aqjjgmmvviozmedjgxdy.supabase.co
       - key: SUPABASE_ANON_KEY
         value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxampnbW12dmlvem1lZGpneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjA5MTUsImV4cCI6MjA3Njg5NjkxNX0.XCQQfVAGDTnDqC4W6RHMd8Rmj3C8UyFUmE-S18JVLWk
+      - key: JWT_SECRET
+        value: supersecretjwtkey
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_REFRESH_SECRET
+        value: supersecretjwtrefreshkey
       - key: STRIPE_SECRET_KEY
-        value: your_stripe_secret_key_here
+        value: sk_test_your_stripe_secret_key_here
+      - key: STRIPE_PUBLIC_KEY
+        value: pk_test_your_stripe_public_key_here
+      - key: STRIPE_WEBHOOK_SECRET
+        value: whsec_your_webhook_secret_here
       - key: CLOUDINARY_CLOUD_NAME
-        value: your_cloudinary_cloud_name_here
+        value: deguirpcb
       - key: CLOUDINARY_API_KEY
-        value: your_cloudinary_api_key_here
+        value: 969444696786874
       - key: CLOUDINARY_API_SECRET
-        value: your_cloudinary_api_secret_here
+        value: wJPxIpBFLs4Um_ewlV6eY75LZ7k
+      - key: OPENCAGE_API_KEY
+        value: 6769cc75d3b74a2ba2c3948f83710337
+      - key: FRONTEND_URL
+        value: https://parkwayai.vercel.app
+      - key: DB_POOL_MAX
+        value: 20
+      - key: DB_POOL_MIN
+        value: 5
+      - key: DB_POOL_ACQUIRE
+        value: 30000
+      - key: DB_POOL_IDLE
+        value: 10000
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: CACHE_TTL
+        value: 300
     healthCheckPath: /health
     autoDeploy: true
