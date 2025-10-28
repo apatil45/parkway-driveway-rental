@@ -25,6 +25,8 @@ class ApiService {
     this.baseURL = import.meta.env.VITE_API_URL || 
       (import.meta.env.DEV ? 'http://localhost:3000/api' : '/api');
     
+    console.log('API Service Base URL:', this.baseURL); // Debug log
+    
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 10000,
