@@ -104,7 +104,7 @@ const App: React.FC = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/help" element={<HelpCenterComponent />} />
                 <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
-                <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><TestComponent /></PrivateRoute>} />
+                <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><ParkwayInterface /></PrivateRoute>} />
                 <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
                 {/* Development-only test route */}
                 {process.env.NODE_ENV === 'development' && (

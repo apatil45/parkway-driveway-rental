@@ -8,11 +8,7 @@ import ProfessionalDrivewayList from './ProfessionalDrivewayList';
 import UnifiedMapView from './UnifiedMapView';
 import { useBooking } from '../context/BookingContext';
 import apiService from '../services/apiService';
-// import { useRealtimeUpdates } from '../hooks/useRealtimeUpdates'; // Temporarily disabled
 import { Driveway, UserLocation } from '../types/map';
-// CSS import removed - now using Tailwind CSS
-
-// Using unified types from ../types/map
 
 interface SearchData {
   location: string;
@@ -22,7 +18,7 @@ interface SearchData {
 }
 
 const ParkwayInterface: React.FC = () => {
-  // Initialize all state first to avoid temporal dead zone
+  // State declarations - all at the top
   const [activeTab, setActiveTab] = useState<'search' | 'reserve' | 'prices' | 'explore' | 'airport'>('search');
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [driveways, setDriveways] = useState<Driveway[]>([]);
@@ -35,13 +31,15 @@ const ParkwayInterface: React.FC = () => {
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [centerMapOnDriveway, setCenterMapOnDriveway] = useState<((driveway: Driveway) => void) | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Refs
   const isLoadingRef = useRef(false);
   
-  // Initialize hooks after state
+  // Hooks
   const { openBookingModal } = useBooking();
 
-  // Define loadDriveways as a useCallback to avoid temporal dead zone issues
-  const loadDriveways = useCallback(async (lat?: number, lng?: number) => {
+  // Simple function to load driveways - no useCallback to avoid circular dependencies
+  const loadDriveways = async (lat?: number, lng?: number) => {
     if (isLoadingRef.current) {
       console.log('⏳ Already loading driveways, skipping...');
       return;
@@ -88,117 +86,37 @@ const ParkwayInterface: React.FC = () => {
       setIsLoadingDriveways(false);
       isLoadingRef.current = false;
     }
-  }, []); // Empty dependency array
+  };
 
-  // Define refresh function as useCallback - avoid circular dependency
-  const refreshAvailableSpots = useCallback(() => {
+  // Simple refresh function
+  const refreshAvailableSpots = () => {
     if (userLocation) {
-      // Call loadDriveways directly to avoid circular dependency
-      const refreshDriveways = async () => {
-        if (isLoadingRef.current) return;
-        
-        try {
-          isLoadingRef.current = true;
-          setIsLoadingDriveways(true);
-          
-          const searchParams = {
-            searchMode: 'now',
-            duration: '120',
-            lat: userLocation.lat.toString(),
-            lng: userLocation.lng.toString(),
-            radius: '10'
-          };
-
-          const response = await apiService.getDriveways(searchParams);
-          
-          if (response.success && response.data) {
-            setDriveways(response.data);
-            setSearchError(null);
-            setLastUpdateTime(new Date());
-          } else {
-            setDriveways([]);
-            setSearchError(response.error || 'No driveways found');
-          }
-          
-        } catch (error) {
-          console.error('❌ Error refreshing driveways:', error);
-          setSearchError('Failed to refresh driveways. Please try again.');
-          setDriveways([]);
-        } finally {
-          setIsLoadingDriveways(false);
-          isLoadingRef.current = false;
-        }
-      };
-      
-      refreshDriveways();
+      loadDriveways(userLocation.lat, userLocation.lng);
     }
-  }, [userLocation]); // Only depend on userLocation
+  };
 
-  // Simple connection status (always true for now since we disabled realtime)
-  const isConnected = true;
-
-  // useEffect to load driveways on mount
+  // Initialize on mount
   useEffect(() => {
     console.log('🚀 ParkwayInterface mounted, loading driveways...');
     
-    // Set default location and load driveways
     const defaultLocation = {
       lat: 40.7178,
       lng: -74.0431
     };
     setUserLocation(defaultLocation);
     
-    // Load driveways directly to avoid circular dependency
-    const loadInitialDriveways = async () => {
-      if (isLoadingRef.current) return;
-      
-      try {
-        isLoadingRef.current = true;
-        setIsLoadingDriveways(true);
-        console.log('🔄 Loading driveways...', { lat: defaultLocation.lat, lng: defaultLocation.lng });
-        
-        const searchParams = {
-          searchMode: 'now',
-          duration: '120',
-          lat: defaultLocation.lat.toString(),
-          lng: defaultLocation.lng.toString(),
-          radius: '10'
-        };
-
-        const response = await apiService.getDriveways(searchParams);
-        
-        if (response.success && response.data) {
-          console.log('✅ Loaded driveways:', response.data.length);
-          setDriveways(response.data);
-          setSearchError(null);
-          setLastUpdateTime(new Date());
-        } else {
-          console.log('⚠️ No driveways found');
-          setDriveways([]);
-          setSearchError(response.error || 'No driveways found');
-        }
-        
-      } catch (error) {
-        console.error('❌ Error loading driveways:', error);
-        setSearchError('Failed to load driveways. Please try again.');
-        setDriveways([]);
-      } finally {
-        setIsLoadingDriveways(false);
-        isLoadingRef.current = false;
-      }
-    };
-    
-    loadInitialDriveways();
+    // Load driveways directly
+    loadDriveways(defaultLocation.lat, defaultLocation.lng);
     setIsInitialized(true);
-  }, []); // Empty dependency array - only run on mount
+  }, []); // Empty dependency array
 
-  const handleSearch = useCallback(async (data: SearchData) => {
+  // Search handler
+  const handleSearch = async (data: SearchData) => {
     setSearchData(data);
     setIsSearching(true);
     setSearchError(null);
 
     try {
-      // Use your existing driveway search API
       const searchParams = new URLSearchParams();
       
       if (data.coordinates) {
@@ -209,33 +127,27 @@ const ParkwayInterface: React.FC = () => {
         searchParams.append('longitude', userLocation.lng.toString());
       }
 
-      searchParams.append('radius', '1000'); // 1km radius - very local parking
-      searchParams.append('searchMode', data.searchMode);
+      searchParams.append('radius', '1000');
+      searchParams.append('searchMode', data.searchMode || 'now');
 
-      // Add mode-specific parameters
       if (data.searchMode === 'now') {
         searchParams.append('duration', data.duration?.toString() || '120');
       } else {
         if (data.date) searchParams.append('date', data.date);
         if (data.time) {
-          // For schedule mode, we need to calculate end time
-          // For now, let's assume 2 hours duration
-          const startTime = data.time;
-          const [hours, minutes] = startTime.split(':').map(Number);
+          const [hours, minutes] = data.time.split(':').map(Number);
           const startDateTime = new Date();
           startDateTime.setHours(hours, minutes, 0, 0);
-          const endDateTime = new Date(startDateTime.getTime() + (2 * 60 * 60 * 1000)); // 2 hours
+          const endDateTime = new Date(startDateTime.getTime() + (2 * 60 * 60 * 1000));
           const endTime = endDateTime.toTimeString().slice(0, 5);
           
-          searchParams.append('startTime', startTime);
+          searchParams.append('startTime', data.time);
           searchParams.append('endTime', endTime);
         }
       }
 
-      const result = await apiService.get(`/driveways/search?${searchParams}`);
-      console.log('Search API response:', result);
+      const result = await apiService.get(`/driveways/search?${searchParams.toString()}`);
       
-      // Handle enhanced response format
       let driveways = [];
       if (result.success && result.data) {
         if (Array.isArray(result.data)) {
@@ -251,46 +163,42 @@ const ParkwayInterface: React.FC = () => {
         driveways = result.data;
       }
       
-      console.log('Processed driveways:', driveways);
+      console.log('✅ Search results:', driveways.length);
       setDriveways(driveways);
+      setSearchError(null);
+      setLastUpdateTime(new Date());
+      
     } catch (error) {
-      console.error('Search error:', error);
-      setSearchError('Failed to search for parking spots. Please try again.');
+      console.error('❌ Search error:', error);
+      setSearchError('Search failed. Please try again.');
+      setDriveways([]);
     } finally {
       setIsSearching(false);
     }
-  }, [userLocation]);
+  };
 
-  const handleDrivewaySelect = useCallback((driveway: Driveway, clickPos?: { x: number; y: number }) => {
-    console.log('🎯 handleDrivewaySelect called with:', {
-      id: driveway.id,
-      address: driveway.address,
-      pricePerHour: driveway.pricePerHour,
-      isAvailable: driveway.isAvailable,
-      coordinates: driveway.coordinates,
-      clickPosition: clickPos
-    });
+  // Driveway selection handler
+  const handleDrivewaySelect = (driveway: Driveway) => {
     setSelectedDriveway(driveway);
-    openBookingModal(driveway, clickPos);
-    console.log('✅ Booking modal should now be open');
-  }, [openBookingModal]);
+    openBookingModal(driveway);
+  };
 
-  const handleDrivewayFocus = useCallback((driveway: Driveway) => {
-    // Only select for map focus, don't open booking modal
-    setSelectedDriveway(driveway);
-  }, []);
+  // Map centering handler
+  const handleCenterMapOnDriveway = (driveway: Driveway) => {
+    if (centerMapOnDriveway) {
+      centerMapOnDriveway(driveway);
+    }
+  };
 
-  const handleBookingSuccess = useCallback(() => {
-    setSelectedDriveway(null);
-    // Optionally refresh the search results
-  }, []);
+  // Connection status
+  const isConnected = true;
 
-  // Show loading state until component is fully initialized
+  // Loading state
   if (!isInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="loading-spinner mx-auto mb-4"></div>
           <p className="text-gray-600">Loading Parkway Interface...</p>
         </div>
       </div>
@@ -302,7 +210,7 @@ const ParkwayInterface: React.FC = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8">
-          {/* Search & Results Panel - responsive width */}
+          {/* Search & Results Panel */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Search Panel */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200">
@@ -349,82 +257,61 @@ const ParkwayInterface: React.FC = () => {
                 <ProfessionalDrivewayList
                   driveways={driveways}
                   onDrivewaySelect={handleDrivewaySelect}
-                  searchLocation={userLocation}
-                  selectedDriveway={selectedDriveway}
-                  onCenterMapOnDriveway={centerMapOnDriveway}
+                  isLoading={isLoadingDriveways}
+                  onCenterMapOnDriveway={handleCenterMapOnDriveway}
                 />
               )}
 
-              {!isSearching && !searchError && driveways.length === 0 && searchData && (
+              {!isSearching && !searchError && driveways.length === 0 && !isLoadingDriveways && (
                 <div className="card">
                   <div className="card-body text-center py-12">
                     <div className="text-gray-400 mb-4">
                       <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.709M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No parking spots found</h3>
-                    <p className="text-gray-600 mb-4">No parking spots found in this area.</p>
-                    <p className="text-gray-500">Try expanding your search radius or checking a different location.</p>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No parking spots found</h3>
+                    <p className="text-gray-600 mb-4">Try adjusting your search criteria or location.</p>
+                    <button 
+                      onClick={refreshAvailableSpots}
+                      className="btn btn-primary"
+                    >
+                      Refresh Results
+                    </button>
                   </div>
                 </div>
               )}
-
             </div>
           </div>
 
-          {/* Map Panel - responsive width */}
+          {/* Map Panel */}
           <div className="lg:col-span-3">
-            <div className="sticky top-20 sm:top-24">
-              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px]">
-                <div className="p-0">
-                  <div className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px] rounded-xl sm:rounded-2xl overflow-hidden">
-                    <UnifiedMapView
-                      driveways={driveways}
-                      userLocation={userLocation}
-                      onDrivewaySelect={handleDrivewaySelect}
-                      selectedDriveway={selectedDriveway}
-                      height={400}
-                      showLegend={true}
-                      showControls={true}
-                      onRefresh={refreshAvailableSpots}
-                      isRefreshing={isRefreshing}
-                      onCenterMapOnDriveway={setCenterMapOnDriveway}
-                    />
-                  </div>
-                </div>
-              </div>
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-full min-h-[600px]">
+              <UnifiedMapView
+                driveways={driveways}
+                userLocation={userLocation}
+                onDrivewaySelect={handleDrivewaySelect}
+                onCenterMapOnDriveway={setCenterMapOnDriveway}
+                isLoading={isLoadingDriveways}
+                searchData={searchData}
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Real-time Status Indicator */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg text-sm ${
-          isConnected 
-            ? 'bg-green-100 text-green-800 border border-green-200' 
-            : 'bg-red-100 text-red-800 border border-red-200'
-        }`}>
-          <div className={`w-2 h-2 rounded-full ${
-            isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-          }`}></div>
-          <span className="font-medium">
-            {isConnected ? 'Live Updates' : 'Offline'}
-          </span>
-          {lastUpdateTime && (
-            <span className="text-xs opacity-75">
-              {lastUpdateTime.toLocaleTimeString()}
-            </span>
-          )}
+        {/* Quick Actions */}
+        <div className="mt-6 sm:mt-8">
+          <QuickActions
+            onRefresh={refreshAvailableSpots}
+            isRefreshing={isRefreshing}
+            isConnected={isConnected}
+            lastUpdateTime={lastUpdateTime}
+          />
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <QuickActions />
-
-      {/* Unified Booking Modal */}
-      <UnifiedBookingModal onBookingSuccess={handleBookingSuccess} />
+      {/* Booking Modal */}
+      <UnifiedBookingModal />
     </div>
   );
 };
