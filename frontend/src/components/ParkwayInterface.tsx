@@ -22,7 +22,7 @@ interface SearchData {
 }
 
 const ParkwayInterface: React.FC = () => {
-  const { openBookingModal } = useBooking();
+  // Initialize all state first to avoid temporal dead zone
   const [activeTab, setActiveTab] = useState<'search' | 'reserve' | 'prices' | 'explore' | 'airport'>('search');
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [driveways, setDriveways] = useState<Driveway[]>([]);
@@ -36,6 +36,9 @@ const ParkwayInterface: React.FC = () => {
   const [centerMapOnDriveway, setCenterMapOnDriveway] = useState<((driveway: Driveway) => void) | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const isLoadingRef = useRef(false);
+  
+  // Initialize hooks after state
+  const { openBookingModal } = useBooking();
 
   // Define loadDriveways as a useCallback to avoid temporal dead zone issues
   const loadDriveways = useCallback(async (lat?: number, lng?: number) => {
