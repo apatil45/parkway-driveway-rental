@@ -90,12 +90,49 @@ const ParkwayInterface: React.FC = () => {
     }
   }, []); // Empty dependency array
 
-  // Define refresh function as useCallback
+  // Define refresh function as useCallback - avoid circular dependency
   const refreshAvailableSpots = useCallback(() => {
     if (userLocation) {
-      loadDriveways(userLocation.lat, userLocation.lng);
+      // Call loadDriveways directly to avoid circular dependency
+      const refreshDriveways = async () => {
+        if (isLoadingRef.current) return;
+        
+        try {
+          isLoadingRef.current = true;
+          setIsLoadingDriveways(true);
+          
+          const searchParams = {
+            searchMode: 'now',
+            duration: '120',
+            lat: userLocation.lat.toString(),
+            lng: userLocation.lng.toString(),
+            radius: '10'
+          };
+
+          const response = await apiService.getDriveways(searchParams);
+          
+          if (response.success && response.data) {
+            setDriveways(response.data);
+            setSearchError(null);
+            setLastUpdateTime(new Date());
+          } else {
+            setDriveways([]);
+            setSearchError(response.error || 'No driveways found');
+          }
+          
+        } catch (error) {
+          console.error('❌ Error refreshing driveways:', error);
+          setSearchError('Failed to refresh driveways. Please try again.');
+          setDriveways([]);
+        } finally {
+          setIsLoadingDriveways(false);
+          isLoadingRef.current = false;
+        }
+      };
+      
+      refreshDriveways();
     }
-  }, [userLocation, loadDriveways]);
+  }, [userLocation]); // Only depend on userLocation
 
   // Simple connection status (always true for now since we disabled realtime)
   const isConnected = true;
@@ -111,9 +148,12 @@ const ParkwayInterface: React.FC = () => {
     };
     setUserLocation(defaultLocation);
     
-    // Call loadDriveways directly instead of relying on dependency
+    // Load driveways directly to avoid circular dependency
     const loadInitialDriveways = async () => {
+      if (isLoadingRef.current) return;
+      
       try {
+        isLoadingRef.current = true;
         setIsLoadingDriveways(true);
         console.log('🔄 Loading driveways...', { lat: defaultLocation.lat, lng: defaultLocation.lng });
         
@@ -131,6 +171,7 @@ const ParkwayInterface: React.FC = () => {
           console.log('✅ Loaded driveways:', response.data.length);
           setDriveways(response.data);
           setSearchError(null);
+          setLastUpdateTime(new Date());
         } else {
           console.log('⚠️ No driveways found');
           setDriveways([]);
@@ -143,6 +184,7 @@ const ParkwayInterface: React.FC = () => {
         setDriveways([]);
       } finally {
         setIsLoadingDriveways(false);
+        isLoadingRef.current = false;
       }
     };
     
