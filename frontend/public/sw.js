@@ -1,5 +1,5 @@
 // Simple Service Worker for Parkway.com
-const CACHE_NAME = 'parkway-v9'; // Updated cache name to force refresh
+const CACHE_NAME = 'parkway-v10'; // Updated cache name to force refresh
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -10,6 +10,7 @@ const urlsToCache = [
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing...');
   console.log('Service Worker: Current origin:', self.location.origin);
+  console.log('Service Worker: Cache version v10 - Fresh deployment');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {

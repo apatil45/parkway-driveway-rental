@@ -6,6 +6,7 @@ import PrivateRoute from './components/PrivateRoute';
 import Nav from "./components/Nav"; // Import the navigation component
 import LoadingSpinner from './components/LoadingSpinner';
 import { useAuth } from './context/AuthContext';
+import './utils/deploymentInfo'; // Force deployment info to load
 
 // Lazy load components for code splitting
 const Register = lazy(() => import('./components/Register'));
@@ -13,6 +14,7 @@ const Login = lazy(() => import('./components/Login'));
 const OwnerDashboard = lazy(() => import('./components/OwnerDashboard'));
 const DriverDashboardNew = lazy(() => import('./components/DriverDashboardNew'));
 const ParkwayInterface = lazy(() => import('./components/ParkwayInterface'));
+const TestComponent = lazy(() => import('./components/TestComponent'));
 const HomeComponent = lazy(() => import('./components/Home'));
 const Profile = lazy(() => import('./components/Profile'));
 const HelpCenterComponent = lazy(() => import('./components/HelpCenter'));
@@ -102,7 +104,7 @@ const App: React.FC = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/help" element={<HelpCenterComponent />} />
                 <Route path="/owner-dashboard" element={<PrivateRoute allowedRoles={['owner']}><OwnerDashboard /></PrivateRoute>} />
-                <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><ParkwayInterface /></PrivateRoute>} />
+                <Route path="/driver-dashboard" element={<PrivateRoute allowedRoles={['driver']}><TestComponent /></PrivateRoute>} />
                 <Route path="/profile" element={<PrivateRoute allowedRoles={['owner', 'driver']}><Profile /></PrivateRoute>} />
                 {/* Development-only test route */}
                 {process.env.NODE_ENV === 'development' && (
