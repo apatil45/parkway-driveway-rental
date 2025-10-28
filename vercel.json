@@ -7,7 +7,7 @@
   "public": true,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!sw\\.js|manifest\\.json|favicon\\.svg|assets|icons|screenshots).*)",
       "destination": "/index.html"
     }
   ],

@@ -7,6 +7,7 @@ import QuickActions from './QuickActions';
 import ProfessionalDrivewayList from './ProfessionalDrivewayList';
 import UnifiedMapView from './UnifiedMapView';
 import { useBooking } from '../context/BookingContext';
+import apiService from '../services/apiService';
 // import { useRealtimeUpdates } from '../hooks/useRealtimeUpdates'; // Temporarily disabled
 import { Driveway, UserLocation } from '../types/map';
 // CSS import removed - now using Tailwind CSS
@@ -41,33 +42,27 @@ const ParkwayInterface: React.FC = () => {
       setIsLoadingDriveways(true);
       console.log('🔄 Loading driveways...', { lat, lng });
       
-      const searchParams = new URLSearchParams({
+      const searchParams: any = {
         searchMode: 'now',
         duration: '120'
-      });
+      };
 
       if (lat && lng) {
-        searchParams.append('lat', lat.toString());
-        searchParams.append('lng', lng.toString());
-        searchParams.append('radius', '10');
+        searchParams.lat = lat.toString();
+        searchParams.lng = lng.toString();
+        searchParams.radius = '10';
       }
 
-      const response = await fetch(`/api/driveways?${searchParams.toString()}`);
+      const response = await apiService.getDriveways(searchParams);
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.driveways) {
-        console.log('✅ Loaded driveways:', data.driveways.length);
-        setDriveways(data.driveways);
+      if (response.success && response.data) {
+        console.log('✅ Loaded driveways:', response.data.length);
+        setDriveways(response.data);
         setSearchError(null);
       } else {
         console.log('⚠️ No driveways found');
         setDriveways([]);
-        setSearchError(data.error || 'No driveways found');
+        setSearchError(response.error || 'No driveways found');
       }
       
     } catch (error) {
@@ -106,30 +101,24 @@ const ParkwayInterface: React.FC = () => {
         setIsLoadingDriveways(true);
         console.log('🔄 Loading driveways...', { lat: defaultLocation.lat, lng: defaultLocation.lng });
         
-        const searchParams = new URLSearchParams({
+        const searchParams = {
           searchMode: 'now',
           duration: '120',
           lat: defaultLocation.lat.toString(),
           lng: defaultLocation.lng.toString(),
           radius: '10'
-        });
+        };
 
-        const response = await fetch(`/api/driveways?${searchParams.toString()}`);
+        const response = await apiService.getDriveways(searchParams);
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.success && data.driveways) {
-          console.log('✅ Loaded driveways:', data.driveways.length);
-          setDriveways(data.driveways);
+        if (response.success && response.data) {
+          console.log('✅ Loaded driveways:', response.data.length);
+          setDriveways(response.data);
           setSearchError(null);
         } else {
           console.log('⚠️ No driveways found');
           setDriveways([]);
-          setSearchError(data.error || 'No driveways found');
+          setSearchError(response.error || 'No driveways found');
         }
         
       } catch (error) {
