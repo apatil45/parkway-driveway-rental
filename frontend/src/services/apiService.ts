@@ -21,11 +21,12 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    // Use localhost for development, production URL for deployment
+    // Use environment variable if set, otherwise fallback to development/production logic
     this.baseURL = import.meta.env.VITE_API_URL || 
-      (import.meta.env.DEV ? 'http://localhost:3000/api' : '/api');
+      (import.meta.env.DEV ? 'http://localhost:3000/api' : 'https://parkway-driveway-rental.onrender.com/api');
     
     console.log('API Service Base URL:', this.baseURL); // Debug log
+    console.log('Environment:', import.meta.env.MODE); // Debug log
     
     this.api = axios.create({
       baseURL: this.baseURL,
