@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useBooking } from '../context/BookingContext';
+import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 import { Driveway, UserLocation } from '../types/map';
 
@@ -23,6 +24,7 @@ const ParkwayInterface: React.FC = () => {
   
   // Hooks
   const { openBookingModal } = useBooking();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // Simple function to load driveways
   const loadDriveways = async (lat?: number, lng?: number) => {
@@ -47,14 +49,16 @@ const ParkwayInterface: React.FC = () => {
         searchParams.radius = '10';
       }
 
+      console.log('🔍 Making API call with params:', searchParams);
       const response = await apiService.getDriveways(searchParams);
+      console.log('🔍 API response:', response);
       
       if (response.success && response.data) {
         console.log('✅ Loaded driveways:', response.data.length);
         setDriveways(response.data);
         setLastUpdateTime(new Date());
       } else {
-        console.log('⚠️ No driveways found');
+        console.log('⚠️ No driveways found or API error:', response);
         setDriveways([]);
       }
       
@@ -71,20 +75,29 @@ const ParkwayInterface: React.FC = () => {
     }
   };
 
-  // Initialize on mount
+  // Initialize on mount - wait for authentication
   useEffect(() => {
-    console.log('🚀 ParkwayInterface mounted, loading driveways...');
+    console.log('🚀 ParkwayInterface mounted, checking authentication...');
+    console.log('Auth status:', { isLoading, isAuthenticated, user: !!user });
     
-    const defaultLocation = {
-      lat: 40.7178,
-      lng: -74.0431
-    };
-    setUserLocation(defaultLocation);
-    
-    // Load driveways directly
-    loadDriveways(defaultLocation.lat, defaultLocation.lng);
-    setIsInitialized(true);
-  }, []); // Empty dependency array
+    // Only proceed if authentication is complete
+    if (!isLoading && isAuthenticated && user) {
+      console.log('✅ User authenticated, loading driveways...');
+      
+      const defaultLocation = {
+        lat: 40.7178,
+        lng: -74.0431
+      };
+      setUserLocation(defaultLocation);
+      
+      // Load driveways after authentication is confirmed
+      loadDriveways(defaultLocation.lat, defaultLocation.lng);
+      setIsInitialized(true);
+    } else if (!isLoading && !isAuthenticated) {
+      console.log('❌ User not authenticated, skipping driveway load');
+      setIsInitialized(true);
+    }
+  }, [isLoading, isAuthenticated, user]); // Depend on auth state
 
   // Loading state
   if (!isInitialized) {
