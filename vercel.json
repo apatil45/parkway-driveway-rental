@@ -4,19 +4,8 @@
   "devCommand": "cd frontend && npm run dev",
   "installCommand": "npm install",
   "framework": "vite",
+  "public": true,
   "rewrites": [
-    {
-      "source": "/sw.js",
-      "destination": "/sw.js"
-    },
-    {
-      "source": "/manifest.json",
-      "destination": "/manifest.json"
-    },
-    {
-      "source": "/favicon.svg",
-      "destination": "/favicon.svg"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
@@ -42,6 +31,10 @@
         {
           "key": "Content-Type",
           "value": "application/manifest+json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
         }
       ]
     },
