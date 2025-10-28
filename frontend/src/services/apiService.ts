@@ -212,7 +212,16 @@ class ApiService {
 
   // Notification methods
   async getNotifications(): Promise<ApiResponse<any[]>> {
-    return this.get('/notifications');
+    try {
+      return await this.get('/notifications');
+    } catch (error) {
+      console.warn('Notifications API not available:', error);
+      return {
+        success: false,
+        data: [],
+        error: 'Notifications service unavailable'
+      };
+    }
   }
 
   async markNotificationAsRead(id: string): Promise<ApiResponse<any>> {

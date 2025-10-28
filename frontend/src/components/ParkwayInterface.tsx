@@ -42,7 +42,13 @@ const ParkwayInterface: React.FC = () => {
 
   // Define loadDriveways as a useCallback to avoid temporal dead zone issues
   const loadDriveways = useCallback(async (lat?: number, lng?: number) => {
+    if (isLoadingRef.current) {
+      console.log('⏳ Already loading driveways, skipping...');
+      return;
+    }
+    
     try {
+      isLoadingRef.current = true;
       setIsLoadingDriveways(true);
       console.log('🔄 Loading driveways...', { lat, lng });
       
@@ -63,10 +69,15 @@ const ParkwayInterface: React.FC = () => {
         console.log('✅ Loaded driveways:', response.data.length);
         setDriveways(response.data);
         setSearchError(null);
+        setLastUpdateTime(new Date());
       } else {
         console.log('⚠️ No driveways found');
         setDriveways([]);
         setSearchError(response.error || 'No driveways found');
+      }
+      
+      if (lat && lng) {
+        setUserLocation({ lat, lng });
       }
       
     } catch (error) {
@@ -75,6 +86,7 @@ const ParkwayInterface: React.FC = () => {
       setDriveways([]);
     } finally {
       setIsLoadingDriveways(false);
+      isLoadingRef.current = false;
     }
   }, []); // Empty dependency array
 
