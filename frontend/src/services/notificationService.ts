@@ -207,6 +207,18 @@ class NotificationService {
     });
   }
 
+  // Generic error method for backward compatibility
+  showError(message: string, title = 'Error') {
+    return this.showNotification({
+      type: 'error',
+      title,
+      message,
+      context: 'system',
+      priority: 'high',
+      duration: 7000
+    });
+  }
+
   // System notifications
   showSystemInfo(message: string, title = 'System Notice') {
     return this.showNotification({
