@@ -45,6 +45,11 @@ class NotificationApiService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = localStorage.getItem('token');
     
+    // Check if user is authenticated
+    if (!token) {
+      throw new Error('User not authenticated');
+    }
+    
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
@@ -55,6 +60,9 @@ class NotificationApiService {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -62,14 +70,24 @@ class NotificationApiService {
   }
 
   async getNotifications(type?: string, unreadOnly?: boolean): Promise<NotificationResponse> {
-    const params = new URLSearchParams();
-    if (type && type !== 'all') params.append('type', type);
-    if (unreadOnly) params.append('unread_only', 'true');
+    try {
+      const params = new URLSearchParams();
+      if (type && type !== 'all') params.append('type', type);
+      if (unreadOnly) params.append('unread_only', 'true');
 
-    const queryString = params.toString();
-    const endpoint = queryString ? `?${queryString}` : '';
+      const queryString = params.toString();
+      const endpoint = queryString ? `?${queryString}` : '';
 
-    return this.makeRequest<NotificationResponse>(endpoint);
+      return await this.makeRequest<NotificationResponse>(endpoint);
+    } catch (error) {
+      console.warn('Notifications API not available:', error);
+      // Return empty response instead of throwing
+      return {
+        success: false,
+        notifications: [],
+        error: 'Notifications service unavailable'
+      };
+    }
   }
 
   async markAsRead(notificationId: string): Promise<{ success: boolean; message: string }> {
