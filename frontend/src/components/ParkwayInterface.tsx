@@ -16,6 +16,7 @@ const ParkwayInterface: React.FC = () => {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [isLoadingDriveways, setIsLoadingDriveways] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   
   // Refs
   const isLoadingRef = useRef(false);
