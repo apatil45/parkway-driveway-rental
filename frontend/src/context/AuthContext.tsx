@@ -80,6 +80,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (token) {
         try {
+          // Check if token is expired before making API call
+          const tokenData = JSON.parse(atob(token.split('.')[1]));
+          const now = Date.now() / 1000;
+          
+          if (tokenData.exp && tokenData.exp < now) {
+            // Token is expired, clear it
+            clearAuthData();
+            return;
+          }
+          
           const response = await apiService.getUser();
           setUser(response.data);
           setLastUserValidation(Date.now());
