@@ -196,7 +196,7 @@ console.log('🚀 Backend: API-only mode - Frontend served by Vercel');
 app.use('/api/auth', authLimiter, require('./routes/authSupabase'));
 app.use('/api/bookings', bookingLimiter, require('./routes/bookingsSupabase'));
 app.use('/api/driveways', searchLimiter, require('./routes/drivewaysSupabase'));
-// app.use('/api/payments', require('./routes/paymentsPG')); // TODO: Create Supabase version
+app.use('/api/payments', require('./routes/paymentsSupabase'));
 // Temporarily disabled - requires node-geocoder dependency
 // app.use('/api/geocoding', require('./routes/geocoding'));
 // Temporarily disabled - requires cloudinary and sharp dependencies
