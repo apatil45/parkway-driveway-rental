@@ -5,10 +5,34 @@
   "installCommand": "npm install",
   "framework": "vite",
   "public": true,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!sw\\.js|manifest\\.json|favicon\\.svg|assets|icons|screenshots).*)",
-      "destination": "/index.html"
+      "src": "/sw.js",
+      "dest": "/sw.js"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/favicon.svg",
+      "dest": "/favicon.svg"
+    },
+    {
+      "src": "/icons/(.*)",
+      "dest": "/icons/$1"
+    },
+    {
+      "src": "/screenshots/(.*)",
+      "dest": "/screenshots/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [

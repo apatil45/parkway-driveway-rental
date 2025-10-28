@@ -34,6 +34,7 @@ const ParkwayInterface: React.FC = () => {
   const [isLoadingDriveways, setIsLoadingDriveways] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [centerMapOnDriveway, setCenterMapOnDriveway] = useState<((driveway: Driveway) => void) | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const isLoadingRef = useRef(false);
 
   // Define loadDriveways as a useCallback to avoid temporal dead zone issues
@@ -131,6 +132,7 @@ const ParkwayInterface: React.FC = () => {
     };
     
     loadInitialDriveways();
+    setIsInitialized(true);
   }, []); // Empty dependency array - only run on mount
 
   const handleSearch = useCallback(async (data: SearchData) => {
@@ -230,6 +232,18 @@ const ParkwayInterface: React.FC = () => {
     setSelectedDriveway(null);
     // Optionally refresh the search results
   }, []);
+
+  // Show loading state until component is fully initialized
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Parkway Interface...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
