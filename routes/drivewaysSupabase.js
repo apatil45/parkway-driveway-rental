@@ -97,6 +97,142 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/driveways/search
+// @desc    Search driveways with advanced filters
+// @access  Public
+router.get('/search', async (req, res) => {
+  try {
+    const { 
+      latitude, 
+      longitude, 
+      radius = 1000, 
+      date, 
+      startTime, 
+      endTime, 
+      searchMode = 'now',
+      duration = 120,
+      min_price, 
+      max_price, 
+      car_size, 
+      limit = 50,
+      offset = 0 
+    } = req.query;
+
+    let query = supabase
+      .from('driveways')
+      .select(`
+        *,
+        users!driveways_owner_id_fkey (
+          id,
+          name,
+          rating,
+          total_reviews
+        )
+      `)
+      .eq('is_active', true)
+      .eq('is_available', true)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit))
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    // Apply filters
+    if (min_price) {
+      query = query.gte('price_per_hour', parseFloat(min_price));
+    }
+    if (max_price) {
+      query = query.lte('price_per_hour', parseFloat(max_price));
+    }
+    if (car_size) {
+      query = query.contains('car_size_compatibility', [car_size]);
+    }
+
+    const { data: driveways, error } = await query;
+
+    if (error) {
+      console.error('Search driveways error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to search driveways'
+      });
+    }
+
+    // Calculate distance if coordinates provided
+    let processedDriveways = driveways || [];
+    if (latitude && longitude) {
+      processedDriveways = driveways.map(driveway => {
+        if (driveway.latitude && driveway.longitude) {
+          const distance = calculateDistance(
+            parseFloat(latitude),
+            parseFloat(longitude),
+            parseFloat(driveway.latitude),
+            parseFloat(driveway.longitude)
+          );
+          
+          // Filter by radius
+          if (distance <= parseFloat(radius)) {
+            return {
+              ...driveway,
+              distance: Math.round(distance),
+              coordinates: {
+                lat: parseFloat(driveway.latitude),
+                lng: parseFloat(driveway.longitude)
+              }
+            };
+          }
+        }
+        return null;
+      }).filter(Boolean);
+    }
+
+    // Transform data for frontend compatibility
+    const transformedDriveways = processedDriveways.map(driveway => ({
+      id: driveway.id,
+      address: driveway.address,
+      description: driveway.description,
+      pricePerHour: parseFloat(driveway.price_per_hour),
+      images: driveway.images || [],
+      rating: driveway.rating || 0,
+      distance: driveway.distance,
+      coordinates: driveway.coordinates,
+      latitude: driveway.latitude,
+      longitude: driveway.longitude,
+      amenities: driveway.amenities || [],
+      features: driveway.features || [],
+      owner: driveway.users,
+      isAvailable: driveway.is_available,
+      drivewaySize: driveway.driveway_size,
+      carSizeCompatibility: driveway.car_size_compatibility
+    }));
+
+    res.json({
+      success: true,
+      driveways: transformedDriveways,
+      total: transformedDriveways.length
+    });
+
+  } catch (error) {
+    console.error('Search driveways error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search driveways'
+    });
+  }
+});
+
+// Helper function to calculate distance between two points
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c; // Distance in kilometers
+  return distance * 1000; // Convert to meters
+}
+
 // @route   GET /api/driveways/:id
 // @desc    Get single driveway by ID
 // @access  Public

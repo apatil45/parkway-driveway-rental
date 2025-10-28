@@ -79,9 +79,12 @@ router.post('/register', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { 
-        id: user.id, 
-        email: user.email,
-        roles: user.roles 
+        user: {
+          id: user.id, 
+          email: user.email,
+          name: user.name,
+          roles: user.roles 
+        }
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
@@ -144,9 +147,12 @@ router.post('/login', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { 
-        id: user.id, 
-        email: user.email,
-        roles: user.roles 
+        user: {
+          id: user.id, 
+          email: user.email,
+          name: user.name,
+          roles: user.roles 
+        }
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }

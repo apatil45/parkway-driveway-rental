@@ -57,16 +57,27 @@ const Login: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const userRole = await login(formData.email, formData.password, formData.rememberMe);
+      const userRoles = await login(formData.email, formData.password, formData.rememberMe);
       
-      // Navigate directly to appropriate dashboard based on user role
-      if (userRole === 'driver') {
-        navigate('/driver-dashboard', { replace: true });
-      } else if (userRole === 'owner') {
-        navigate('/owner-dashboard', { replace: true });
+      // Navigate directly to appropriate dashboard based on user roles
+      if (Array.isArray(userRoles)) {
+        if (userRoles.includes('driver')) {
+          navigate('/driver-dashboard', { replace: true });
+        } else if (userRoles.includes('owner')) {
+          navigate('/owner-dashboard', { replace: true });
+        } else {
+          // Fallback to homepage if role is unclear
+          navigate('/', { replace: true });
+        }
       } else {
-        // Fallback to homepage if role is unclear
-        navigate('/', { replace: true });
+        // Fallback for single role string
+        if (userRoles === 'driver') {
+          navigate('/driver-dashboard', { replace: true });
+        } else if (userRoles === 'owner') {
+          navigate('/owner-dashboard', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
       }
     } catch (error) {
       console.error('Login error:', error);

@@ -30,9 +30,12 @@ CREATE TABLE IF NOT EXISTS driveways (
   car_size_compatibility VARCHAR(50),
   price_per_hour DECIMAL(10,2) NOT NULL,
   availability TEXT DEFAULT '24/7',
-  amenities TEXT,
+  amenities TEXT[],
   images TEXT[],
+  latitude DECIMAL(10,8),
+  longitude DECIMAL(11,8),
   is_active BOOLEAN DEFAULT true,
+  is_available BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -48,6 +51,11 @@ CREATE TABLE IF NOT EXISTS bookings (
   total_price DECIMAL(10,2) NOT NULL,
   payment_intent_id VARCHAR(255),
   payment_status VARCHAR(20) DEFAULT 'pending',
+  payment_amount DECIMAL(10,2),
+  payment_currency VARCHAR(3) DEFAULT 'USD',
+  payment_completed_at TIMESTAMP WITH TIME ZONE,
+  vehicle_info JSONB,
+  special_requests TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

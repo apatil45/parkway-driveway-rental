@@ -60,10 +60,10 @@ class ApiService {
       },
       (error: AxiosError) => {
         if (error.response?.status === 401) {
-          // Clear auth data on unauthorized
+          // Clear auth data on unauthorized - let AuthContext handle navigation
           localStorage.removeItem('token');
           localStorage.removeItem('rememberMe');
-          window.location.href = '/login';
+          // Don't force redirect here - let AuthContext handle it gracefully
         }
         return Promise.reject(this.handleError(error));
       }

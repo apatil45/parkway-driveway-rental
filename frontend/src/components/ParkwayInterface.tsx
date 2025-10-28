@@ -178,23 +178,18 @@ const ParkwayInterface: React.FC = () => {
         }
       }
 
-      const response = await fetch(`/api/driveways/search?${searchParams}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to search driveways');
-      }
-
-      const result = await response.json();
+      const result = await apiService.get(`/driveways/search?${searchParams}`);
       console.log('Search API response:', result);
       
       // Handle enhanced response format
       let driveways = [];
-      if (Array.isArray(result)) {
+      if (result.success && result.data) {
+        if (Array.isArray(result.data)) {
+          driveways = result.data;
+        } else if (result.data.driveways && Array.isArray(result.data.driveways)) {
+          driveways = result.data.driveways;
+        }
+      } else if (Array.isArray(result)) {
         driveways = result;
       } else if (result.driveways && Array.isArray(result.driveways)) {
         driveways = result.driveways;

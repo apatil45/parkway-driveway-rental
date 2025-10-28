@@ -16,8 +16,9 @@ const authenticateToken = async (req, res, next) => {
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
-    // Get user from Supabase
-    const user = await db.getUserById(decoded.id);
+    // Get user from Supabase - handle both old and new JWT structures
+    const userId = decoded.user?.id || decoded.id;
+    const user = await db.getUserById(userId);
     
     if (!user) {
       return res.status(401).json({

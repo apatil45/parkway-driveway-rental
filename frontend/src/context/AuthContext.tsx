@@ -160,7 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       setIsLoading(false);
-      return userData.roles?.[0] || 'driver'; // Return first role instead of single role
+      return userData.roles || ['driver']; // Return all roles
     } catch (err: any) {
       console.error("AuthContext - Login error:", err.message);
       

@@ -7,7 +7,7 @@ import './UnifiedMapView.css';
 import { MapViewProps, UserLocation } from '../types/map';
 import MapMarker from './MapMarker';
 import MapLegend from './MapLegend';
-import { ensureCoordinates, calculateMapBounds } from '../utils/mapUtils';
+import { ensureCoordinates, calculateMapBounds } from '../utils/coordinateUtils';
 import { groupMarkersByProximity, shouldClusterMarkers, getClusterDistance } from '../utils/markerClustering';
 
 // Fix for default markers in react-leaflet - Enhanced with clustering

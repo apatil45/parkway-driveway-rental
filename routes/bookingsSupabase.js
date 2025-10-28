@@ -171,7 +171,7 @@ router.post('/', auth, async (req, res) => {
       .select('id')
       .eq('driveway_id', driveway_id)
       .eq('status', 'confirmed')
-      .or(`start_time.lt.${end_time.toISOString()},end_time.gt.${start_time.toISOString()}`);
+      .or(`start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()}`);
 
     if (overlapError) {
       console.error('Check overlap error:', overlapError);
@@ -190,6 +190,7 @@ router.post('/', auth, async (req, res) => {
       status: 'pending',
       total_price: totalPrice,
       payment_status: 'pending',
+      payment_intent_id: null, // Will be set when payment is created
       vehicle_info: vehicle_info || {},
       special_requests
     };
@@ -243,9 +244,15 @@ router.post('/', auth, async (req, res) => {
 
   } catch (error) {
     console.error('Create booking error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({
       success: false,
-      error: 'Failed to create booking'
+      error: 'Failed to create booking',
+      details: error.message
     });
   }
 });
