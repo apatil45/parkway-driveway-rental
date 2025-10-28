@@ -6,7 +6,7 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/((?!sw\\.js|manifest\\.json|favicon\\.svg|assets/).*)",
+      "source": "/((?!sw\\.js|manifest\\.json|favicon\\.svg|assets|icons|screenshots).*)",
       "destination": "/index.html"
     }
   ],
@@ -30,6 +30,15 @@
         {
           "key": "Content-Type",
           "value": "application/manifest+json"
+        }
+      ]
+    },
+    {
+      "source": "/favicon.svg",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "image/svg+xml"
         }
       ]
     },

@@ -133,7 +133,7 @@ class ApiService {
 
   // Authentication methods
   async login(email: string, password: string): Promise<ApiResponse<{ token: string; user: any }>> {
-    return this.post('/api/auth/login', { email, password });
+    return this.post('/auth/login', { email, password });
   }
 
   async register(userData: {
@@ -142,81 +142,81 @@ class ApiService {
     password: string;
     roles?: string[];
   }): Promise<ApiResponse<{ token: string; user: any }>> {
-    return this.post('/api/auth/register', userData);
+    return this.post('/auth/register', userData);
   }
 
   async getUser(): Promise<ApiResponse<any>> {
-    return this.get('/api/auth/user');
+    return this.get('/auth/user');
   }
 
   async refreshToken(): Promise<ApiResponse<{ token: string }>> {
-    return this.post('/api/auth/refresh');
+    return this.post('/auth/refresh');
   }
 
   // Driveway methods
   async getDriveways(params?: any): Promise<ApiResponse<any[]>> {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return this.get(`/api/driveways${queryString}`);
+    return this.get(`/driveways${queryString}`);
   }
 
   async searchDriveways(searchParams: any): Promise<ApiResponse<any[]>> {
-    return this.get('/api/driveways/search', { params: searchParams });
+    return this.get('/driveways/search', { params: searchParams });
   }
 
   async getDriveway(id: string): Promise<ApiResponse<any>> {
-    return this.get(`/api/driveways/${id}`);
+    return this.get(`/driveways/${id}`);
   }
 
   async createDriveway(drivewayData: any): Promise<ApiResponse<any>> {
-    return this.post('/api/driveways', drivewayData);
+    return this.post('/driveways', drivewayData);
   }
 
   async updateDriveway(id: string, drivewayData: any): Promise<ApiResponse<any>> {
-    return this.put(`/api/driveways/${id}`, drivewayData);
+    return this.put(`/driveways/${id}`, drivewayData);
   }
 
   async deleteDriveway(id: string): Promise<ApiResponse<any>> {
-    return this.delete(`/api/driveways/${id}`);
+    return this.delete(`/driveways/${id}`);
   }
 
   // Booking methods
   async getBookings(): Promise<ApiResponse<any[]>> {
-    return this.get('/api/bookings');
+    return this.get('/bookings');
   }
 
   async createBooking(bookingData: any): Promise<ApiResponse<any>> {
-    return this.post('/api/bookings', bookingData);
+    return this.post('/bookings', bookingData);
   }
 
   async updateBooking(id: string, bookingData: any): Promise<ApiResponse<any>> {
-    return this.put(`/api/bookings/${id}`, bookingData);
+    return this.put(`/bookings/${id}`, bookingData);
   }
 
   async cancelBooking(id: string): Promise<ApiResponse<any>> {
-    return this.delete(`/api/bookings/${id}`);
+    return this.delete(`/bookings/${id}`);
   }
 
   // Payment methods
   async createPaymentIntent(amount: number, currency: string = 'usd'): Promise<ApiResponse<any>> {
-    return this.post('/api/payments/create-intent', { amount, currency });
+    return this.post('/payments/create-intent', { amount, currency });
   }
 
   async confirmPayment(paymentIntentId: string): Promise<ApiResponse<any>> {
-    return this.post('/api/payments/confirm', { paymentIntentId });
+    return this.post('/payments/confirm', { paymentIntentId });
   }
 
   // Notification methods
   async getNotifications(): Promise<ApiResponse<any[]>> {
-    return this.get('/api/notifications');
+    return this.get('/notifications');
   }
 
   async markNotificationAsRead(id: string): Promise<ApiResponse<any>> {
-    return this.patch(`/api/notifications/${id}/read`);
+    return this.patch(`/notifications/${id}/read`);
   }
 
   // Geocoding methods
   async geocodeAddress(address: string): Promise<ApiResponse<any>> {
-    return this.get('/api/geocoding', { params: { address } });
+    return this.get('/geocoding', { params: { address } });
   }
 
   // File upload methods
@@ -225,7 +225,7 @@ class ApiService {
     formData.append('file', file);
     formData.append('type', type);
 
-    return this.post('/api/upload', formData, {
+    return this.post('/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
