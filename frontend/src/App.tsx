@@ -62,7 +62,7 @@ const App: React.FC = () => {
       <ErrorProvider>
         <AuthProvider>
           <BookingProvider>
-            <Router>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthRedirectHandler />
           <PerformanceOptimizer />
           <Nav />
