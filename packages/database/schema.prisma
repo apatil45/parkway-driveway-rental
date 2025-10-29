@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  DRIVER
+  OWNER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  roles     UserRole[]
+  phone     String?
+  address   String?
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  driveways Driveway[]
+  bookings  Booking[]
+  reviews   Review[]
+
+  @@map("users")
+}
+
+model Driveway {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  address     String
+  latitude    Float
+  longitude   Float
+  pricePerHour Float
+  capacity    Int      @default(1)
+  carSize     String[] // ["small", "medium", "large", "extra-large"]
+  amenities   String[] // ["covered", "security", "ev_charging", "easy_access"]
+  images      String[]
+  isActive    Boolean  @default(true)
+  isAvailable Boolean  @default(true)
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+  reviews  Review[]
+
+  @@map("driveways")
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  startTime       DateTime
+  endTime         DateTime
+  totalPrice      Float
+  status          BookingStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentIntentId String?
+  specialRequests String?
+  vehicleInfo     Json? // { make, model, color, licensePlate }
+  userId          String
+  drivewayId      String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  driveway Driveway @relation(fields: [drivewayId], references: [id], onDelete: Cascade)
+
+  @@map("bookings")
+}
+
+model Review {
+  id         String  @id @default(cuid())
+  rating     Int     // 1-5 stars
+  comment    String?
+  userId     String
+  drivewayId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  driveway Driveway @relation(fields: [drivewayId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, drivewayId])
+  @@map("reviews")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   @default("info") // "info", "success", "warning", "error"
+  isRead    Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}

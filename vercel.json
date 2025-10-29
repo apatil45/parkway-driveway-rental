@@ -1,51 +1,33 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "frontend/dist",
-  "devCommand": "cd frontend && npm run dev",
-  "installCommand": "npm install",
-  "framework": "vite",
-  "public": true,
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/((?!sw\\.js|manifest\\.json|favicon\\.svg|assets|icons|screenshots|_headers|_redirects).*)",
-      "destination": "/index.html"
+      "src": "apps/web/package.json",
+      "use": "@vercel/next"
     }
   ],
-  "headers": [
+  "routes": [
     {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-cache"
-        }
-      ]
+      "src": "/api/(.*)",
+      "dest": "apps/web/src/app/api/$1"
     },
     {
-      "source": "/manifest.json",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/manifest+json"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-cache"
-        }
-      ]
-    },
-    {
-      "source": "/favicon.svg",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "image/svg+xml"
-        }
-      ]
+      "src": "/(.*)",
+      "dest": "apps/web/$1"
     }
-  ]
+  ],
+  "functions": {
+    "apps/web/src/app/api/**/*.ts": {
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "JWT_SECRET": "@jwt_secret",
+    "JWT_REFRESH_SECRET": "@jwt_refresh_secret",
+    "STRIPE_SECRET_KEY": "@stripe_secret_key",
+    "CLOUDINARY_CLOUD_NAME": "@cloudinary_cloud_name",
+    "CLOUDINARY_API_KEY": "@cloudinary_api_key",
+    "CLOUDINARY_API_SECRET": "@cloudinary_api_secret"
+  }
 }
