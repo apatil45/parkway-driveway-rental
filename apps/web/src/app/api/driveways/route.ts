@@ -1,17 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
+import { drivewaySearchSchema } from '@/lib/validations';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const location = searchParams.get('location');
-    const priceMin = searchParams.get('priceMin');
-    const priceMax = searchParams.get('priceMax');
-    const carSize = searchParams.get('carSize');
-
+    
+    // Validate query parameters
+    const validationResult = drivewaySearchSchema.safeParse(Object.fromEntries(searchParams));
+    if (!validationResult.success) {
+      return NextResponse.json(
+        createApiError(
+          'Invalid query parameters: ' + validationResult.error.errors.map(e => e.message).join(', '),
+          400,
+          'VALIDATION_ERROR'
+        ),
+        { status: 400 }
+      );
+    }
+    
+    const { page, limit, location, priceMin, priceMax, carSize } = validationResult.data;
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -21,11 +32,11 @@ export async function GET(request: NextRequest) {
     };
 
     if (priceMin) {
-      where.pricePerHour = { ...where.pricePerHour, gte: parseFloat(priceMin) };
+      where.pricePerHour = { ...where.pricePerHour, gte: priceMin };
     }
 
     if (priceMax) {
-      where.pricePerHour = { ...where.pricePerHour, lte: parseFloat(priceMax) };
+      where.pricePerHour = { ...where.pricePerHour, lte: priceMax };
     }
 
     if (carSize) {
@@ -60,10 +71,10 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Calculate average ratings
-    const drivewaysWithRatings = driveways.map(driveway => ({
+    const drivewaysWithRatings = driveways.map((driveway: any) => ({
       ...driveway,
       averageRating: driveway.reviews.length > 0 
-        ? driveway.reviews.reduce((sum, review) => sum + review.rating, 0) / driveway.reviews.length
+        ? driveway.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / driveway.reviews.length
         : 0,
       reviewCount: driveway.reviews.length
     }));

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(createApiResponse(user, 'User data retrieved successfully'));
   } catch (error) {
-    if (error.name === 'TokenExpiredError') {
+    if (error instanceof Error && error.name === 'TokenExpiredError') {
       return NextResponse.json(
         createApiError('Token expired.', 401, 'TOKEN_EXPIRED'),
         { status: 401 }

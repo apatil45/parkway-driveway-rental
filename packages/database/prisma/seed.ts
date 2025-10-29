@@ -1,107 +1,108 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seeding...');
 
-  // Create sample users
-  const driver = await prisma.user.upsert({
-    where: { email: 'driver@parkway.com' },
-    update: {},
-    create: {
-      name: 'John Driver',
-      email: 'driver@parkway.com',
-      password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/4.8.2.', // password123
-      roles: ['DRIVER'],
-      phone: '+1234567890',
-      address: '123 Main St, City, State'
-    }
-  });
+  // Create or find test users
+  const hashedPassword = await bcrypt.hash('password123', 10);
 
   const owner = await prisma.user.upsert({
     where: { email: 'owner@parkway.com' },
     update: {},
     create: {
-      name: 'Jane Owner',
       email: 'owner@parkway.com',
-      password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/4.8.2.', // password123
+      password: hashedPassword,
+      name: 'John Owner',
+      phone: '+1234567890',
       roles: ['OWNER'],
+      isActive: true,
+    },
+  });
+
+  const driver = await prisma.user.upsert({
+    where: { email: 'driver@parkway.com' },
+    update: {},
+    create: {
+      email: 'driver@parkway.com',
+      password: hashedPassword,
+      name: 'Jane Driver',
       phone: '+1234567891',
-      address: '456 Oak Ave, City, State'
-    }
+      roles: ['DRIVER'],
+      isActive: true,
+    },
   });
 
-  // Create sample driveways
-  const driveway1 = await prisma.driveway.upsert({
-    where: { id: 'driveway-1' },
-    update: {},
-    create: {
-      id: 'driveway-1',
-      title: 'Spacious Downtown Driveway',
-      description: 'Large driveway perfect for any vehicle size. Close to downtown attractions.',
-      address: '789 Downtown St, City, State',
-      latitude: 40.7128,
-      longitude: -74.0060,
-      pricePerHour: 5.00,
-      capacity: 2,
-      carSize: ['small', 'medium', 'large'],
-      amenities: ['covered', 'security', 'easy_access'],
-      images: ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800'],
-      ownerId: owner.id
-    }
-  });
-
-  const driveway2 = await prisma.driveway.upsert({
-    where: { id: 'driveway-2' },
-    update: {},
-    create: {
-      id: 'driveway-2',
-      title: 'Secure Residential Driveway',
-      description: 'Safe and secure driveway in quiet residential area.',
-      address: '321 Elm St, City, State',
+  // Create sample driveway
+  const driveway = await prisma.driveway.create({
+    data: {
+      ownerId: owner.id,
+      title: 'Downtown Premium Spot',
+      description: 'Convenient parking spot in the heart of downtown. Close to restaurants and shopping.',
+      address: '123 Main Street, Downtown, New York, NY 10001',
       latitude: 40.7589,
       longitude: -73.9851,
-      pricePerHour: 3.50,
+      pricePerHour: 5.00,
       capacity: 1,
-      carSize: ['small', 'medium'],
-      amenities: ['security'],
-      images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800'],
-      ownerId: owner.id
-    }
+      carSize: ['small', 'medium', 'large'],
+      amenities: ['covered', 'security', 'easy_access'],
+      images: [
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800',
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800'
+      ],
+      isActive: true,
+      isAvailable: true,
+    },
   });
 
-  // Create sample bookings
-  const booking1 = await prisma.booking.upsert({
-    where: { id: 'booking-1' },
-    update: {},
-    create: {
-      id: 'booking-1',
-      drivewayId: driveway1.id,
+
+  // Create sample booking
+  const booking = await prisma.booking.create({
+    data: {
       userId: driver.id,
-      startTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-      endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // Tomorrow + 2 hours
-      totalPrice: 10.00,
+      drivewayId: driveway.id,
+      startTime: new Date('2024-01-15T09:00:00Z'),
+      endTime: new Date('2024-01-15T17:00:00Z'),
+      totalPrice: 40.00,
       status: 'CONFIRMED',
       paymentStatus: 'COMPLETED',
-      specialRequests: 'Please ensure easy access',
-      vehicleInfo: JSON.stringify({
+      vehicleInfo: {
         make: 'Toyota',
         model: 'Camry',
         color: 'Silver',
         licensePlate: 'ABC123'
-      })
-    }
+      },
+    },
+  });
+
+  // Create sample review
+  await prisma.review.create({
+    data: {
+      userId: driver.id,
+      drivewayId: driveway.id,
+      rating: 5,
+      comment: 'Great location and easy to find. Owner was very responsive.',
+    },
+  });
+
+  // Create sample notification
+  await prisma.notification.create({
+    data: {
+      userId: owner.id,
+      type: 'info',
+      title: 'New Booking Confirmed',
+      message: 'Your driveway has been booked for January 15th, 9:00 AM - 5:00 PM',
+      isRead: false,
+    },
   });
 
   console.log('✅ Database seeded successfully!');
-  console.log('👤 Sample users created:');
-  console.log('  - Driver: driver@parkway.com (password: password123)');
-  console.log('  - Owner: owner@parkway.com (password: password123)');
-  console.log('🏠 Sample driveways created:');
-  console.log('  - Downtown Driveway: $5.00/hour');
-  console.log('  - Residential Driveway: $3.50/hour');
-  console.log('📅 Sample booking created');
+  console.log(`👤 Created owner: ${owner.email}`);
+  console.log(`👤 Created driver: ${driver.email}`);
+  console.log(`🏠 Created driveway: ${driveway.title}`);
+  console.log(`📅 Created booking: ${booking.id}`);
 }
 
 main()

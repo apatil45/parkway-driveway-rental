@@ -1,3 +1,15 @@
+// Import Prisma types
+import type {
+  User,
+  Driveway,
+  Booking,
+  Review,
+  Notification,
+  UserRole,
+  BookingStatus,
+  PaymentStatus,
+} from '@prisma/client';
+
 // Re-export Prisma types
 export type {
   User,
@@ -8,7 +20,7 @@ export type {
   UserRole,
   BookingStatus,
   PaymentStatus,
-} from '@parkway/database';
+};
 
 // API Response types
 export interface ApiResponse<T = any> {

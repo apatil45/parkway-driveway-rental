@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: 'Parkway - Driveway Rental Platform',
   description: 'Find and rent driveways near you. List your driveway and earn money.',
   keywords: 'driveway rental, parking, driveway sharing, parking space',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

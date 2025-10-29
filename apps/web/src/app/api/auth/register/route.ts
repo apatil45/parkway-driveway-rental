@@ -3,21 +3,19 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { 
-  RegisterRequest, 
   AuthResponse, 
   createApiResponse, 
-  createApiError,
-  validateEmail,
-  validatePassword 
+  createApiError
 } from '@parkway/shared';
+import { registerSchema, type RegisterInput } from '@/lib/validations';
 
 // Generate JWT token
 const generateToken = (userId: string): string => {
   return jwt.sign(
     { id: userId },
     process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  ) as string;
+    { expiresIn: '7d' }
+  );
 };
 
 // Generate refresh token
@@ -26,34 +24,27 @@ const generateRefreshToken = (userId: string): string => {
     { id: userId, type: 'refresh' },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET!,
     { expiresIn: '30d' }
-  ) as string;
+  );
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const body: RegisterRequest = await request.json();
-    const { name, email, password, roles, phone, address } = body;
-
-    // Validate email format
-    if (!validateEmail(email)) {
-      return NextResponse.json(
-        createApiError('Invalid email format', 400, 'INVALID_EMAIL'),
-        { status: 400 }
-      );
-    }
-
-    // Validate password strength
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
+    const body = await request.json();
+    
+    // Validate input
+    const validationResult = registerSchema.safeParse(body);
+    if (!validationResult.success) {
       return NextResponse.json(
         createApiError(
-          'Password validation failed: ' + passwordValidation.errors.join(', '),
+          'Validation failed: ' + validationResult.error.errors.map(e => e.message).join(', '),
           400,
-          'WEAK_PASSWORD'
+          'VALIDATION_ERROR'
         ),
         { status: 400 }
       );
     }
+    
+    const { name, email, password, roles, phone, address }: RegisterInput = validationResult.data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -99,7 +90,7 @@ export async function POST(request: NextRequest) {
     const token = generateToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
 
-    const response: AuthResponse = {
+    const response = {
       user,
       token,
       refreshToken

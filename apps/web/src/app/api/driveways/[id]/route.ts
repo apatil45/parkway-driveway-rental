@@ -45,8 +45,8 @@ export async function GET(
     }
 
     // Calculate average rating
-    const averageRating = driveway.reviews.length > 0 
-      ? driveway.reviews.reduce((sum, review) => sum + review.rating, 0) / driveway.reviews.length
+    const averageRating = driveway.reviews.length > 0
+      ? driveway.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / driveway.reviews.length
       : 0;
 
     const drivewayWithRating = {

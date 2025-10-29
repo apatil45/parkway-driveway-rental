@@ -1,9 +1,24 @@
 import { PrismaClient } from '@prisma/client';
 
-// Create a single instance of PrismaClient
-const prisma = new PrismaClient({
+// Global variable to store the Prisma client instance
+declare global {
+  var __prisma: PrismaClient | undefined;
+}
+
+// Create a singleton Prisma client for serverless environments
+const prisma = globalThis.__prisma || new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
 });
+
+// Store the client in global scope to prevent multiple instances
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.__prisma = prisma;
+}
 
 // Export the Prisma client
 export { prisma };

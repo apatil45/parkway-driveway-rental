@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
-import { createApiResponse, createApiError, CreateBookingRequest } from '@parkway/shared';
+import { createApiResponse, createApiError } from '@parkway/shared';
+import { createBookingSchema, bookingQuerySchema, type CreateBookingInput, type BookingQueryParams } from '@/lib/validations';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,8 +19,21 @@ export async function GET(request: NextRequest) {
     const userId = decoded.id;
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    
+    // Validate query parameters
+    const queryValidation = bookingQuerySchema.safeParse(Object.fromEntries(searchParams));
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        createApiError(
+          'Invalid query parameters: ' + queryValidation.error.errors.map(e => e.message).join(', '),
+          400,
+          'VALIDATION_ERROR'
+        ),
+        { status: 400 }
+      );
+    }
+    
+    const { page, limit }: BookingQueryParams = queryValidation.data;
     const skip = (page - 1) * limit;
 
     const [bookings, total] = await Promise.all([
@@ -83,8 +97,22 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
     const userId = decoded.id;
 
-    const body: CreateBookingRequest = await request.json();
-    const { drivewayId, startTime, endTime, specialRequests, vehicleInfo } = body;
+    const body = await request.json();
+    
+    // Validate input
+    const validationResult = createBookingSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        createApiError(
+          'Validation failed: ' + validationResult.error.errors.map(e => e.message).join(', '),
+          400,
+          'VALIDATION_ERROR'
+        ),
+        { status: 400 }
+      );
+    }
+    
+    const { drivewayId, startTime, endTime, specialRequests, vehicleInfo }: CreateBookingInput = validationResult.data;
 
     // Get driveway details
     const driveway = await prisma.driveway.findUnique({
@@ -113,7 +141,7 @@ export async function POST(request: NextRequest) {
         endTime: end,
         totalPrice,
         specialRequests,
-        vehicleInfo: vehicleInfo ? JSON.stringify(vehicleInfo) : null
+        vehicleInfo: vehicleInfo || undefined
       },
       include: {
         driveway: {

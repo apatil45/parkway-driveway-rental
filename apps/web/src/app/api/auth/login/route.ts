@@ -3,19 +3,19 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { 
-  LoginRequest, 
   AuthResponse, 
   createApiResponse, 
   createApiError 
 } from '@parkway/shared';
+import { loginSchema, type LoginInput } from '@/lib/validations';
 
 // Generate JWT token
 const generateToken = (userId: string): string => {
   return jwt.sign(
     { id: userId },
     process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  ) as string;
+    { expiresIn: '7d' }
+  );
 };
 
 // Generate refresh token
@@ -24,13 +24,27 @@ const generateRefreshToken = (userId: string): string => {
     { id: userId, type: 'refresh' },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET!,
     { expiresIn: '30d' }
-  ) as string;
+  );
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const body: LoginRequest = await request.json();
-    const { email, password } = body;
+    const body = await request.json();
+    
+    // Validate input
+    const validationResult = loginSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        createApiError(
+          'Validation failed: ' + validationResult.error.errors.map(e => e.message).join(', '),
+          400,
+          'VALIDATION_ERROR'
+        ),
+        { status: 400 }
+      );
+    }
+    
+    const { email, password }: LoginInput = validationResult.data;
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -71,7 +85,7 @@ export async function POST(request: NextRequest) {
       updatedAt: user.updatedAt
     };
 
-    const response: AuthResponse = {
+    const response = {
       user: userData,
       token,
       refreshToken
