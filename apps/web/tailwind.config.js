@@ -1,37 +1,56 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: '1rem',
+        sm: '1.25rem',
+        lg: '2rem',
+        xl: '2rem',
+      },
+      screens: {
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1200px',
+      },
+    },
     extend: {
       colors: {
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: 'rgb(var(--color-primary-50))',
+          100: 'rgb(var(--color-primary-100))',
+          200: 'rgb(var(--color-primary-200))',
+          300: 'rgb(var(--color-primary-300))',
+          400: 'rgb(var(--color-primary-400))',
+          500: 'rgb(var(--color-primary-500))',
+          600: 'rgb(var(--color-primary-600))',
+          700: 'rgb(var(--color-primary-700))',
+          800: 'rgb(var(--color-primary-800))',
+          900: 'rgb(var(--color-primary-900))',
         },
-        secondary: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
+        surface: {
+          DEFAULT: 'rgb(var(--color-surface))',
+          foreground: 'rgb(var(--color-surface-foreground))',
         },
+        border: 'rgb(var(--color-border))',
+      },
+      borderRadius: {
+        sm: '6px',
+        DEFAULT: '10px',
+        lg: '14px',
+      },
+      boxShadow: {
+        sm: '0 1px 2px rgba(0,0,0,0.06)',
+        DEFAULT: '0 2px 8px rgba(0,0,0,0.08)',
+        lg: '0 8px 24px rgba(0,0,0,0.1)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

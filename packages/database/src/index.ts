@@ -1,18 +1,27 @@
 import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
 
 // Global variable to store the Prisma client instance
 declare global {
   var __prisma: PrismaClient | undefined;
 }
 
+// In dev, ensure DATABASE_URL is available (fallback to repo DATABASE_URL.txt if missing)
+if (!process.env.DATABASE_URL && process.env.NODE_ENV === 'development') {
+  try {
+    const repoRoot = path.resolve(__dirname, '..', '..', '..');
+    const fallbackPath = path.resolve(repoRoot, 'DATABASE_URL.txt');
+    if (fs.existsSync(fallbackPath)) {
+      const url = fs.readFileSync(fallbackPath, 'utf-8').trim();
+      if (url) process.env.DATABASE_URL = url;
+    }
+  } catch {}
+}
+
 // Create a singleton Prisma client for serverless environments
 const prisma = globalThis.__prisma || new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
 });
 
 // Store the client in global scope to prevent multiple instances

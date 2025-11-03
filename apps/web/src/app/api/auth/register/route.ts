@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { 
@@ -90,20 +90,33 @@ export async function POST(request: NextRequest) {
     const token = generateToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
 
-    const response = {
-      user,
-      token,
-      refreshToken
-    };
-
-    return NextResponse.json(
-      createApiResponse(response, 'User registered successfully', 201),
+    const res = NextResponse.json(
+      createApiResponse({ user }, 'User registered successfully', 201),
       { status: 201 }
     );
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookies.set('access_token', token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 15,
+    });
+    res.cookies.set('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return res;
   } catch (error) {
     console.error('Registration error:', error);
+    const message = process.env.NODE_ENV === 'development' && error instanceof Error
+      ? `Internal server error: ${error.message}`
+      : 'Internal server error';
     return NextResponse.json(
-      createApiError('Internal server error', 500, 'INTERNAL_ERROR'),
+      createApiError(message, 500, 'INTERNAL_ERROR'),
       { status: 500 }
     );
   }

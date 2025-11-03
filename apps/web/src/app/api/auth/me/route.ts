@@ -5,7 +5,7 @@ import { createApiResponse, createApiError } from '@parkway/shared';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const token = request.cookies.get('access_token')?.value;
     
     if (!token) {
       return NextResponse.json(

@@ -6,7 +6,7 @@ import { createBookingSchema, bookingQuerySchema, type CreateBookingInput, type 
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const token = request.cookies.get('access_token')?.value;
     
     if (!token) {
       return NextResponse.json(
@@ -33,12 +33,17 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const { page, limit }: BookingQueryParams = queryValidation.data;
+    const { page, limit, status }: BookingQueryParams & { status?: string } = queryValidation.data as any;
     const skip = (page - 1) * limit;
+
+    const whereClause: any = {
+      userId,
+      ...(status ? { status } : {}),
+    };
 
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
-        where: { userId },
+        where: whereClause,
         skip,
         take: limit,
         include: {
@@ -62,7 +67,7 @@ export async function GET(request: NextRequest) {
           createdAt: 'desc'
         }
       }),
-      prisma.booking.count({ where: { userId } })
+      prisma.booking.count({ where: whereClause })
     ]);
 
     return NextResponse.json(createApiResponse({
@@ -85,7 +90,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const token = request.cookies.get('access_token')?.value;
     
     if (!token) {
       return NextResponse.json(
@@ -126,11 +131,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate total price
+    // Validate time range and calculate total price
     const start = new Date(startTime);
     const end = new Date(endTime);
+    if (!(start instanceof Date) || isNaN(start.getTime()) || !(end instanceof Date) || isNaN(end.getTime())) {
+      return NextResponse.json(
+        createApiError('Invalid start or end time', 400, 'VALIDATION_ERROR'),
+        { status: 400 }
+      );
+    }
+    if (end.getTime() <= start.getTime()) {
+      return NextResponse.json(
+        createApiError('End time must be after start time', 400, 'INVALID_TIME_RANGE'),
+        { status: 400 }
+      );
+    }
     const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
     const totalPrice = Math.round(hours * driveway.pricePerHour * 100) / 100;
+
+    // Check overlapping bookings against capacity (consider pending and confirmed)
+    const overlappingCount = await prisma.booking.count({
+      where: {
+        drivewayId,
+        status: { in: ['PENDING', 'CONFIRMED'] as any },
+        // Overlap condition: existing.start < newEnd AND existing.end > newStart
+        AND: [
+          { startTime: { lt: end } },
+          { endTime: { gt: start } }
+        ]
+      }
+    });
+
+    if (overlappingCount >= (driveway.capacity || 1)) {
+      return NextResponse.json(
+        createApiError('Driveway is fully booked for the selected time range', 409, 'CAPACITY_EXCEEDED'),
+        { status: 409 }
+      );
+    }
 
     // Create booking
     const booking = await prisma.booking.create({

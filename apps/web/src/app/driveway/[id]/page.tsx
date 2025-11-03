@@ -73,12 +73,6 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     fetchDriveway();
   }, [params.id, router]);
 
@@ -88,11 +82,7 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
       const response = await api.get(`/driveways/${params.id}`);
       setDriveway(response.data.data);
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        router.push('/login');
-      } else if (err.response?.status === 404) {
+      if (err.response?.status === 404) {
         setError('Driveway not found');
       } else {
         setError('Failed to load driveway details');

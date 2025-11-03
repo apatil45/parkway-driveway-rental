@@ -2,18 +2,20 @@ import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline';
+  variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'subtle';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
+  fullWidth?: boolean;
   children: React.ReactNode;
 }
 
 const variantClasses = {
   primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
-  secondary: 'bg-secondary-600 text-white hover:bg-secondary-700 focus:ring-secondary-500',
-  danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-  outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-primary-500'
-};
+  secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
+  destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+  outline: 'border border-[color:rgb(var(--color-border))] bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] hover:bg-gray-50 focus:ring-primary-500',
+  subtle: 'bg-transparent text-[color:rgb(var(--color-surface-foreground))] hover:bg-gray-100 focus:ring-primary-500'
+} as const;
 
 const sizeClasses = {
   sm: 'px-3 py-1.5 text-sm',
@@ -25,6 +27,7 @@ export default function Button({
   variant = 'primary',
   size = 'md',
   loading = false,
+  fullWidth = false,
   disabled,
   className = '',
   children,
@@ -40,7 +43,7 @@ export default function Button({
     <button
       className={`${baseClasses} ${variantClass} ${sizeClass} ${
         isDisabled ? 'opacity-50 cursor-not-allowed' : ''
-      } ${className}`}
+      } ${fullWidth ? 'w-full' : ''} ${className}`}
       disabled={isDisabled}
       {...props}
     >

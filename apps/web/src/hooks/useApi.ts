@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import api from '@/lib/api';
 
 interface ApiState<T> {
@@ -62,56 +62,68 @@ export function useApi<T = any>(options: UseApiOptions = {}) {
     });
   }, []);
 
-  return {
+  // Return a stable reference to avoid effect dependency churn
+  return useMemo(() => ({
     ...state,
     execute,
-    reset
-  };
+    reset,
+  }), [state, execute, reset]);
 }
 
 // Specific API hooks for common operations
 export function useDriveways() {
-  const apiHook = useApi();
+  const { execute, ...rest } = useApi();
   
   const fetchDriveways = useCallback((params: Record<string, any> = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return apiHook.execute(() => api.get(`/driveways?${queryString}`));
-  }, [apiHook]);
+    return execute(() => api.get(`/driveways?${queryString}`));
+  }, [execute]);
 
   return {
-    ...apiHook,
+    ...rest,
+    execute,
     fetchDriveways
   };
 }
 
 export function useBookings() {
-  const apiHook = useApi();
+  const { execute, ...rest } = useApi();
   
   const fetchBookings = useCallback((params: Record<string, any> = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return apiHook.execute(() => api.get(`/bookings?${queryString}`));
-  }, [apiHook]);
+    return execute(() => api.get(`/bookings?${queryString}`));
+  }, [execute]);
 
   const createBooking = useCallback((bookingData: any) => {
-    return apiHook.execute(() => api.post('/bookings', bookingData));
-  }, [apiHook]);
+    return execute(() => api.post('/bookings', bookingData));
+  }, [execute]);
 
   return {
-    ...apiHook,
+    ...rest,
+    execute,
     fetchBookings,
     createBooking
   };
 }
 
 export function useDashboardStats() {
-  const apiHook = useApi();
+  const { execute, ...rest } = useApi();
   
-  const fetchStats = useCallback(() => {
-    return apiHook.execute(() => api.get('/dashboard/stats'));
-  }, [apiHook]);
+  const fetchStats = useCallback(async () => {
+    // Try once; on 401 attempt refresh then retry
+    const res = await execute(() => api.get('/dashboard/stats'));
+    if (!res.success && res.error && res.error.toLowerCase().includes('unauthorized')) {
+      try {
+        await api.post('/auth/refresh');
+        return await execute(() => api.get('/dashboard/stats'));
+      } catch {}
+    }
+    return res;
+  }, [execute]);
 
   return {
-    ...apiHook,
+    ...rest,
+    execute,
     fetchStats
   };
 }

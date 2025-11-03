@@ -2,14 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Leaflet map styles */
+@import 'leaflet/dist/leaflet.css';
+
 @layer base {
+  :root {
+    /* Primary (blue) scale in R,G,B for opacity support */
+    --color-primary-50: 239, 246, 255;
+    --color-primary-100: 219, 234, 254;
+    --color-primary-200: 191, 219, 254;
+    --color-primary-300: 147, 197, 253;
+    --color-primary-400: 96, 165, 250;
+    --color-primary-500: 59, 130, 246;
+    --color-primary-600: 37, 99, 235;
+    --color-primary-700: 29, 78, 216;
+    --color-primary-800: 30, 64, 175;
+    --color-primary-900: 30, 58, 138;
+
+    /* Surfaces */
+    --color-surface: 249, 250, 251; /* gray-50 */
+    --color-surface-foreground: 17, 24, 39; /* gray-900 */
+    --color-border: 229, 231, 235; /* gray-200 */
+  }
+
+  .dark {
+    --color-surface: 3, 7, 18; /* gray-950 */
+    --color-surface-foreground: 243, 244, 246; /* gray-100 */
+    --color-border: 31, 41, 55; /* gray-800 */
+  }
+
   html {
     font-family: 'Inter', system-ui, sans-serif;
   }
   
   body {
-    @apply text-gray-900 bg-gray-50;
+    @apply text-[color:rgb(var(--color-surface-foreground))] bg-[color:rgb(var(--color-surface))];
   }
+
+  /* Heading scale and rhythm */
+  h1 { @apply text-3xl md:text-4xl font-bold leading-tight; }
+  h2 { @apply text-2xl md:text-3xl font-semibold leading-snug; }
+  h3 { @apply text-lg md:text-xl font-semibold leading-snug; }
+  p  { @apply leading-relaxed; }
 }
 
 @layer components {
@@ -34,6 +68,11 @@
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] rounded-lg shadow border border-[color:rgb(var(--color-border))] p-6;
+  }
+
+  /* Skeletons */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded; /* dark mode will still be acceptable */
   }
 }

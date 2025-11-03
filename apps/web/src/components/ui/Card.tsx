@@ -5,6 +5,7 @@ interface CardProps {
   className?: string;
   padding?: 'sm' | 'md' | 'lg';
   shadow?: 'sm' | 'md' | 'lg';
+  clickable?: boolean;
 }
 
 const paddingClasses = {
@@ -23,13 +24,14 @@ export default function Card({
   children,
   className = '',
   padding = 'md',
-  shadow = 'md'
+  shadow = 'md',
+  clickable = false
 }: CardProps) {
   const paddingClass = paddingClasses[padding];
   const shadowClass = shadowClasses[shadow];
   
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 ${paddingClass} ${shadowClass} ${className}`}>
+    <div className={`bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] rounded-lg border border-[color:rgb(var(--color-border))] ${paddingClass} ${shadowClass} ${clickable ? 'transition-colors hover:bg-gray-50 cursor-pointer' : ''} ${className}`}>
       {children}
     </div>
   );

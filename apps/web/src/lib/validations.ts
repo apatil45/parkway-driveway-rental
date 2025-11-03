@@ -77,7 +77,8 @@ export const drivewaySearchSchema = z.object({
 
 export const bookingQuerySchema = z.object({
   page: z.string().transform(Number).pipe(z.number().int().min(1)).default('1'),
-  limit: z.string().transform(Number).pipe(z.number().int().min(1).max(50)).default('10')
+  limit: z.string().transform(Number).pipe(z.number().int().min(1).max(50)).default('10'),
+  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'EXPIRED']).optional()
 });
 
 // Type exports

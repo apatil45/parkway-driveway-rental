@@ -21,9 +21,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <div className="min-h-screen bg-gray-50">
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className} antialiased` }>
+        <div className="min-h-screen bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))]">
           {children}
         </div>
       </body>

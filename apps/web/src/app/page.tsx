@@ -4,8 +4,8 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-[color:rgb(var(--color-surface))] border-b border-[color:rgb(var(--color-border))]">
+        <div className="container">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-primary-600">Parkway</h1>
@@ -24,7 +24,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="container py-24">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Find & Rent Driveways
@@ -45,8 +45,8 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24">
+        <div className="container">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               How Parkway Works
@@ -91,8 +91,8 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-24">
+        <div className="container text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Ready to Get Started?
           </h2>
@@ -107,7 +107,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="container py-12">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-lg font-semibold mb-4">Parkway</h3>
@@ -118,25 +118,25 @@ export default function Home() {
             <div>
               <h4 className="font-semibold mb-4">For Drivers</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="/find-parking">Find Parking</Link></li>
-                <li><Link href="/how-it-works">How It Works</Link></li>
-                <li><Link href="/pricing">Pricing</Link></li>
+                <li><Link href="/search">Find Parking</Link></li>
+                <li><Link href="/about">How It Works</Link></li>
+                <li><Link href="/dashboard">Pricing</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">For Owners</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="/list-driveway">List Your Driveway</Link></li>
-                <li><Link href="/earnings">Earnings</Link></li>
-                <li><Link href="/host-guide">Host Guide</Link></li>
+                <li><Link href="/dashboard">List Your Driveway</Link></li>
+                <li><Link href="/dashboard">Earnings</Link></li>
+                <li><Link href="/about">Host Guide</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="/help">Help Center</Link></li>
-                <li><Link href="/contact">Contact Us</Link></li>
-                <li><Link href="/privacy">Privacy Policy</Link></li>
+                <li><Link href="/about">Help Center</Link></li>
+                <li><Link href="/about">Contact Us</Link></li>
+                <li><Link href="/about">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>

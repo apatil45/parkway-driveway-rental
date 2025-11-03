@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
+import { useAuth } from '@/hooks';
 
 interface Booking {
   id: string;
@@ -47,14 +48,9 @@ export default function BookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     fetchBookings();
   }, [router, statusFilter]);
 
@@ -88,11 +84,19 @@ export default function BookingsPage() {
     }
   };
 
-  const handleStatusChange = (bookingId: string, newStatus: string) => {
-    // This would typically make an API call to update the booking status
-    console.log(`Update booking ${bookingId} to status ${newStatus}`);
-    // For now, just refresh the data
-    fetchBookings(pagination.page);
+  const handleStatusChange = async (bookingId: string, newStatus: string) => {
+    try {
+      setLoading(true);
+      await api.patch(`/bookings/${bookingId}`, { status: newStatus });
+      await fetchBookings(pagination.page);
+      alert(`Booking ${newStatus.toLowerCase()} successfully`);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to update booking';
+      setError(msg);
+      alert(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -147,16 +151,23 @@ export default function BookingsPage() {
   if (loading && bookings.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+        <div className="space-y-6 w-full max-w-5xl px-6">
+          <div className="h-8 w-64 skeleton"></div>
+          <div className="space-y-4">
+            <div className="h-28 skeleton"></div>
+            <div className="h-28 skeleton"></div>
+            <div className="h-28 skeleton"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-[color:rgb(var(--color-surface))] border-b border-[color:rgb(var(--color-border))]">
+        <div className="container">
           <div className="flex justify-between items-center py-6">
             <Link href="/dashboard" className="text-2xl font-bold text-primary-600">
               Parkway
@@ -173,9 +184,9 @@ export default function BookingsPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
+          <h1 className="text-3xl font-bold">My Bookings</h1>
           
           {/* Status Filter */}
           <div className="flex space-x-2">
@@ -202,7 +213,7 @@ export default function BookingsPage() {
 
         {bookings.length === 0 && !loading ? (
           <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
+            <h3 className="text-lg font-medium mb-2">No bookings found</h3>
             <p className="text-gray-600 mb-4">
               {statusFilter === 'all' 
                 ? "You haven't made any bookings yet." 
@@ -216,10 +227,10 @@ export default function BookingsPage() {
         ) : (
           <div className="space-y-6">
             {bookings.map((booking) => (
-              <div key={booking.id} className="bg-white rounded-lg shadow-sm p-6">
+              <div key={booking.id} className="rounded-lg border border-[color:rgb(var(--color-border))] p-6 bg-[color:rgb(var(--color-surface))]">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-lg font-semibold mb-2">
                       {booking.driveway.title}
                     </h3>
                     <p className="text-gray-600 mb-2">{booking.driveway.address}</p>
@@ -302,7 +313,7 @@ export default function BookingsPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-4 border-t border-[color:rgb(var(--color-border))]">
                   <div className="flex space-x-4">
                     <Link
                       href={`/driveway/${booking.driveway.id}`}
@@ -317,6 +328,23 @@ export default function BookingsPage() {
                       >
                         Cancel Booking
                       </button>
+                    )}
+                    {/* Owner controls */}
+                    {user && booking.driveway.owner.id === user.id && booking.status === 'PENDING' && (
+                      <>
+                        <button
+                          onClick={() => handleStatusChange(booking.id, 'CONFIRMED')}
+                          className="text-green-600 hover:text-green-800 text-sm font-medium"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Cancel
+                        </button>
+                      </>
                     )}
                   </div>
                   

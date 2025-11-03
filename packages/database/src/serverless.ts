@@ -33,7 +33,8 @@ export async function checkDatabaseHealth() {
     return { 
       status: 'healthy', 
       timestamp: new Date().toISOString(),
-      connectionCount: prisma._engineConfig?.connectionLimit || 'unknown'
+      // Prisma does not expose connection details in a public API
+      connectionCount: 'unknown'
     };
   } catch (error) {
     return { 

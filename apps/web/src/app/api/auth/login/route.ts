@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { 
@@ -29,6 +29,23 @@ const generateRefreshToken = (userId: string): string => {
 
 export async function POST(request: NextRequest) {
   try {
+    // Basic in-memory rate limit (dev/preview). Replace with Redis in prod.
+    const ip = request.headers.get('x-forwarded-for') || 'local';
+    const key = `rl_${ip}`;
+    const now = Date.now();
+    // @ts-ignore
+    globalThis.__rl = globalThis.__rl || new Map();
+    // @ts-ignore
+    const entry = globalThis.__rl.get(key) || [];
+    const windowMs = 60_000; // 1 minute
+    const limit = 10; // 10 attempts/min
+    const recent = entry.filter((t: number) => now - t < windowMs);
+    if (recent.length >= limit) {
+      return NextResponse.json(createApiError('Too many attempts, try again later', 429, 'RATE_LIMIT'), { status: 429 });
+    }
+    // @ts-ignore
+    globalThis.__rl.set(key, [...recent, now]);
+
     const body = await request.json();
     
     // Validate input
@@ -85,17 +102,31 @@ export async function POST(request: NextRequest) {
       updatedAt: user.updatedAt
     };
 
-    const response = {
-      user: userData,
-      token,
-      refreshToken
-    };
-
-    return NextResponse.json(createApiResponse(response, 'Login successful'));
+    // Set httpOnly cookies
+    const res = NextResponse.json(createApiResponse({ user: userData }, 'Login successful'));
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookies.set('access_token', token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 15, // 15 minutes
+    });
+    res.cookies.set('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+    return res;
   } catch (error) {
     console.error('Login error:', error);
+    const message = process.env.NODE_ENV === 'development' && error instanceof Error
+      ? `Internal server error: ${error.message}`
+      : 'Internal server error';
     return NextResponse.json(
-      createApiError('Internal server error', 500, 'INTERNAL_ERROR'),
+      createApiError(message, 500, 'INTERNAL_ERROR'),
       { status: 500 }
     );
   }

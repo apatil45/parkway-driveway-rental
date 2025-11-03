@@ -4,8 +4,7 @@ A professional driveway rental platform built with modern technologies and deplo
 
 ## 🆓 **100% FREE Stack**
 
-- **Frontend**: Next.js 14 on Vercel (FREE)
-- **Backend**: Node.js on Railway (FREE)
+- **Frontend + API**: Next.js 14 (App Router) on Vercel (FREE)
 - **Database**: PostgreSQL on Supabase (FREE)
 - **File Storage**: Cloudinary (FREE - 25GB)
 - **Maps**: OpenStreetMap + Leaflet (FREE)
@@ -36,19 +35,15 @@ npm install
 5. Copy `apps/api/.env.example` to `apps/api/.env`
 6. Add your Supabase database URL
 
-#### **Backend Hosting (Railway - FREE)**
-1. Go to [railway.app](https://railway.app)
-2. Create a free account
-3. Connect your GitHub repository
-4. Deploy the `apps/api` folder
-5. Add environment variables in Railway dashboard
+#### **API Hosting**
+No separate backend needed. API routes live inside the Next.js app under `apps/web/src/app/api` and are deployed automatically on Vercel.
 
-#### **Frontend Hosting (Vercel - FREE)**
+#### **Vercel (FREE)**
 1. Go to [vercel.com](https://vercel.com)
 2. Create a free account
 3. Connect your GitHub repository
 4. Deploy the `apps/web` folder
-5. Add environment variables in Vercel dashboard
+5. Add environment variables in Vercel dashboard (at minimum: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`)
 
 #### **File Storage (Cloudinary - FREE)**
 1. Go to [cloudinary.com](https://cloudinary.com)
@@ -71,23 +66,15 @@ npm run dev --workspace=@parkway/web
 ```
 parkway-platform/
 ├── apps/
-│   ├── api/                    # Backend (Railway)
-│   │   ├── src/
-│   │   │   ├── controllers/    # Route handlers
-│   │   │   ├── services/       # Business logic
-│   │   │   ├── middleware/     # Express middleware
-│   │   │   ├── routes/         # API routes
-│   │   │   └── utils/          # Utilities
-│   │   └── package.json
-│   └── web/                    # Frontend (Vercel)
+│   └── web/                    # Next.js app (frontend + API routes)
 │       ├── src/
-│       │   ├── app/            # Next.js App Router
+│       │   ├── app/            # App Router + serverless API under app/api
 │       │   ├── components/     # React components
 │       │   ├── hooks/          # Custom hooks
 │       │   └── lib/            # Utilities
 │       └── package.json
 ├── packages/
-│   ├── database/               # Prisma Schema
+│   ├── database/               # Prisma schema + Prisma client singleton
 │   └── shared/                 # Shared Types & Utils
 ├── package.json                # Monorepo config
 └── turbo.json                  # Turborepo config
@@ -134,19 +121,20 @@ npm run db:seed            # Seed database
 npm run db:studio          # Open Prisma Studio
 ```
 
-### **Environment Variables**
+### **Environment Variables (Vercel)**
 
-#### **Backend (.env)**
+#### **Server (Next.js API routes)**
 ```env
 DATABASE_URL="postgresql://..."
 JWT_SECRET="your-secret"
+JWT_REFRESH_SECRET="your-refresh-secret"
 STRIPE_SECRET_KEY="sk_test_..."
 CLOUDINARY_CLOUD_NAME="your-cloud"
 ```
 
-#### **Frontend (.env.local)**
+#### **Client (.env.local)**
 ```env
-NEXT_PUBLIC_API_URL="http://localhost:3001/api"
+NEXT_PUBLIC_API_URL="/api" # Optional: keep default for same-origin
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
 ```
 
@@ -160,17 +148,8 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
 4. **Storage**: Cloudinary (25GB FREE)
 5. **Maps**: OpenStreetMap (Unlimited FREE)
 
-### **Deployment Commands**
-```bash
-# Deploy to Railway (Backend)
-railway login
-railway link
-railway up
-
-# Deploy to Vercel (Frontend)
-vercel login
-vercel --prod
-```
+### **Deployment**
+Deploy the monorepo on Vercel; it builds `apps/web` and hosts both frontend and API routes automatically.
 
 ## 📊 **Performance**
 

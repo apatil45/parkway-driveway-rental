@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button } from '@/components/ui';
@@ -27,22 +27,27 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
-  const { user, loading: authLoading, error: authError, requireAuth } = useAuth();
+  const { user, loading: authLoading, error: authError, isAuthenticated, logout } = useAuth();
   const { data: stats, loading: statsLoading, error: statsError, fetchStats } = useDashboardStats();
   const router = useRouter();
 
+  // Prevent duplicate fetches in dev StrictMode and on transient re-renders
+  const fetchedRef = useRef(false);
   useEffect(() => {
-    requireAuth();
-    if (user) {
+    if (!authLoading && isAuthenticated && user && !fetchedRef.current) {
+      fetchedRef.current = true;
       fetchStats();
     }
-  }, [user, requireAuth, fetchStats]);
+  }, [authLoading, isAuthenticated, user, fetchStats]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/');
-  };
+  // Redirect unauthenticated users away from dashboard
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  const handleLogout = () => { logout(); };
 
   const loading = authLoading || statsLoading;
   const error = authError || statsError;
@@ -50,7 +55,15 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="xl" text="Loading dashboard..." />
+        <div className="space-y-4 w-full max-w-5xl px-6">
+          <div className="h-8 w-64 skeleton"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="h-28 skeleton"></div>
+            <div className="h-28 skeleton"></div>
+            <div className="h-28 skeleton"></div>
+            <div className="h-28 skeleton"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -71,10 +84,10 @@ export default function DashboardPage() {
   const isDriver = user?.roles.includes('DRIVER');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-[color:rgb(var(--color-surface))] border-b border-[color:rgb(var(--color-border))]">
+        <div className="container">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <Link href="/" className="text-2xl font-bold text-primary-600">
@@ -95,7 +108,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container py-8">
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -116,7 +129,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalBookings}</p>
+                  <p className="text-2xl font-bold">{stats.totalBookings}</p>
                 </div>
               </div>
             </Card>
@@ -128,7 +141,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Active Bookings</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.activeBookings}</p>
+                  <p className="text-2xl font-bold">{stats.activeBookings}</p>
                 </div>
               </div>
             </Card>
@@ -141,7 +154,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-                    <p className="text-2xl font-bold text-gray-900">${stats.totalEarnings.toFixed(2)}</p>
+                    <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
                   </div>
                 </div>
               </Card>
@@ -154,7 +167,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Average Rating</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.averageRating.toFixed(1)}</p>
+                  <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
                 </div>
               </div>
             </Card>
@@ -169,7 +182,7 @@ export default function DashboardPage() {
                 <div className="p-4 bg-primary-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <span className="text-2xl">🏠</span>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Driveways</h3>
+                <h3 className="text-lg font-semibold mb-2">Manage Driveways</h3>
                 <p className="text-gray-600 mb-4">Add, edit, or remove your driveway listings</p>
                 <Link href="/driveways" className="btn btn-primary w-full">
                   View Driveways
@@ -184,7 +197,7 @@ export default function DashboardPage() {
                 <div className="p-4 bg-green-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <span className="text-2xl">🔍</span>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Find Parking</h3>
+                <h3 className="text-lg font-semibold mb-2">Find Parking</h3>
                 <p className="text-gray-600 mb-4">Search for available parking spots</p>
                 <Link href="/search" className="btn btn-primary w-full">
                   Search Now
@@ -198,7 +211,7 @@ export default function DashboardPage() {
               <div className="p-4 bg-blue-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                 <span className="text-2xl">📋</span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">My Bookings</h3>
+              <h3 className="text-lg font-semibold mb-2">My Bookings</h3>
               <p className="text-gray-600 mb-4">View and manage your bookings</p>
               <Link href="/bookings" className="btn btn-primary w-full">
                 View Bookings
@@ -209,7 +222,7 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         <Card>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
+          <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-gray-200">
               <div className="flex items-center">

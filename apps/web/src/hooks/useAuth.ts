@@ -36,17 +36,6 @@ export function useAuth() {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setAuthState({
-          user: null,
-          loading: false,
-          error: '',
-          isAuthenticated: false
-        });
-        return;
-      }
-
       const response = await api.get('/auth/me');
       setAuthState({
         user: response.data.data,
@@ -55,21 +44,22 @@ export function useAuth() {
         isAuthenticated: true
       });
     } catch (error: any) {
+      // Try refresh once on 401
       if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setAuthState({
-          user: null,
-          loading: false,
-          error: '',
-          isAuthenticated: false
-        });
+        try {
+          await api.post('/auth/refresh');
+          const me = await api.get('/auth/me');
+          setAuthState({
+            user: me.data.data,
+            loading: false,
+            error: '',
+            isAuthenticated: true
+          });
+        } catch {
+          setAuthState({ user: null, loading: false, error: '', isAuthenticated: false });
+        }
       } else {
-        setAuthState(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Failed to verify authentication'
-        }));
+        setAuthState(prev => ({ ...prev, loading: false, error: 'Failed to verify authentication' }));
       }
     }
   };
@@ -79,10 +69,7 @@ export function useAuth() {
       setAuthState(prev => ({ ...prev, loading: true, error: '' }));
       
       const response = await api.post('/auth/login', { email, password });
-      const { user, token } = response.data.data;
-
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      const user = response.data.data.user;
 
       setAuthState({
         user,
@@ -108,10 +95,7 @@ export function useAuth() {
       setAuthState(prev => ({ ...prev, loading: true, error: '' }));
       
       const response = await api.post('/auth/register', userData);
-      const { user, token } = response.data.data;
-
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      const user = response.data.data.user;
 
       setAuthState({
         user,
@@ -132,9 +116,8 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try { await api.post('/auth/logout'); } catch {}
     setAuthState({
       user: null,
       loading: false,
@@ -145,8 +128,12 @@ export function useAuth() {
   };
 
   const requireAuth = () => {
-    if (!authState.isAuthenticated && !authState.loading) {
-      router.push('/login');
+    // Avoid redirect loops: do not redirect if we're already on /login
+    if (typeof window !== 'undefined') {
+      const onLoginPage = window.location.pathname === '/login';
+      if (!authState.isAuthenticated && !authState.loading && !onLoginPage) {
+        router.push('/login');
+      }
     }
   };
 
