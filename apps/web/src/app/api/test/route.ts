@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
+import { requireDevelopment } from '@/lib/api-protection';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  // Only allow in development/preview
+  const devCheck = requireDevelopment();
+  if (devCheck) return devCheck;
+
   try {
     console.log('Test API route called');
     

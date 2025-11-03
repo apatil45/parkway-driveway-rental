@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
+import { requireDevelopment } from '@/lib/api-protection';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET() {
+  // Only allow in development/preview
+  const devCheck = requireDevelopment();
+  if (devCheck) return devCheck;
   try {
     // Test database connection
     await prisma.$connect();
