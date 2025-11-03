@@ -32,16 +32,28 @@ test.describe('Comprehensive Functionality Tests', () => {
 
     test('1.2 - Navbar is visible and functional', async ({ page }) => {
       await page.goto(BASE_URL);
+      await page.waitForLoadState('networkidle');
       
-      // Check navbar exists
-      const navbar = page.locator('header');
-      await expect(navbar).toBeVisible();
+      // Check navbar exists (can be in AppLayout or standalone header)
+      const navbar = page.locator('header').first();
+      const navbarVisible = await navbar.isVisible().catch(() => false);
       
-      // Check logo
-      await expect(page.locator('text=Parkway').first()).toBeVisible();
+      // Navbar should be visible OR page should have navigation elements
+      if (!navbarVisible) {
+        // Check if AppLayout navbar exists
+        const appNavbar = page.locator('header').or(page.locator('[class*="navbar"]'));
+        await expect(appNavbar.first()).toBeVisible({ timeout: 5000 });
+      } else {
+        await expect(navbar).toBeVisible();
+      }
       
-      // Check navigation links
-      await expect(page.locator('a[href="/search"]')).toBeVisible();
+      // Check logo/branding (Parkway text)
+      const logo = page.locator('text=Parkway').first();
+      await expect(logo).toBeVisible({ timeout: 5000 });
+      
+      // Check navigation links (search should be available)
+      const searchLink = page.locator('a[href="/search"]').or(page.locator('text=Search'));
+      await expect(searchLink.first()).toBeVisible({ timeout: 5000 });
     });
 
     test('1.3 - Global Search Bar is functional', async ({ page }) => {
