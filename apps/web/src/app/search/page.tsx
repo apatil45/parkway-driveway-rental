@@ -282,13 +282,14 @@ function SearchPageContent() {
                   value={filters.carSize}
                   onChange={(e) => handleFilterChange('carSize', e.target.value)}
                   className="text-sm"
-                >
-                  <option value="">Any Size</option>
-                  <option value="small">Small</option>
-                  <option value="medium">Medium</option>
-                  <option value="large">Large</option>
-                  <option value="extra-large">Extra Large</option>
-                </Select>
+                  options={[
+                    { value: '', label: 'Any Size' },
+                    { value: 'small', label: 'Small' },
+                    { value: 'medium', label: 'Medium' },
+                    { value: 'large', label: 'Large' },
+                    { value: 'extra-large', label: 'Extra Large' },
+                  ]}
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Sort By</label>
@@ -296,12 +297,13 @@ function SearchPageContent() {
                   value={filters.sort || ''}
                   onChange={(e) => handleFilterChange('sort', e.target.value as any)}
                   className="text-sm"
-                >
-                  <option value="">Default</option>
-                  <option value="price_asc">Price: Low to High</option>
-                  <option value="price_desc">Price: High to Low</option>
-                  <option value="rating_desc">Rating: High to Low</option>
-                </Select>
+                  options={[
+                    { value: '', label: 'Default' },
+                    { value: 'price_asc', label: 'Price: Low to High' },
+                    { value: 'price_desc', label: 'Price: High to Low' },
+                    { value: 'rating_desc', label: 'Rating: High to Low' },
+                  ]}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
