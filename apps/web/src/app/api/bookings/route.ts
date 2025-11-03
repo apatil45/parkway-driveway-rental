@@ -288,7 +288,7 @@ export async function POST(request: NextRequest) {
           type: 'info'
         },
         {
-          userId: booking.driveway.ownerId,
+          userId: booking.driveway.owner.id,
           title: 'New Booking Request',
           message: `You have a new booking request for ${booking.driveway.title}`,
           type: 'info'
