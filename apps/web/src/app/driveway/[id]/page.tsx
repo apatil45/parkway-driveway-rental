@@ -153,23 +153,27 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
-      </div>
+      <AppLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+        </div>
+      </AppLayout>
     );
   }
 
   if (error || !driveway) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
-          <p className="text-gray-600 mb-4">{error || 'Driveway not found'}</p>
-          <Link href="/search" className="btn btn-primary">
-            Back to Search
-          </Link>
+      <AppLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+            <p className="text-gray-600 mb-4">{error || 'Driveway not found'}</p>
+            <Link href="/search" className="btn btn-primary">
+              Back to Search
+            </Link>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
