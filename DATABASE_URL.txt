@@ -1,1 +1,0 @@
-postgresql://postgres:Parkway%40rental05@db.aqjjgmmvviozmedjgxdy.supabase.co:5432/postgres
