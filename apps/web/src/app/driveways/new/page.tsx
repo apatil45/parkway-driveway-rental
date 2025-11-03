@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Input, Button } from '@/components/ui';
+import { Card, Input, Button, ImageUpload } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import api from '@/lib/api';
 
@@ -10,7 +10,7 @@ export default function NewDrivewayPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', address: '', pricePerHour: '', capacity: '', images: '', amenities: '' });
+  const [form, setForm] = useState({ title: '', address: '', pricePerHour: '', capacity: '', images: [] as string[], amenities: '' });
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +22,7 @@ export default function NewDrivewayPage() {
         address: form.address,
         pricePerHour: Number(form.pricePerHour),
         capacity: Number(form.capacity),
-        images: form.images ? form.images.split(',').map(s => s.trim()) : [],
+        images: form.images || [],
         amenities: form.amenities ? form.amenities.split(',').map(s => s.trim()) : [],
       });
       router.push('/driveways');
@@ -44,7 +44,12 @@ export default function NewDrivewayPage() {
             <Input label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
             <Input label="Price per hour (USD)" type="number" value={form.pricePerHour} onChange={(e) => setForm({ ...form, pricePerHour: e.target.value })} required />
             <Input label="Capacity" type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} required />
-            <Input label="Images (comma-separated URLs)" value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} />
+            <ImageUpload
+              value={form.images}
+              onChange={(urls) => setForm({ ...form, images: urls })}
+              maxImages={5}
+              disabled={loading}
+            />
             <Input label="Amenities (comma-separated)" value={form.amenities} onChange={(e) => setForm({ ...form, amenities: e.target.value })} />
             <div className="flex justify-end">
               <Button type="submit" loading={loading}>Create</Button>
