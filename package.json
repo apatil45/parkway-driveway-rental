@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "dev": "cd apps/web && npm run dev",
-    "build": "npm run db:generate && cd apps/web && npm run build",
+    "build": "npm run build:packages && npm run db:generate && cd apps/web && npm run build",
+    "build:packages": "cd packages/database && npm run build && cd ../shared && npm run build",
     "start": "cd apps/web && npm run start",
     "test": "cd apps/web && npm run test",
     "lint": "cd apps/web && npm run lint",

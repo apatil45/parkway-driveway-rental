@@ -4,6 +4,7 @@
   "description": "Database schema and utilities for Parkway platform - FREE",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "source": "src/index.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
