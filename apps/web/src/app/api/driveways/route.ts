@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
-import { drivewaySearchSchema } from '@/lib/validations';
+import { drivewaySearchSchema, createDrivewaySchema, type CreateDrivewayInput } from '@/lib/validations';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -150,37 +150,72 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get('access_token')?.value;
-    if (!token) return NextResponse.json(createApiError('Unauthorized', 401, 'UNAUTHORIZED'), { status: 401 });
+    if (!token) {
+      return NextResponse.json(createApiError('Unauthorized', 401, 'UNAUTHORIZED'), { status: 401 });
+    }
+    
     let userId: string | undefined;
-    try { userId = (jwt.verify(token, process.env.JWT_SECRET!) as any)?.id; } catch {}
-    if (!userId) return NextResponse.json(createApiError('Unauthorized', 401, 'UNAUTHORIZED'), { status: 401 });
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.id;
+    } catch (error) {
+      console.error('JWT verification error:', error);
+      return NextResponse.json(createApiError('Unauthorized', 401, 'UNAUTHORIZED'), { status: 401 });
+    }
+    
+    if (!userId) {
+      return NextResponse.json(createApiError('Unauthorized', 401, 'UNAUTHORIZED'), { status: 401 });
+    }
 
     const body = await request.json();
-    const { title, address, pricePerHour, capacity, amenities = [], images = [], latitude, longitude, carSize } = body || {};
-    if (!title || !address || !pricePerHour || !capacity) {
-      return NextResponse.json(createApiError('Missing required fields', 400, 'VALIDATION_ERROR'), { status: 400 });
+    
+    // Validate input using Zod schema
+    const validationResult = createDrivewaySchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        createApiError(
+          'Validation failed: ' + validationResult.error.errors.map(e => e.message).join(', '),
+          400,
+          'VALIDATION_ERROR'
+        ),
+        { status: 400 }
+      );
     }
+
+    const { title, description, address, pricePerHour, capacity, amenities, images, latitude, longitude, carSize }: CreateDrivewayInput = validationResult.data;
 
     const created = await prisma.driveway.create({
       data: {
         title,
+        description: description || undefined,
         address,
-        pricePerHour: Number(pricePerHour),
-        capacity: Number(capacity),
-        amenities,
-        images,
-        latitude: latitude != null ? Number(latitude) : 37.7749,
-        longitude: longitude != null ? Number(longitude) : -122.4194,
-        carSize: Array.isArray(carSize) && carSize.length ? carSize : ['small','medium','large'],
+        pricePerHour,
+        capacity,
+        amenities: amenities || [],
+        images: images || [],
+        latitude,
+        longitude,
+        carSize,
         isActive: true,
         isAvailable: true,
         ownerId: userId,
       },
-      select: { id: true, title: true, address: true, pricePerHour: true, capacity: true, isActive: true }
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        address: true,
+        pricePerHour: true,
+        capacity: true,
+        isActive: true,
+        isAvailable: true,
+        createdAt: true
+      }
     });
-    return NextResponse.json(createApiResponse(created, 'Driveway created', 201), { status: 201 });
-  } catch (e) {
-    console.error('Create driveway error', e);
+    
+    return NextResponse.json(createApiResponse(created, 'Driveway created successfully', 201), { status: 201 });
+  } catch (error) {
+    console.error('Create driveway error:', error);
     return NextResponse.json(createApiError('Failed to create driveway', 500, 'INTERNAL_ERROR'), { status: 500 });
   }
 }

@@ -47,15 +47,16 @@ export async function GET(request: NextRequest) {
       prisma.review.count({ where })
     ]);
 
-    // Calculate average rating for driveway if drivewayId provided
+    // Calculate average rating for driveway if drivewayId provided (using aggregation)
     let averageRating = 0;
     if (drivewayId) {
-      const ratings = await prisma.review.findMany({
+      const avgResult = await prisma.review.aggregate({
         where: { drivewayId },
-        select: { rating: true }
+        _avg: { rating: true },
+        _count: true
       });
-      if (ratings.length > 0) {
-        averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+      if (avgResult._avg.rating !== null) {
+        averageRating = avgResult._avg.rating;
       }
     }
 

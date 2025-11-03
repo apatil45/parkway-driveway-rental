@@ -40,8 +40,19 @@ export async function GET(request: NextRequest) {
     const { page, limit, status }: BookingQueryParams & { status?: string } = queryValidation.data as any;
     const skip = (page - 1) * limit;
 
+    // Get user's driveways to include bookings for owned driveways
+    const userDriveways = await prisma.driveway.findMany({
+      where: { ownerId: userId },
+      select: { id: true }
+    });
+    const drivewayIds = userDriveways.map(d => d.id);
+
+    // Include bookings where user is the driver OR owner of the driveway
     const whereClause: any = {
-      userId,
+      OR: [
+        { userId }, // User's own bookings
+        ...(drivewayIds.length > 0 ? [{ drivewayId: { in: drivewayIds } }] : []) // Bookings for user's driveways
+      ],
       ...(status ? { status } : {}),
     };
 
@@ -135,6 +146,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if driveway is available and active
+    if (!driveway.isActive || !driveway.isAvailable) {
+      return NextResponse.json(
+        createApiError('Driveway is not available for booking', 400, 'DRIVEWAY_UNAVAILABLE'),
+        { status: 400 }
+      );
+    }
+
+    // Check if user is trying to book their own driveway
+    if (driveway.ownerId === userId) {
+      return NextResponse.json(
+        createApiError('You cannot book your own driveway', 400, 'INVALID_BOOKING'),
+        { status: 400 }
+      );
+    }
+
     // Validate time range and calculate total price
     const start = new Date(startTime);
     const end = new Date(endTime);
@@ -144,66 +171,85 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Check that booking is in the future
+    const now = new Date();
+    if (start.getTime() < now.getTime()) {
+      return NextResponse.json(
+        createApiError('Start time must be in the future', 400, 'INVALID_TIME'),
+        { status: 400 }
+      );
+    }
+
     if (end.getTime() <= start.getTime()) {
       return NextResponse.json(
         createApiError('End time must be after start time', 400, 'INVALID_TIME_RANGE'),
         { status: 400 }
       );
     }
-    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    const totalPrice = Math.round(hours * driveway.pricePerHour * 100) / 100;
 
-    // Check overlapping bookings against capacity (consider pending and confirmed)
-    const overlappingCount = await prisma.booking.count({
-      where: {
-        drivewayId,
-        status: { in: ['PENDING', 'CONFIRMED'] as any },
-        // Overlap condition: existing.start < newEnd AND existing.end > newStart
-        AND: [
-          { startTime: { lt: end } },
-          { endTime: { gt: start } }
-        ]
-      }
-    });
-
-    if (overlappingCount >= (driveway.capacity || 1)) {
+    // Validate maximum booking duration (7 days)
+    const maxDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+    if (end.getTime() - start.getTime() > maxDurationMs) {
       return NextResponse.json(
-        createApiError('Driveway is fully booked for the selected time range', 409, 'CAPACITY_EXCEEDED'),
-        { status: 409 }
+        createApiError('Booking duration cannot exceed 7 days', 400, 'INVALID_DURATION'),
+        { status: 400 }
       );
     }
 
-    // Create Stripe payment intent if Stripe is configured
-    let paymentIntentId: string | undefined;
-    const stripeSecret = process.env.STRIPE_SECRET_KEY;
-    if (stripeSecret) {
-      try {
-        const stripe = (await import('stripe')).default;
-        const stripeClient = new stripe(stripeSecret);
-        const amountInCents = Math.round(totalPrice * 100);
-        
-        const paymentIntent = await stripeClient.paymentIntents.create({
-          amount: amountInCents,
-          currency: 'usd',
-          automatic_payment_methods: { enabled: true },
-          metadata: {
-            booking_userId: userId,
-            booking_drivewayId: drivewayId,
-            booking_startTime: startTime,
-            booking_endTime: endTime,
-          },
-        });
-        
-        paymentIntentId = paymentIntent.id;
-      } catch (error) {
-        console.error('Failed to create payment intent:', error);
-        // Continue without payment intent (will be created later if needed)
-      }
-    }
+    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    const totalPrice = Math.round(hours * driveway.pricePerHour * 100) / 100;
 
-    // Create booking
-    const booking = await prisma.booking.create({
-      data: {
+    // Use transaction to prevent race conditions
+    const booking = await prisma.$transaction(async (tx) => {
+      // Check overlapping bookings against capacity (consider pending and confirmed)
+      const overlappingCount = await tx.booking.count({
+        where: {
+          drivewayId,
+          status: { in: ['PENDING', 'CONFIRMED'] as any },
+          // Overlap condition: existing.start < newEnd AND existing.end > newStart
+          AND: [
+            { startTime: { lt: end } },
+            { endTime: { gt: start } }
+          ]
+        }
+      });
+
+      if (overlappingCount >= (driveway.capacity || 1)) {
+        throw new Error('CAPACITY_EXCEEDED');
+      }
+
+      // Create Stripe payment intent if Stripe is configured
+      let paymentIntentId: string | undefined;
+      const stripeSecret = process.env.STRIPE_SECRET_KEY;
+      if (stripeSecret) {
+        try {
+          const stripe = (await import('stripe')).default;
+          const stripeClient = new stripe(stripeSecret);
+          const amountInCents = Math.round(totalPrice * 100);
+          
+          const paymentIntent = await stripeClient.paymentIntents.create({
+            amount: amountInCents,
+            currency: 'usd',
+            automatic_payment_methods: { enabled: true },
+            metadata: {
+              booking_userId: userId,
+              booking_drivewayId: drivewayId,
+              booking_startTime: startTime,
+              booking_endTime: endTime,
+            },
+          });
+          
+          paymentIntentId = paymentIntent.id;
+        } catch (error) {
+          console.error('Failed to create payment intent:', error);
+          // Continue without payment intent (will be created later if needed)
+        }
+      }
+
+      // Create booking atomically within transaction
+      return await tx.booking.create({
+        data: {
         drivewayId,
         userId,
         startTime: start,
@@ -279,8 +325,17 @@ export async function POST(request: NextRequest) {
       createApiResponse(booking, 'Booking created successfully', 201),
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create booking error:', error);
+    
+    // Handle capacity exceeded error from transaction
+    if (error.message === 'CAPACITY_EXCEEDED') {
+      return NextResponse.json(
+        createApiError('Driveway is fully booked for the selected time range', 409, 'CAPACITY_EXCEEDED'),
+        { status: 409 }
+      );
+    }
+    
     return NextResponse.json(
       createApiError('Failed to create booking', 500, 'INTERNAL_ERROR'),
       { status: 500 }
