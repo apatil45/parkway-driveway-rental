@@ -98,9 +98,36 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
     setBookingLoading(true);
 
     try {
+      // Validate required fields
+      if (!bookingForm.startTime || !bookingForm.endTime) {
+        alert('Please fill in both start and end times');
+        return;
+      }
+
+      // Convert datetime-local format (YYYY-MM-DDTHH:mm) to ISO string
+      // datetime-local doesn't include timezone, so we need to create a proper Date object
+      const startTimeISO = new Date(bookingForm.startTime).toISOString();
+      const endTimeISO = new Date(bookingForm.endTime).toISOString();
+
+      // Prepare vehicle info - only include if all fields are filled
+      const vehicleInfo = bookingForm.vehicleInfo.make && 
+                          bookingForm.vehicleInfo.model && 
+                          bookingForm.vehicleInfo.color && 
+                          bookingForm.vehicleInfo.licensePlate
+        ? {
+            make: bookingForm.vehicleInfo.make,
+            model: bookingForm.vehicleInfo.model,
+            color: bookingForm.vehicleInfo.color,
+            licensePlate: bookingForm.vehicleInfo.licensePlate
+          }
+        : undefined;
+
       const response = await api.post('/bookings', {
         drivewayId: params.id,
-        ...bookingForm
+        startTime: startTimeISO,
+        endTime: endTimeISO,
+        specialRequests: bookingForm.specialRequests || undefined,
+        vehicleInfo
       });
 
       alert('Booking created successfully!');
@@ -117,7 +144,9 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
         }
       });
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create booking');
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to create booking';
+      alert(errorMessage);
+      console.error('Booking error:', err.response?.data || err);
     } finally {
       setBookingLoading(false);
     }
