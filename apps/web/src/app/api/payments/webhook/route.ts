@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   const sig = request.headers.get('stripe-signature');
   const signingSecret = process.env.STRIPE_WEBHOOK_SECRET;

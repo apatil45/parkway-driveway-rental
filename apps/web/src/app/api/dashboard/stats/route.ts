@@ -4,6 +4,7 @@ import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

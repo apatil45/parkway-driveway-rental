@@ -5,6 +5,7 @@ import { createApiResponse, createApiError } from '@parkway/shared';
 import { drivewaySearchSchema } from '@/lib/validations';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
