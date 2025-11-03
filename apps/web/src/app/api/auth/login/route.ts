@@ -9,6 +9,9 @@ import {
 } from '@parkway/shared';
 import { loginSchema, type LoginInput } from '@/lib/validations';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Generate JWT token
 const generateToken = (userId: string): string => {
   return jwt.sign(

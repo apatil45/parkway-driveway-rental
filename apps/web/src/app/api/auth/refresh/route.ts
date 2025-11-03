@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,

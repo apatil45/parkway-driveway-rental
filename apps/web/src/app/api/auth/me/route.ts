@@ -3,6 +3,9 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
