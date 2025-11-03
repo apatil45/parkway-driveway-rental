@@ -20,7 +20,8 @@
     "db:generate": "cd packages/database && prisma generate",
     "db:migrate": "cd packages/database && prisma migrate dev",
     "db:seed": "cd packages/database && prisma db seed",
-    "db:studio": "cd packages/database && prisma studio"
+    "db:studio": "cd packages/database && prisma studio",
+    "validate-env": "cd apps/web && node scripts/validate-env.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
