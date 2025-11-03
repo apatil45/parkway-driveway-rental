@@ -17,7 +17,8 @@ const mockShowToast = jest.fn();
 const mockApi = api as jest.Mocked<typeof api>;
 
 jest.mock('@/components/ui/Card', () => ({
-  Card: ({ children, className }: any) => <div className={className}>{children}</div>,
+  __esModule: true,
+  default: ({ children, className }: any) => <div className={className}>{children}</div>,
 }));
 
 jest.mock('@/components/ui/Button', () => ({
