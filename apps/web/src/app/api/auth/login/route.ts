@@ -97,8 +97,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password
-    const isPasswordValid = await bcryptjs.compare(password, user.password);
+    // Check password - bcryptjs is compatible with bcrypt hashes
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await bcryptjs.compare(password, user.password);
+    } catch (compareError) {
+      console.error('[AUTH] Password comparison error:', compareError);
+      return NextResponse.json(
+        createApiError('Authentication error', 500, 'AUTH_ERROR'),
+        { status: 500 }
+      );
+    }
     if (!isPasswordValid) {
       return NextResponse.json(
         createApiError('Invalid credentials', 401, 'INVALID_CREDENTIALS'),
@@ -145,9 +154,24 @@ export async function POST(request: NextRequest) {
     });
     return res;
   } catch (error) {
-    console.error('Login error:', error);
-    const message = process.env.NODE_ENV === 'development' && error instanceof Error
-      ? `Internal server error: ${error.message}`
+    console.error('[AUTH] Login error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Log detailed error in all environments for debugging
+    console.error('[AUTH] Login error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      env: {
+        hasJwtSecret: !!process.env.JWT_SECRET,
+        hasDbUrl: !!process.env.DATABASE_URL,
+        nodeEnv: process.env.NODE_ENV,
+        vercel: process.env.VERCEL
+      }
+    });
+    
+    const message = process.env.NODE_ENV === 'development'
+      ? `Internal server error: ${errorMessage}`
       : 'Internal server error';
     return NextResponse.json(
       createApiError(message, 500, 'INTERNAL_ERROR'),
