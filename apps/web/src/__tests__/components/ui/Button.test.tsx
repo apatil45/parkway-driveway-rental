@@ -101,7 +101,14 @@ describe('Button Component', () => {
   it('has touch-action manipulation style', () => {
     render(<Button>Touch</Button>);
     const button = screen.getByText('Touch');
-    expect(button).toHaveStyle({ touchAction: 'manipulation' });
+    // Check for CSS class
+    expect(button).toHaveClass('touch-manipulation');
+    // Check inline style attribute directly
+    const styleAttr = button.getAttribute('style');
+    expect(styleAttr).toBeTruthy();
+    if (styleAttr) {
+      expect(styleAttr).toContain('touch-action: manipulation');
+    }
   });
 
   it('applies custom className', () => {

@@ -27,6 +27,7 @@ const customJestConfig = {
     '/node_modules/',
     '/.next/',
     '/e2e/',
+    '/__mocks__/',
   ],
   coverageThreshold: {
     global: {
