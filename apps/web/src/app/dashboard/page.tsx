@@ -137,7 +137,7 @@ export default function DashboardPage() {
             <Card>
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
-                  <span className="text-2xl">✅</span>
+                  <span className="text-lg font-semibold text-green-700">✓</span>
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Active Bookings</p>
@@ -150,7 +150,7 @@ export default function DashboardPage() {
               <Card>
                 <div className="flex items-center">
                   <div className="p-2 bg-yellow-100 rounded-lg">
-                    <span className="text-2xl">💰</span>
+                    <span className="text-lg font-semibold text-yellow-700">$</span>
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Total Earnings</p>
@@ -163,7 +163,7 @@ export default function DashboardPage() {
             <Card>
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
-                  <span className="text-2xl">⭐</span>
+                  <span className="text-lg font-semibold text-blue-700">★</span>
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Average Rating</p>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
             <Card>
               <div className="text-center">
                 <div className="p-4 bg-primary-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-2xl">🏠</span>
+                  <span className="text-lg font-semibold text-primary-700">H</span>
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Manage Driveways</h3>
                 <p className="text-gray-600 mb-4">Add, edit, or remove your driveway listings</p>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
             <Card>
               <div className="text-center">
                 <div className="p-4 bg-green-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-2xl">🔍</span>
+                  <span className="text-lg font-semibold text-green-700">S</span>
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Find Parking</h3>
                 <p className="text-gray-600 mb-4">Search for available parking spots</p>
@@ -209,7 +209,7 @@ export default function DashboardPage() {
           <Card>
             <div className="text-center">
               <div className="p-4 bg-blue-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <span className="text-2xl">📋</span>
+                <span className="text-lg font-semibold text-blue-700">B</span>
               </div>
               <h3 className="text-lg font-semibold mb-2">My Bookings</h3>
               <p className="text-gray-600 mb-4">View and manage your bookings</p>
@@ -227,7 +227,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between py-3 border-b border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg mr-3">
-                  <span className="text-lg">✅</span>
+                  <span className="text-sm font-semibold text-green-700">✓</span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Booking Confirmed</p>
@@ -240,7 +240,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between py-3 border-b border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                  <span className="text-lg">💰</span>
+                  <span className="text-sm font-semibold text-blue-700">$</span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Payment Received</p>
@@ -253,7 +253,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between py-3">
               <div className="flex items-center">
                 <div className="p-2 bg-yellow-100 rounded-lg mr-3">
-                  <span className="text-lg">⭐</span>
+                  <span className="text-sm font-semibold text-yellow-700">★</span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">New Review</p>

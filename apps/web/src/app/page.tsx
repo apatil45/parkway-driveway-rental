@@ -59,7 +59,7 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🔍</span>
+                <span className="text-lg font-semibold text-primary-700">S</span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Find Parking</h3>
               <p className="text-gray-600">
@@ -69,7 +69,7 @@ export default function Home() {
             
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">💰</span>
+                <span className="text-lg font-semibold text-primary-700">$</span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Earn Money</h3>
               <p className="text-gray-600">
@@ -79,7 +79,7 @@ export default function Home() {
             
             <div className="text-center">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🔒</span>
+                <span className="text-lg font-semibold text-primary-700">L</span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Secure Payments</h3>
               <p className="text-gray-600">
@@ -141,7 +141,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Parkway. All rights reserved. Built with ❤️ for FREE.</p>
+            <p>&copy; 2024 Parkway. All rights reserved.</p>
           </div>
         </div>
       </footer>

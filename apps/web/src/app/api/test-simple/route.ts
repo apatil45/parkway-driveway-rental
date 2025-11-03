@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    console.log('🔍 Testing simple API route...');
+    console.log('[TEST] Testing simple API route...');
     
     // Test basic functionality without database
     const testData = {
@@ -15,7 +15,7 @@ export async function GET() {
       jwtSecret: process.env.JWT_SECRET ? 'SET' : 'NOT SET'
     };
     
-    console.log('✅ Simple test completed');
+    console.log('[TEST] Simple test completed');
     
     return NextResponse.json({
       success: true,
@@ -23,7 +23,7 @@ export async function GET() {
       data: testData
     });
   } catch (error) {
-    console.error('❌ Simple test failed:', error);
+    console.error('[TEST] Simple test failed:', error);
     return NextResponse.json({
       success: false,
       message: 'Simple test failed',

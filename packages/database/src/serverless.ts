@@ -23,7 +23,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Graceful shutdown
 export async function disconnectDatabase() {
   await prisma.$disconnect();
-  console.log('✅ Database disconnected');
+  console.log('[DB] Database disconnected');
 }
 
 // Health check for serverless

@@ -5,23 +5,23 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    console.log('🔍 Testing serverless Prisma client...');
+    console.log('[TEST] Testing serverless Prisma client...');
     
     // Test basic connection
     await prisma.$connect();
-    console.log('✅ Database connected successfully');
+    console.log('[TEST] Database connected successfully');
     
     // Test user count
     const userCount = await prisma.user.count();
-    console.log(`✅ User count: ${userCount}`);
+    console.log(`[TEST] User count: ${userCount}`);
     
     // Test driveway count
     const drivewayCount = await prisma.driveway.count();
-    console.log(`✅ Driveway count: ${drivewayCount}`);
+    console.log(`[TEST] Driveway count: ${drivewayCount}`);
     
     // Test booking count
     const bookingCount = await prisma.booking.count();
-    console.log(`✅ Booking count: ${bookingCount}`);
+    console.log(`[TEST] Booking count: ${bookingCount}`);
     
     await prisma.$disconnect();
     
@@ -37,7 +37,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('❌ Serverless database test failed:', error);
+    console.error('[TEST] Serverless database test failed:', error);
     return NextResponse.json({
       success: false,
       message: 'Serverless database test failed',

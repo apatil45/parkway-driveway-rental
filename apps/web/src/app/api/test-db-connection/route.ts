@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    console.log('🔍 Testing database connection details...');
+    console.log('[TEST] Testing database connection details...');
     
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) {
@@ -60,7 +60,7 @@ export async function GET() {
     }
     
   } catch (error) {
-    console.error('❌ Database connection test failed:', error);
+    console.error('[TEST] Database connection test failed:', error);
     return NextResponse.json({
       success: false,
       message: 'Database connection test failed',

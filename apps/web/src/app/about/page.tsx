@@ -54,7 +54,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="text-center">
               <div className="p-4 bg-primary-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <span className="text-2xl">🔍</span>
+                <span className="text-lg font-semibold text-primary-700">S</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">For Drivers</h3>
               <p className="text-gray-600">
@@ -65,7 +65,7 @@ export default function AboutPage() {
 
             <Card className="text-center">
               <div className="p-4 bg-green-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <span className="text-2xl">💰</span>
+                <span className="text-lg font-semibold text-green-700">$</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">For Owners</h3>
               <p className="text-gray-600">
@@ -76,7 +76,7 @@ export default function AboutPage() {
 
             <Card className="text-center">
               <div className="p-4 bg-blue-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <span className="text-2xl">🔒</span>
+                <span className="text-lg font-semibold text-blue-700">L</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Secure & Safe</h3>
               <p className="text-gray-600">
@@ -92,7 +92,7 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Why Choose Parkway?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">🚀 Easy to Use</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Easy to Use</h3>
               <p className="text-gray-600">
                 Our intuitive platform makes it simple to find parking or list your driveway. 
                 No complicated setup or technical knowledge required.
@@ -100,7 +100,7 @@ export default function AboutPage() {
             </Card>
 
             <Card>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">💳 Secure Payments</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Secure Payments</h3>
               <p className="text-gray-600">
                 All payments are processed securely through our platform. 
                 Owners get paid instantly, and drivers are protected with automatic refunds.
@@ -108,7 +108,7 @@ export default function AboutPage() {
             </Card>
 
             <Card>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">📱 Mobile Friendly</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Mobile Friendly</h3>
               <p className="text-gray-600">
                 Access Parkway from any device. Our responsive design works perfectly 
                 on smartphones, tablets, and desktop computers.
@@ -116,7 +116,7 @@ export default function AboutPage() {
             </Card>
 
             <Card>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">🛡️ Trusted & Reliable</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Trusted & Reliable</h3>
               <p className="text-gray-600">
                 We verify all users and provide 24/7 customer support. 
                 Your safety and satisfaction are our top priorities.
@@ -203,7 +203,7 @@ export default function AboutPage() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Parkway. All rights reserved. Built with ❤️ for FREE.</p>
+            <p>&copy; 2024 Parkway. All rights reserved.</p>
           </div>
         </div>
       </footer>

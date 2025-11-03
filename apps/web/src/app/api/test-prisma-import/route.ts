@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    console.log('🔍 Testing Prisma import...');
+    console.log('[TEST] Testing Prisma import...');
     
     // Test importing Prisma client
     let prisma;
     try {
       const { PrismaClient } = await import('@prisma/client');
-      console.log('✅ PrismaClient imported successfully');
+      console.log('[TEST] PrismaClient imported successfully');
       
       prisma = new PrismaClient({
         log: ['error'],
@@ -20,18 +20,18 @@ export async function GET() {
           },
         },
       });
-      console.log('✅ PrismaClient instance created');
+      console.log('[TEST] PrismaClient instance created');
       
       // Test connection
       await prisma.$connect();
-      console.log('✅ Database connected');
+      console.log('[TEST] Database connected');
       
       // Test query
       const userCount = await prisma.user.count();
-      console.log(`✅ User count: ${userCount}`);
+      console.log(`[TEST] User count: ${userCount}`);
       
       await prisma.$disconnect();
-      console.log('✅ Database disconnected');
+      console.log('[TEST] Database disconnected');
       
       return NextResponse.json({
         success: true,
@@ -43,7 +43,7 @@ export async function GET() {
       });
       
     } catch (prismaError) {
-      console.error('❌ Prisma error:', prismaError);
+      console.error('[TEST] Prisma error:', prismaError);
       return NextResponse.json({
         success: false,
         message: 'Prisma import/connection failed',
@@ -53,7 +53,7 @@ export async function GET() {
     }
     
   } catch (error) {
-    console.error('❌ General error:', error);
+    console.error('[TEST] General error:', error);
     return NextResponse.json({
       success: false,
       message: 'General test failed',

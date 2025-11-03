@@ -403,7 +403,7 @@ function SearchPageContent() {
             {emptyResults && (
               <div className="flex items-center justify-center h-full text-gray-500">
                 <div className="text-center">
-                  <div className="text-4xl mb-2">🗺️</div>
+                  <div className="text-lg font-semibold text-gray-600 mb-2">MAP</div>
                   <p className="text-sm">No driveways to display on map</p>
                 </div>
               </div>
@@ -421,7 +421,7 @@ function SearchPageContent() {
             <div className="p-4 sm:p-6">
               {emptyResults ? (
                 <div className="text-center py-12">
-                  <div className="text-4xl mb-4">🚗</div>
+                  <div className="text-lg font-semibold text-gray-600 mb-4">PARKING</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No driveways found</h3>
                   <p className="text-sm text-gray-600 mb-4">Try adjusting your search filters</p>
                   <Button onClick={() => setShowFilters(true)} size="sm">
@@ -460,7 +460,7 @@ function SearchPageContent() {
                             </div>
                           ) : (
                             <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0 bg-gray-200 flex items-center justify-center">
-                              <span className="text-3xl">🚗</span>
+                              <span className="text-sm font-medium text-gray-500">P</span>
                             </div>
                           )}
 

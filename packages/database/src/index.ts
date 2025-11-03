@@ -48,9 +48,9 @@ export type {
 export async function connectDatabase() {
   try {
     await prisma.$connect();
-    console.log('✅ Database connected successfully');
+    console.log('[DB] Database connected successfully');
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
+    console.error('[DB] Database connection failed:', error);
     throw error;
   }
 }
@@ -58,7 +58,7 @@ export async function connectDatabase() {
 // Graceful shutdown
 export async function disconnectDatabase() {
   await prisma.$disconnect();
-  console.log('✅ Database disconnected');
+  console.log('[DB] Database disconnected');
 }
 
 // Health check
