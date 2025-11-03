@@ -16,17 +16,19 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   const res = NextResponse.json({ success: true, message: 'Logged out', statusCode: 200 });
-  const isProd = process.env.NODE_ENV === 'production';
+  // Use secure cookies in production (HTTPS required)
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+  const isSecure = isProd || request.url.startsWith('https://');
   res.cookies.set('access_token', '', {
     httpOnly: true,
-    secure: isProd,
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
   });
   res.cookies.set('refresh_token', '', {
     httpOnly: true,
-    secure: isProd,
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 0,

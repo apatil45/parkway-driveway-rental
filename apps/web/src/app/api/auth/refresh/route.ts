@@ -28,10 +28,12 @@ export async function POST(request: NextRequest) {
     }
     const access = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET!, { expiresIn: '15m' });
     const res = NextResponse.json({ success: true, message: 'Token refreshed', statusCode: 200 });
-    const isProd = process.env.NODE_ENV === 'production';
+    // Use secure cookies in production (HTTPS required)
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    const isSecure = isProd || request.url.startsWith('https://');
     res.cookies.set('access_token', access, {
       httpOnly: true,
-      secure: isProd,
+      secure: isSecure,
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 15,

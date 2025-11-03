@@ -118,17 +118,19 @@ export async function POST(request: NextRequest) {
 
     // Set httpOnly cookies
     const res = NextResponse.json(createApiResponse({ user: userData }, 'Login successful'));
-    const isProd = process.env.NODE_ENV === 'production';
+    // Use secure cookies in production (HTTPS required)
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    const isSecure = isProd || request.url.startsWith('https://');
     res.cookies.set('access_token', token, {
       httpOnly: true,
-      secure: isProd,
+      secure: isSecure,
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 15, // 15 minutes
     });
     res.cookies.set('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: isProd,
+      secure: isSecure,
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 days
