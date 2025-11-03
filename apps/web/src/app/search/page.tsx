@@ -177,12 +177,15 @@ function SearchPageContent() {
     ? [drivewayList[0].latitude, drivewayList[0].longitude]
     : [37.7749, -122.4194];
 
-  // Map markers
+  // Map markers with enhanced data
   const mapMarkers = drivewayList.map(d => ({
     id: d.id,
     position: [d.latitude, d.longitude] as [number, number],
     title: d.title,
     price: d.pricePerHour,
+    address: d.address,
+    rating: d.averageRating,
+    image: d.images && d.images.length > 0 ? d.images[0] : undefined,
   }));
 
   const emptyResults = Array.isArray(drivewayList) && drivewayList.length === 0 && !loading;
