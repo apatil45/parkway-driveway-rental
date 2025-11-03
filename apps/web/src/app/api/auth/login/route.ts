@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcrypt';
+import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { 
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcryptjs.compare(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(
         createApiError('Invalid credentials', 401, 'INVALID_CREDENTIALS'),

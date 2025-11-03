@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcrypt';
+import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     // Hash password
     const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcryptjs.hash(password, saltRounds);
 
     // Create user
     const user = await prisma.user.create({
