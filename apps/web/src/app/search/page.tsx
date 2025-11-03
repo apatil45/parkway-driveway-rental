@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select } from '@/components/ui';
+import { AppLayout } from '@/components/layout';
 import MapView from '@/components/ui/MapView';
 import { useDriveways } from '@/hooks';
 
@@ -187,60 +188,53 @@ function SearchPageContent() {
   const emptyResults = Array.isArray(drivewayList) && drivewayList.length === 0 && !loading;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Clean Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/dashboard" className="text-xl font-bold text-primary-600">
-              Parkway
-            </Link>
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  onClick={() => setViewMode('map')}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    viewMode === 'map'
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Map
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  List
-                </button>
-                <button
-                  onClick={() => setViewMode('split')}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    viewMode === 'split'
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Both
-                </button>
-              </div>
+    <AppLayout showFooter={false}>
+      <div className="min-h-screen bg-gray-50">
+      {/* View Mode Toggle */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="hidden sm:flex items-center gap-2">
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                onClick={() => setViewMode('map')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'map'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
-                {showFilters ? 'Hide Filters' : 'Filters'}
+                Map
               </button>
-              <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
-                Dashboard
-              </Link>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                List
+              </button>
+              <button
+                onClick={() => setViewMode('split')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'split'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Both
+              </button>
             </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              {showFilters ? 'Hide Filters' : 'Filters'}
+            </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Filters Panel (Collapsible) */}
       {showFilters && (
@@ -564,7 +558,8 @@ function SearchPageContent() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { AppLayout } from '@/components/layout';
 import api from '@/lib/api';
 
 interface Driveway {
@@ -173,27 +174,8 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <Link href="/search" className="text-2xl font-bold text-primary-600">
-              Parkway
-            </Link>
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-700 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <Link href="/search" className="text-gray-700 hover:text-gray-900">
-                Search
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 min-h-screen">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
@@ -448,6 +430,7 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

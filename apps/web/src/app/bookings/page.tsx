@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
+import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 
 interface Booking {
@@ -164,27 +165,8 @@ export default function BookingsPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-[color:rgb(var(--color-surface))] border-b border-[color:rgb(var(--color-border))]">
-        <div className="container">
-          <div className="flex justify-between items-center py-6">
-            <Link href="/dashboard" className="text-2xl font-bold text-primary-600">
-              Parkway
-            </Link>
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-700 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <Link href="/search" className="text-gray-700 hover:text-gray-900">
-                Search
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="container py-8">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">My Bookings</h1>
           
@@ -394,6 +376,6 @@ export default function BookingsPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }

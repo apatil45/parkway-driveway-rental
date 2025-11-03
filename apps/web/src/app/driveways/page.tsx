@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, Button } from '@/components/ui';
+import { AppLayout } from '@/components/layout';
 import api from '@/lib/api';
 
 interface DrivewayItem {
@@ -32,7 +33,8 @@ export default function OwnerDrivewaysPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div className="container py-8">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">My Driveways</h1>
         <Link href="/driveways/new" className="btn btn-primary">New Driveway</Link>
@@ -69,7 +71,8 @@ export default function OwnerDrivewaysPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </AppLayout>
   );
 }
 

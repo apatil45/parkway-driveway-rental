@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button } from '@/components/ui';
+import { AppLayout } from '@/components/layout';
 import { useAuth, useDashboardStats } from '@/hooks';
 
 interface User {
@@ -47,7 +48,6 @@ export default function DashboardPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  const handleLogout = () => { logout(); };
 
   const loading = authLoading || statsLoading;
   const error = authError || statsError;
@@ -84,31 +84,8 @@ export default function DashboardPage() {
   const isDriver = user?.roles.includes('DRIVER');
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-[color:rgb(var(--color-surface))] border-b border-[color:rgb(var(--color-border))]">
-        <div className="container">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-primary-600">
-                Parkway
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user?.name}</span>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="text-gray-500 hover:text-gray-900"
-              >
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="container py-8">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -122,32 +99,36 @@ export default function DashboardPage() {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <div className="flex items-center">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <span className="text-2xl">📅</span>
+            <Link href="/bookings">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <div className="flex items-center">
+                  <div className="p-2 bg-primary-100 rounded-lg">
+                    <span className="text-2xl">📅</span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+                    <p className="text-2xl font-bold">{stats.totalBookings}</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                  <p className="text-2xl font-bold">{stats.totalBookings}</p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
 
-            <Card>
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <span className="text-lg font-semibold text-green-700">✓</span>
+            <Link href="/bookings?status=CONFIRMED">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <span className="text-lg font-semibold text-green-700">✓</span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Active Bookings</p>
+                    <p className="text-2xl font-bold">{stats.activeBookings}</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Bookings</p>
-                  <p className="text-2xl font-bold">{stats.activeBookings}</p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
 
             {isOwner && (
-              <Card>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="flex items-center">
                   <div className="p-2 bg-yellow-100 rounded-lg">
                     <span className="text-lg font-semibold text-yellow-700">$</span>
@@ -265,6 +246,6 @@ export default function DashboardPage() {
           </div>
         </Card>
       </div>
-    </div>
+    </AppLayout>
   );
 }
