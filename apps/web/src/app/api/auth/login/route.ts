@@ -170,12 +170,25 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    const message = process.env.NODE_ENV === 'development'
+    // In development, include error details; in production, keep it generic
+    const isDev = process.env.NODE_ENV === 'development';
+    const message = isDev
       ? `Internal server error: ${errorMessage}`
-      : 'Internal server error';
-    return NextResponse.json(
-      createApiError(message, 500, 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
+      : 'Internal server error. Please check server logs.';
+    
+    // Create error response
+    const errorResponse = createApiError(message, 500, 'INTERNAL_ERROR');
+    
+    // Include debug info only in development or preview
+    if (isDev || process.env.VERCEL_ENV === 'preview') {
+      (errorResponse as any).debug = {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        message: errorMessage,
+        hasJwtSecret: !!process.env.JWT_SECRET,
+        hasDbUrl: !!process.env.DATABASE_URL,
+      };
+    }
+    
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
