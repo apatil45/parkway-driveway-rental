@@ -56,32 +56,32 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Optional: radius search if latitude/longitude + radius provided via query
-    const lat = searchParams.get('latitude');
-    const lon = searchParams.get('longitude');
-    const rad = searchParams.get('radius'); // km
-
-    // Fallback filtering in JS for radius if provided (simple post-filter)
-    let drivewaysRaw: any[] = [];
-
     // Optional owner=me filter requires auth cookie
     const ownerFilter = searchParams.get('owner');
     let authUserId: string | undefined;
     if (ownerFilter === 'me') {
-      const token = (request as any).cookies?.get?.('access_token')?.value;
-      if (token) {
-        try { authUserId = (jwt.verify(token, process.env.JWT_SECRET!) as any)?.id; } catch {}
-      }
+      const { optionalAuth } = await import('@/lib/auth-middleware');
+      const auth = await optionalAuth(request);
+      authUserId = auth.userId;
       if (authUserId) {
         (where as any).ownerId = authUserId;
       }
     }
 
+    // Optional: radius search if latitude/longitude + radius provided via query
+    const lat = searchParams.get('latitude');
+    const lon = searchParams.get('longitude');
+    const rad = searchParams.get('radius'); // km
+
+    // If radius search is requested, we need to fetch more results and filter
+    // For better performance with PostGIS, but for now we'll optimize the JS filtering
+    const fetchLimit = lat && lon && rad ? limit * 3 : limit; // Fetch more if radius search
+
     const [driveways, total] = await Promise.all([
       prisma.driveway.findMany({
         where,
         skip,
-        take: limit,
+        take: fetchLimit,
         include: {
           owner: {
             select: {
@@ -103,30 +103,50 @@ export async function GET(request: NextRequest) {
       prisma.driveway.count({ where })
     ]);
 
-    // Calculate average ratings
-    let drivewaysWithRatings = driveways.map((driveway: any) => ({
-      ...driveway,
-      averageRating: driveway.reviews.length > 0 
-        ? driveway.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / driveway.reviews.length
-        : 0,
-      reviewCount: driveway.reviews.length
-    }));
+    // Calculate average ratings (using aggregation when possible)
+    let drivewaysWithRatings = driveways.map((driveway: any) => {
+      const reviewCount = driveway.reviews.length;
+      const averageRating = reviewCount > 0
+        ? driveway.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / reviewCount
+        : 0;
+      
+      return {
+        ...driveway,
+        averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
+        reviewCount
+      };
+    });
 
+    // Apply radius filter if provided (optimized calculation)
     if (lat && lon && rad) {
-      const R = 6371; // km
+      const R = 6371; // Earth radius in km
       const latNum = parseFloat(lat);
       const lonNum = parseFloat(lon);
       const radNum = parseFloat(rad);
+      
       if (Number.isFinite(latNum) && Number.isFinite(lonNum) && Number.isFinite(radNum) && radNum > 0) {
+        // Pre-calculate constants for better performance
+        const latRad = latNum * Math.PI / 180;
+        const cosLat = Math.cos(latRad);
+        
         drivewaysWithRatings = drivewaysWithRatings.filter((d: any) => {
+          // Haversine formula (optimized)
           const dLat = (d.latitude - latNum) * Math.PI / 180;
           const dLon = (d.longitude - lonNum) * Math.PI / 180;
-          const a = Math.sin(dLat/2)**2 + Math.cos(latNum * Math.PI/180) * Math.cos(d.latitude * Math.PI/180) * Math.sin(dLon/2)**2;
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
+                   cosLat * Math.cos(d.latitude * Math.PI / 180) * 
+                   Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
           const dist = R * c;
           return dist <= radNum;
         });
+        
+        // Re-slice to limit after filtering
+        drivewaysWithRatings = drivewaysWithRatings.slice(0, limit);
       }
+    } else {
+      // If no radius search, ensure we respect the limit
+      drivewaysWithRatings = drivewaysWithRatings.slice(0, limit);
     }
 
     return NextResponse.json(createApiResponse({

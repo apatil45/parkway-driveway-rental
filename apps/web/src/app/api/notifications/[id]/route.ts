@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
+import { requireAuth } from '@/lib/auth-middleware';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const token = request.cookies.get('access_token')?.value;
-    
-    if (!token) {
-      return NextResponse.json(
-        createApiError('Access denied. No token provided.', 401, 'NO_TOKEN'),
-        { status: 401 }
-      );
+    // Use centralized auth middleware
+    const authResult = await requireAuth(request);
+    if (!authResult.success) {
+      return authResult.error!;
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const userId = authResult.userId!;
 
     const body = await request.json();
     const { isRead } = body;
@@ -62,17 +57,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const token = request.cookies.get('access_token')?.value;
-    
-    if (!token) {
-      return NextResponse.json(
-        createApiError('Access denied. No token provided.', 401, 'NO_TOKEN'),
-        { status: 401 }
-      );
+    // Use centralized auth middleware
+    const authResult = await requireAuth(request);
+    if (!authResult.success) {
+      return authResult.error!;
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.id;
+    const userId = authResult.userId!;
 
     // Verify notification belongs to user
     const notification = await prisma.notification.findUnique({

@@ -11,6 +11,8 @@
  * 4. Set RESEND_FROM_EMAIL to your verified domain email
  */
 
+import { escapeHtml } from './sanitize';
+
 interface EmailOptions {
   to: string;
   subject: string;
@@ -87,12 +89,12 @@ export const emailTemplates = {
             <h2 style="color: #1f2937; margin-top: 0;">Booking Confirmed!</h2>
             <p>Your booking has been confirmed. Here are the details:</p>
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Driveway:</strong> ${booking.drivewayTitle}</p>
-              <p><strong>Address:</strong> ${booking.address}</p>
-              <p><strong>Start Time:</strong> ${new Date(booking.startTime).toLocaleString()}</p>
-              <p><strong>End Time:</strong> ${new Date(booking.endTime).toLocaleString()}</p>
-              <p><strong>Total Price:</strong> $${booking.totalPrice.toFixed(2)}</p>
-              <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
+              <p><strong>Driveway:</strong> ${escapeHtml(booking.drivewayTitle)}</p>
+              <p><strong>Address:</strong> ${escapeHtml(booking.address)}</p>
+              <p><strong>Start Time:</strong> ${escapeHtml(new Date(booking.startTime).toLocaleString())}</p>
+              <p><strong>End Time:</strong> ${escapeHtml(new Date(booking.endTime).toLocaleString())}</p>
+              <p><strong>Total Price:</strong> $${escapeHtml(booking.totalPrice.toFixed(2))}</p>
+              <p><strong>Booking ID:</strong> ${escapeHtml(booking.bookingId)}</p>
             </div>
             <p style="margin-top: 30px;">Thank you for using Parkway!</p>
           </div>
@@ -122,9 +124,9 @@ export const emailTemplates = {
             <h2 style="color: #1f2937; margin-top: 0;">Payment Received!</h2>
             <p>You have received payment for your driveway booking:</p>
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Driveway:</strong> ${booking.drivewayTitle}</p>
-              <p><strong>Amount:</strong> $${booking.totalPrice.toFixed(2)}</p>
-              <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
+              <p><strong>Driveway:</strong> ${escapeHtml(booking.drivewayTitle)}</p>
+              <p><strong>Amount:</strong> $${escapeHtml(booking.totalPrice.toFixed(2))}</p>
+              <p><strong>Booking ID:</strong> ${escapeHtml(booking.bookingId)}</p>
             </div>
             <p style="margin-top: 30px;">The payment has been processed successfully.</p>
           </div>
@@ -154,9 +156,9 @@ export const emailTemplates = {
             <h2 style="color: #1f2937; margin-top: 0;">Reminder: Upcoming Booking</h2>
             <p>This is a reminder about your upcoming booking:</p>
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Driveway:</strong> ${booking.drivewayTitle}</p>
-              <p><strong>Address:</strong> ${booking.address}</p>
-              <p><strong>Start Time:</strong> ${new Date(booking.startTime).toLocaleString()}</p>
+              <p><strong>Driveway:</strong> ${escapeHtml(booking.drivewayTitle)}</p>
+              <p><strong>Address:</strong> ${escapeHtml(booking.address)}</p>
+              <p><strong>Start Time:</strong> ${escapeHtml(new Date(booking.startTime).toLocaleString())}</p>
             </div>
             <p style="margin-top: 30px;">Don't forget to arrive on time!</p>
           </div>
