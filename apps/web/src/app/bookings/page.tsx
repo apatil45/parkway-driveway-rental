@@ -6,6 +6,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
+import { useToast } from '@/components/ui/Toast';
 
 interface Booking {
   id: string;
@@ -50,6 +51,7 @@ export default function BookingsPage() {
 
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchBookings();
@@ -90,11 +92,11 @@ export default function BookingsPage() {
       setLoading(true);
       await api.patch(`/bookings/${bookingId}`, { status: newStatus });
       await fetchBookings(pagination.page);
-      alert(`Booking ${newStatus.toLowerCase()} successfully`);
+      showToast(`Booking ${newStatus.toLowerCase()} successfully`, 'success');
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to update booking';
       setError(msg);
-      alert(msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }

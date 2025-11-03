@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Input, Button, ImageUpload } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
+import { useToast } from '@/components/ui/Toast';
 import api from '@/lib/api';
 
 export default function NewDrivewayPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ title: '', address: '', pricePerHour: '', capacity: '', images: [] as string[], amenities: '' });
@@ -25,9 +27,12 @@ export default function NewDrivewayPage() {
         images: form.images || [],
         amenities: form.amenities ? form.amenities.split(',').map(s => s.trim()) : [],
       });
+      showToast('Driveway created successfully!', 'success');
       router.push('/driveways');
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to create driveway');
+      const errorMsg = e.response?.data?.message || 'Failed to create driveway';
+      setError(errorMsg);
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }

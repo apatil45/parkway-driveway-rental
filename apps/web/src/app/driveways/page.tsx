@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, SkeletonList } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import api from '@/lib/api';
 
@@ -41,11 +41,7 @@ export default function OwnerDrivewaysPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          <div className="h-20 skeleton" />
-          <div className="h-20 skeleton" />
-          <div className="h-20 skeleton" />
-        </div>
+        <SkeletonList count={5} />
       ) : items.length === 0 ? (
         <Card className="text-center py-12">
           <p className="text-gray-600">You have not listed any driveways yet.</p>

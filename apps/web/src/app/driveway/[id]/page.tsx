@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
+import { useToast } from '@/components/ui/Toast';
 import api from '@/lib/api';
 
 interface Driveway {
@@ -72,6 +73,7 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
   const [showBookingForm, setShowBookingForm] = useState(false);
 
   const router = useRouter();
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchDriveway();
@@ -100,7 +102,7 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
     try {
       // Validate required fields
       if (!bookingForm.startTime || !bookingForm.endTime) {
-        alert('Please fill in both start and end times');
+        showToast('Please fill in both start and end times', 'error');
         return;
       }
 
@@ -134,9 +136,10 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
       
       // Redirect to checkout page with booking ID
       if (booking?.id) {
+        showToast('Booking created successfully! Redirecting to checkout...', 'success');
         router.push(`/checkout?bookingId=${booking.id}`);
       } else {
-        alert('Booking created successfully!');
+        showToast('Booking created successfully!', 'success');
         setShowBookingForm(false);
         setBookingForm({
           startTime: '',
@@ -152,7 +155,7 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to create booking';
-      alert(errorMessage);
+      showToast(errorMessage, 'error');
       console.error('Booking error:', err.response?.data || err);
     } finally {
       setBookingLoading(false);

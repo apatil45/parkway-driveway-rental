@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Input, Button, ImageUpload } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
+import { useToast } from '@/components/ui/Toast';
 import api from '@/lib/api';
 
 export default function EditDrivewayPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -46,9 +48,12 @@ export default function EditDrivewayPage({ params }: { params: { id: string } })
         images: form.images || [],
         amenities: form.amenities ? form.amenities.split(',').map(s => s.trim()) : [],
       });
+      showToast('Driveway updated successfully!', 'success');
       router.push('/driveways');
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to update driveway');
+      const errorMsg = e.response?.data?.message || 'Failed to update driveway';
+      setError(errorMsg);
+      showToast(errorMsg, 'error');
     } finally {
       setSaving(false);
     }

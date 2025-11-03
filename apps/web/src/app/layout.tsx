@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { ToastProvider } from '@/components/ui/Toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -13,6 +14,11 @@ export const metadata: Metadata = {
     shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
+  openGraph: {
+    title: 'Parkway - Driveway Rental Platform',
+    description: 'Find and rent driveways near you. List your driveway and earn money.',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({
@@ -23,9 +29,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased` }>
-        <div className="min-h-screen bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))]">
-          {children}
-        </div>
+        <ToastProvider>
+          <div className="min-h-screen bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))]">
+            {children}
+          </div>
+        </ToastProvider>
       </body>
     </html>
   )

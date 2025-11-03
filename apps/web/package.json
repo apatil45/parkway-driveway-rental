@@ -12,6 +12,7 @@
     "postinstall": "prisma generate --schema=../../packages/database/schema.prisma"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.3.2",
     "@parkway/database": "file:../../packages/database",
     "@parkway/shared": "file:../../packages/shared",

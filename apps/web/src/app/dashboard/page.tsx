@@ -6,6 +6,15 @@ import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useAuth, useDashboardStats } from '@/hooks';
+import { 
+  CalendarIcon, 
+  CheckCircleIcon, 
+  CurrencyDollarIcon, 
+  StarIcon,
+  HomeIcon,
+  MagnifyingGlassIcon,
+  BookOpenIcon
+} from '@heroicons/react/24/outline';
 
 interface User {
   id: string;
@@ -103,7 +112,7 @@ export default function DashboardPage() {
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="flex items-center">
                   <div className="p-2 bg-primary-100 rounded-lg">
-                    <span className="text-2xl">📅</span>
+                    <CalendarIcon className="w-6 h-6 text-primary-600" />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Total Bookings</p>
@@ -117,7 +126,7 @@ export default function DashboardPage() {
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="flex items-center">
                   <div className="p-2 bg-green-100 rounded-lg">
-                    <span className="text-lg font-semibold text-green-700">✓</span>
+                    <CheckCircleIcon className="w-6 h-6 text-green-700" />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Active Bookings</p>
@@ -131,9 +140,9 @@ export default function DashboardPage() {
               <Link href="/bookings?status=COMPLETED">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <div className="flex items-center">
-                    <div className="p-2 bg-yellow-100 rounded-lg">
-                      <span className="text-lg font-semibold text-yellow-700">$</span>
-                    </div>
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <CurrencyDollarIcon className="w-6 h-6 text-yellow-700" />
+                  </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Total Earnings</p>
                       <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
@@ -147,7 +156,7 @@ export default function DashboardPage() {
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="flex items-center">
                   <div className="p-2 bg-blue-100 rounded-lg">
-                    <span className="text-lg font-semibold text-blue-700">★</span>
+                    <StarIcon className="w-6 h-6 text-blue-700" />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Average Rating</p>
@@ -165,7 +174,7 @@ export default function DashboardPage() {
             <Card>
               <div className="text-center">
                 <div className="p-4 bg-primary-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-primary-700">H</span>
+                  <HomeIcon className="w-8 h-8 text-primary-700" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Manage Driveways</h3>
                 <p className="text-gray-600 mb-4">Add, edit, or remove your driveway listings</p>
@@ -180,7 +189,7 @@ export default function DashboardPage() {
             <Card>
               <div className="text-center">
                 <div className="p-4 bg-green-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-green-700">S</span>
+                  <MagnifyingGlassIcon className="w-8 h-8 text-green-700" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Find Parking</h3>
                 <p className="text-gray-600 mb-4">Search for available parking spots</p>
@@ -193,9 +202,9 @@ export default function DashboardPage() {
 
           <Card>
             <div className="text-center">
-              <div className="p-4 bg-blue-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <span className="text-lg font-semibold text-blue-700">B</span>
-              </div>
+                <div className="p-4 bg-blue-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <BookOpenIcon className="w-8 h-8 text-blue-700" />
+                </div>
               <h3 className="text-lg font-semibold mb-2">My Bookings</h3>
               <p className="text-gray-600 mb-4">View and manage your bookings</p>
               <Link href="/bookings" className="btn btn-primary w-full">
@@ -212,7 +221,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between py-3 border-b border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg mr-3">
-                  <span className="text-sm font-semibold text-green-700">✓</span>
+                  <CheckCircleIcon className="w-5 h-5 text-green-700" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Booking Confirmed</p>
@@ -225,7 +234,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between py-3 border-b border-gray-200">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                  <span className="text-sm font-semibold text-blue-700">$</span>
+                  <CurrencyDollarIcon className="w-5 h-5 text-blue-700" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Payment Received</p>
@@ -238,7 +247,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between py-3">
               <div className="flex items-center">
                 <div className="p-2 bg-yellow-100 rounded-lg mr-3">
-                  <span className="text-sm font-semibold text-yellow-700">★</span>
+                  <StarIcon className="w-5 h-5 text-yellow-700" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">New Review</p>

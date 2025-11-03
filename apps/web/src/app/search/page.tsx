@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
+import { useToast } from '@/components/ui/Toast';
 import MapView from '@/components/ui/MapView';
 import { useDriveways } from '@/hooks';
+import { MapPinIcon } from '@heroicons/react/24/outline';
 
 interface Driveway {
   id: string;
@@ -69,6 +71,7 @@ function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
+  const { showToast } = useToast();
 
   useEffect(() => {
     performSearch();
@@ -144,9 +147,11 @@ function SearchPageContent() {
 
   if (loading && (!driveways || driveways.length === 0)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="xl" text="Loading driveways..." />
-      </div>
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
+          <SkeletonList count={5} />
+        </div>
+      </AppLayout>
     );
   }
 
@@ -322,20 +327,21 @@ function SearchPageContent() {
                   size="sm"
                   onClick={() => {
                     if (!navigator.geolocation) {
-                      alert('Geolocation not supported');
+                      showToast('Geolocation is not supported by your browser', 'error');
                       return;
                     }
                     navigator.geolocation.getCurrentPosition(
                       (pos) => {
                         handleFilterChange('latitude', String(pos.coords.latitude));
                         handleFilterChange('longitude', String(pos.coords.longitude));
+                        showToast('Location updated successfully', 'success');
                       },
-                      (err) => alert('Unable to get location')
+                      (err) => showToast('Unable to get your location. Please check your browser permissions.', 'error')
                     );
                   }}
                   className="w-full"
                 >
-                  📍 Use My Location
+                  <MapPinIcon className="w-4 h-4 mr-1" /> Use My Location
                 </Button>
               </div>
             </div>
@@ -490,7 +496,7 @@ function SearchPageContent() {
                               </div>
                               {distanceKm(driveway) !== null && (
                                 <span className="flex items-center gap-1">
-                                  <span>📍</span>
+                                  <MapPinIcon className="w-4 h-4" />
                                   {distanceKm(driveway)} km away
                                 </span>
                               )}

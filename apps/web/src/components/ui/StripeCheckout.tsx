@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui';
+import { useToast } from './Toast';
 import api from '@/lib/api';
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -19,6 +20,7 @@ function CheckoutInner({
 }) {
   const stripe = useStripe();
   const elements = useElements();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,13 +34,14 @@ function CheckoutInner({
       const result = await stripe.confirmPayment({ elements, redirect: 'if_required' });
       
       if (result.error) {
-        setError(result.error.message || 'Payment failed');
+        const errorMsg = result.error.message || 'Payment failed';
+        setError(errorMsg);
+        showToast(errorMsg, 'error');
       } else {
         // Payment succeeded
+        showToast('Payment confirmed! Your booking is now confirmed.', 'success');
         if (onSuccess) {
           onSuccess();
-        } else {
-          alert('Payment confirmed! Your booking is now confirmed.');
         }
       }
     } catch (err: any) {
