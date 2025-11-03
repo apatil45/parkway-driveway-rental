@@ -27,6 +27,17 @@ const generateRefreshToken = (userId: string): string => {
   );
 };
 
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Basic in-memory rate limit (dev/preview). Replace with Redis in prod.

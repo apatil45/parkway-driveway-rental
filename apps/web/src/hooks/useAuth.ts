@@ -56,10 +56,15 @@ export function useAuth() {
             isAuthenticated: true
           });
         } catch {
+          // Silently handle expected auth failures (no token)
           setAuthState({ user: null, loading: false, error: '', isAuthenticated: false });
         }
       } else {
-        setAuthState(prev => ({ ...prev, loading: false, error: 'Failed to verify authentication' }));
+        // Only set error for unexpected failures
+        const errorMessage = error.response?.status >= 500 
+          ? 'Failed to verify authentication'
+          : '';
+        setAuthState(prev => ({ ...prev, loading: false, error: errorMessage }));
       }
     }
   };
