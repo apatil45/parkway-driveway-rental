@@ -172,6 +172,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create Stripe payment intent if Stripe is configured
+    let paymentIntentId: string | undefined;
+    const stripeSecret = process.env.STRIPE_SECRET_KEY;
+    if (stripeSecret) {
+      try {
+        const stripe = (await import('stripe')).default;
+        const stripeClient = new stripe(stripeSecret);
+        const amountInCents = Math.round(totalPrice * 100);
+        
+        const paymentIntent = await stripeClient.paymentIntents.create({
+          amount: amountInCents,
+          currency: 'usd',
+          automatic_payment_methods: { enabled: true },
+          metadata: {
+            booking_userId: userId,
+            booking_drivewayId: drivewayId,
+            booking_startTime: startTime,
+            booking_endTime: endTime,
+          },
+        });
+        
+        paymentIntentId = paymentIntent.id;
+      } catch (error) {
+        console.error('Failed to create payment intent:', error);
+        // Continue without payment intent (will be created later if needed)
+      }
+    }
+
     // Create booking
     const booking = await prisma.booking.create({
       data: {
@@ -181,7 +209,8 @@ export async function POST(request: NextRequest) {
         endTime: end,
         totalPrice,
         specialRequests,
-        vehicleInfo: vehicleInfo || undefined
+        vehicleInfo: vehicleInfo || undefined,
+        paymentIntentId: paymentIntentId || undefined
       },
       include: {
         driveway: {

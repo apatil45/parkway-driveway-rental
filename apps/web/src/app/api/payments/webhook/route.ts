@@ -11,12 +11,44 @@ export async function POST(request: NextRequest) {
     try {
       const raw = await request.text();
       const stripeModule = await import('stripe');
-      // Use default API version for the key to avoid TS literal drift
       const stripe = new stripeModule.default(process.env.STRIPE_SECRET_KEY!);
       const event = stripe.webhooks.constructEvent(raw, sig, signingSecret);
-      // Here we could act on event.type like payment_intent.succeeded
+      
+      // Handle payment intent events
+      if (event.type === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object as any;
+        const paymentIntentId = paymentIntent.id;
+        
+        // Update booking with payment status
+        const { prisma } = await import('@parkway/database');
+        await prisma.booking.updateMany({
+          where: { paymentIntentId },
+          data: {
+            paymentStatus: 'COMPLETED',
+            status: 'CONFIRMED', // Auto-confirm booking when payment succeeds
+          },
+        });
+        
+        console.log(`[WEBHOOK] Payment succeeded for intent: ${paymentIntentId}`);
+      } else if (event.type === 'payment_intent.payment_failed') {
+        const paymentIntent = event.data.object as any;
+        const paymentIntentId = paymentIntent.id;
+        
+        // Update booking with failed payment status
+        const { prisma } = await import('@parkway/database');
+        await prisma.booking.updateMany({
+          where: { paymentIntentId },
+          data: {
+            paymentStatus: 'FAILED',
+          },
+        });
+        
+        console.log(`[WEBHOOK] Payment failed for intent: ${paymentIntentId}`);
+      }
+      
       return NextResponse.json({ received: true, type: event.type });
     } catch (err) {
+      console.error('[WEBHOOK] Error:', err);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
   }

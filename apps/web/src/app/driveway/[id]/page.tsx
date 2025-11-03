@@ -130,19 +130,26 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
         vehicleInfo
       });
 
-      alert('Booking created successfully!');
-      setShowBookingForm(false);
-      setBookingForm({
-        startTime: '',
-        endTime: '',
-        specialRequests: '',
-        vehicleInfo: {
-          make: '',
-          model: '',
-          color: '',
-          licensePlate: ''
-        }
-      });
+      const booking = response.data?.data;
+      
+      // Redirect to checkout page with booking ID
+      if (booking?.id) {
+        router.push(`/checkout?bookingId=${booking.id}`);
+      } else {
+        alert('Booking created successfully!');
+        setShowBookingForm(false);
+        setBookingForm({
+          startTime: '',
+          endTime: '',
+          specialRequests: '',
+          vehicleInfo: {
+            make: '',
+            model: '',
+            color: '',
+            licensePlate: ''
+          }
+        });
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to create booking';
       alert(errorMessage);

@@ -8,7 +8,15 @@ import api from '@/lib/api';
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
-function CheckoutInner({ amount }: { amount: number }) {
+function CheckoutInner({ 
+  amount, 
+  bookingId, 
+  onSuccess 
+}: { 
+  amount: number; 
+  bookingId?: string;
+  onSuccess?: () => void;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -19,13 +27,25 @@ function CheckoutInner({ amount }: { amount: number }) {
     if (!stripe || !elements) return;
     setLoading(true);
     setError('');
-    const result = await stripe.confirmPayment({ elements, redirect: 'if_required' });
-    if (result.error) {
-      setError(result.error.message || 'Payment failed');
-    } else {
-      alert('Payment confirmed');
+    
+    try {
+      const result = await stripe.confirmPayment({ elements, redirect: 'if_required' });
+      
+      if (result.error) {
+        setError(result.error.message || 'Payment failed');
+      } else {
+        // Payment succeeded
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          alert('Payment confirmed! Your booking is now confirmed.');
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Payment failed');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -39,7 +59,15 @@ function CheckoutInner({ amount }: { amount: number }) {
   );
 }
 
-export default function StripeCheckout({ amount = 1500 }: { amount?: number }) {
+export default function StripeCheckout({ 
+  amount = 1500, 
+  bookingId,
+  onSuccess 
+}: { 
+  amount?: number;
+  bookingId?: string;
+  onSuccess?: () => void;
+}) {
   const [clientSecret, setClientSecret] = useState('');
   const [stripePromise, setStripePromise] = useState<any>(null);
 
@@ -47,10 +75,17 @@ export default function StripeCheckout({ amount = 1500 }: { amount?: number }) {
     (async () => {
       if (!publishableKey) return;
       setStripePromise(loadStripe(publishableKey));
-      const res = await api.post('/payments/intent', { amount });
-      setClientSecret(res.data?.data?.clientSecret || '');
+      
+      try {
+        // If bookingId is provided, fetch payment intent for that booking
+        // Otherwise create a new payment intent
+        const res = await api.post('/payments/intent', bookingId ? { bookingId } : { amount });
+        setClientSecret(res.data?.data?.clientSecret || '');
+      } catch (err) {
+        console.error('Failed to create payment intent:', err);
+      }
     })();
-  }, [amount]);
+  }, [amount, bookingId]);
 
   if (!publishableKey) {
     return <div className="text-sm text-gray-600">Stripe not configured. Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to enable checkout.</div>;
@@ -62,7 +97,7 @@ export default function StripeCheckout({ amount = 1500 }: { amount?: number }) {
 
   return (
     <Elements stripe={stripePromise} options={{ clientSecret }}>
-      <CheckoutInner amount={amount} />
+      <CheckoutInner amount={amount} bookingId={bookingId} onSuccess={onSuccess} />
     </Elements>
   );
 }

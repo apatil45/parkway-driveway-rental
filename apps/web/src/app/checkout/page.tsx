@@ -1,16 +1,161 @@
 'use client';
 
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui';
 import StripeCheckout from '@/components/ui/StripeCheckout';
+import { AppLayout } from '@/components/layout';
+import api from '@/lib/api';
+import Link from 'next/link';
+
+interface Booking {
+  id: string;
+  totalPrice: number;
+  startTime: string;
+  endTime: string;
+  driveway: {
+    id: string;
+    title: string;
+    address: string;
+  };
+}
+
+function CheckoutContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const bookingId = searchParams.get('bookingId');
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (bookingId) {
+      fetchBooking();
+    } else {
+      setError('No booking ID provided');
+      setLoading(false);
+    }
+  }, [bookingId]);
+
+  const fetchBooking = async () => {
+    try {
+      const response = await api.get(`/bookings?limit=100`);
+      const bookings = response.data?.data?.bookings || [];
+      const foundBooking = bookings.find((b: Booking) => b.id === bookingId);
+      
+      if (foundBooking) {
+        setBooking(foundBooking);
+      } else {
+        setError('Booking not found');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load booking');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !booking) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+              <p className="text-gray-600 mb-4">{error || 'Booking not found'}</p>
+              <Link href="/search" className="btn btn-primary">
+                Back to Search
+              </Link>
+            </div>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const amountInCents = Math.round(booking.totalPrice * 100);
+
+  return (
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 className="text-3xl font-bold mb-6">Complete Your Booking</h1>
+        
+        <div className="space-y-6">
+          {/* Booking Summary */}
+          <Card>
+            <h2 className="text-xl font-semibold mb-4">Booking Summary</h2>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Driveway:</span>
+                <span className="font-medium">{booking.driveway.title}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Address:</span>
+                <span className="font-medium">{booking.driveway.address}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Start Time:</span>
+                <span className="font-medium">
+                  {new Date(booking.startTime).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">End Time:</span>
+                <span className="font-medium">
+                  {new Date(booking.endTime).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between pt-2 border-t">
+                <span className="text-lg font-semibold">Total:</span>
+                <span className="text-lg font-bold text-primary-600">
+                  ${booking.totalPrice.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Payment Form */}
+          <Card>
+            <h2 className="text-xl font-semibold mb-4">Payment</h2>
+            <StripeCheckout 
+              amount={amountInCents} 
+              bookingId={booking.id}
+              onSuccess={() => {
+                router.push(`/bookings?status=CONFIRMED`);
+              }}
+            />
+          </Card>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
 
 export default function CheckoutPage() {
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Checkout</h1>
-      <Card>
-        <StripeCheckout amount={1500} />
-      </Card>
-    </div>
+    <Suspense fallback={
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        </div>
+      </AppLayout>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }
 
