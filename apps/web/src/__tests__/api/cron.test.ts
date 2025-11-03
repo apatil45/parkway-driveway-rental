@@ -5,7 +5,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@parkway/database';
 
-// Mock NextRequest constructor
+// Mock NextRequest and NextResponse
 jest.mock('next/server', () => ({
   NextRequest: class {
     headers: Headers;
@@ -19,8 +19,15 @@ jest.mock('next/server', () => ({
     }
   },
   NextResponse: {
-    json: jest.fn((data, options) => ({ data, status: options?.status || 200 }))
-  }
+    json: jest.fn((data: any, options?: { status?: number }) => {
+      const response = {
+        json: async () => data,
+        status: options?.status || 200,
+        ok: (options?.status || 200) < 400,
+      };
+      return response;
+    }),
+  },
 }));
 
 // Dynamically import after mocking

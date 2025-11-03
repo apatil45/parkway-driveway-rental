@@ -153,16 +153,6 @@ describe('Rate Limiting', () => {
         max: 5
       });
 
-      const request = {
-        headers: {
-          get: (name: string) => {
-            if (name === 'x-forwarded-for') return '127.0.0.1';
-            if (name === 'x-real-ip') return null;
-            return null;
-          }
-        }
-      } as any;
-
       const uniqueIP = `127.0.0.${Math.floor(Math.random() * 255)}`;
       const request = {
         headers: {
