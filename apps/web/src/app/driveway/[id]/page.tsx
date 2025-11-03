@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AppLayout } from '@/components/layout';
+import AppLayout from '@/components/layout/AppLayout';
 import api from '@/lib/api';
 
 interface Driveway {
@@ -433,7 +433,6 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
             </div>
           </div>
         </div>
-      </div>
       </div>
     </AppLayout>
   );
