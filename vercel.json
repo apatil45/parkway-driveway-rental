@@ -1,7 +1,12 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "apps/web/.next",
-  "installCommand": "npm install",
-  "framework": "nextjs"
+  "crons": [
+    {
+      "path": "/api/cron/expire-bookings",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/complete-bookings",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

@@ -47,9 +47,23 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json(createApiError('Not allowed', 403, 'FORBIDDEN'), { status: 403 });
     }
 
+    // Ensure status and paymentStatus remain consistent
+    const updateData: any = { status };
+    
+    // If cancelling, also mark payment as failed if pending
+    if (status === 'CANCELLED' && booking.paymentStatus === 'PENDING') {
+      updateData.paymentStatus = 'FAILED';
+    }
+    
+    // If confirming, ensure payment is completed
+    if (status === 'CONFIRMED' && booking.paymentStatus !== 'COMPLETED') {
+      // Only allow if manually confirmed by owner (payment might be processed separately)
+      // Don't auto-update paymentStatus here - let webhook handle it
+    }
+
     const updated = await prisma.booking.update({
       where: { id: booking.id },
-      data: { status },
+      data: updateData,
       include: {
         driveway: {
           select: {

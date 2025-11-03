@@ -248,17 +248,20 @@ export async function POST(request: NextRequest) {
       }
 
       // Create booking atomically within transaction
+      // Ensure status and paymentStatus are consistent
       return await tx.booking.create({
         data: {
-        drivewayId,
-        userId,
-        startTime: start,
-        endTime: end,
-        totalPrice,
-        specialRequests,
-        vehicleInfo: vehicleInfo || undefined,
-        paymentIntentId: paymentIntentId || undefined
-      },
+          drivewayId,
+          userId,
+          startTime: start,
+          endTime: end,
+          totalPrice,
+          specialRequests,
+          vehicleInfo: vehicleInfo || undefined,
+          paymentIntentId: paymentIntentId || undefined,
+          status: 'PENDING', // Explicitly set to ensure consistency
+          paymentStatus: 'PENDING' // Explicitly set to ensure consistency
+        },
       include: {
         user: {
           select: {

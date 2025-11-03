@@ -21,14 +21,42 @@ export async function POST(request: NextRequest) {
         const paymentIntentId = paymentIntent.id;
         
         // Update booking with payment status
+        // Use transaction to ensure consistency
         const { prisma } = await import('@parkway/database');
-        const updatedBookings = await prisma.booking.updateMany({
+        
+        // First, get the booking to ensure it exists and is in a valid state
+        const existingBooking = await prisma.booking.findFirst({
           where: { paymentIntentId },
+          select: { id: true, status: true, paymentStatus: true }
+        });
+
+        if (!existingBooking) {
+          console.error(`[WEBHOOK] Booking not found for payment intent: ${paymentIntentId}`);
+          return NextResponse.json({ received: true, warning: 'Booking not found' });
+        }
+
+        // Only update if booking is in a valid state (not already cancelled or expired)
+        if (existingBooking.status === 'CANCELLED' || existingBooking.status === 'EXPIRED') {
+          console.warn(`[WEBHOOK] Payment succeeded but booking is ${existingBooking.status}: ${existingBooking.id`);
+          return NextResponse.json({ received: true, warning: 'Booking is cancelled or expired' });
+        }
+
+        // Update booking with payment status and confirm status
+        const updatedBookings = await prisma.booking.updateMany({
+          where: { 
+            paymentIntentId,
+            status: { notIn: ['CANCELLED', 'EXPIRED'] } // Only update if not cancelled/expired
+          },
           data: {
             paymentStatus: 'COMPLETED',
             status: 'CONFIRMED', // Auto-confirm booking when payment succeeds
           },
         });
+
+        if (updatedBookings.count === 0) {
+          console.warn(`[WEBHOOK] No bookings updated for payment intent: ${paymentIntentId}`);
+          return NextResponse.json({ received: true, warning: 'No bookings updated' });
+        }
 
         // Get booking details for email
         const booking = await prisma.booking.findFirst({
@@ -88,11 +116,17 @@ export async function POST(request: NextRequest) {
         const paymentIntentId = paymentIntent.id;
         
         // Update booking with failed payment status
+        // Keep status as PENDING if payment fails (user can retry)
         const { prisma } = await import('@parkway/database');
         await prisma.booking.updateMany({
-          where: { paymentIntentId },
+          where: { 
+            paymentIntentId,
+            status: { notIn: ['CANCELLED', 'EXPIRED', 'COMPLETED'] } // Don't update cancelled/expired/completed
+          },
           data: {
             paymentStatus: 'FAILED',
+            // Keep status as PENDING - don't change to CANCELLED automatically
+            // User can retry payment or booking will expire via cron
           },
         });
         

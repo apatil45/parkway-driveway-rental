@@ -51,22 +51,24 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
-    // Basic in-memory rate limit (dev/preview). Replace with Redis in prod.
-    const ip = request.headers.get('x-forwarded-for') || 'local';
-    const key = `rl_${ip}`;
-    const now = Date.now();
-    // @ts-ignore
-    globalThis.__rl = globalThis.__rl || new Map();
-    // @ts-ignore
-    const entry = globalThis.__rl.get(key) || [];
-    const windowMs = 60_000; // 1 minute
-    const limit = 10; // 10 attempts/min
-    const recent = entry.filter((t: number) => now - t < windowMs);
-    if (recent.length >= limit) {
-      return NextResponse.json(createApiError('Too many attempts, try again later', 429, 'RATE_LIMIT'), { status: 429 });
+    // Rate limiting using improved utility
+    const { rateLimiters } = await import('@/lib/rate-limit');
+    const rateLimitResult = await rateLimiters.login(request as any);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        createApiError(rateLimitResult.error || 'Too many attempts, try again later', 429, 'RATE_LIMIT'),
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': '10',
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
+            'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString()
+          }
+        }
+      );
     }
-    // @ts-ignore
-    globalThis.__rl.set(key, [...recent, now]);
 
     const body = await request.json();
     
