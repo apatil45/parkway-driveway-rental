@@ -30,7 +30,8 @@ test('owner driveways flow: list -> new -> edit with snapshots', async ({ page, 
   await page.getByLabel('Address').fill('99 UI Lane');
   await page.getByLabel('Price per hour (USD)').fill('6');
   await page.getByLabel('Capacity').fill('1');
-  await page.getByLabel('Images (comma-separated URLs)').fill('https://picsum.photos/400');
+  // ImageUpload component - skip for now (optional field, Cloudinary may not be configured)
+  // await page.getByLabel('Images').click(); // ImageUpload component, skip if not configured
   await page.getByLabel('Amenities (comma-separated)').fill('covered,security');
   await page.getByRole('button', { name: 'Create' }).click();
 

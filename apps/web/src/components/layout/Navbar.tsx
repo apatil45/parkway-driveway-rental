@@ -100,6 +100,7 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(true)}
                 className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 aria-label="Open menu"
+                data-testid="mobile-menu-button"
               >
                 <svg
                   className="w-6 h-6"

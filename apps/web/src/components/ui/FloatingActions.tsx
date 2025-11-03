@@ -165,6 +165,7 @@ export default function FloatingActions({ className = '' }: FloatingActionsProps
           }`}
           aria-label="Toggle Quick Actions"
           aria-expanded={isExpanded}
+          data-testid="fab-toggle"
         >
           <svg
             className="w-6 h-6 transition-transform"
