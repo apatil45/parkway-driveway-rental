@@ -128,30 +128,34 @@ export default function DashboardPage() {
             </Link>
 
             {isOwner && (
+              <Link href="/bookings?status=COMPLETED">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <span className="text-lg font-semibold text-yellow-700">$</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Total Earnings</p>
+                      <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            )}
+
+            <Link href="/driveways">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <span className="text-lg font-semibold text-yellow-700">$</span>
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <span className="text-lg font-semibold text-blue-700">★</span>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-                    <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
+                    <p className="text-sm font-medium text-gray-600">Average Rating</p>
+                    <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
                   </div>
                 </div>
               </Card>
-            )}
-
-            <Card>
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <span className="text-lg font-semibold text-blue-700">★</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Average Rating</p>
-                  <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
-                </div>
-              </div>
-            </Card>
+            </Link>
           </div>
         )}
 

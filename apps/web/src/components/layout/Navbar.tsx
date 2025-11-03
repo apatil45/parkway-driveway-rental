@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks';
 import UserMenu from './UserMenu';
 import MobileMenu from './MobileMenu';
+import SearchBar from './SearchBar';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -39,7 +40,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-8">
+            <nav className="hidden lg:flex items-center space-x-6 flex-1 mx-6">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
                 return (
@@ -56,6 +57,10 @@ export default function Navbar() {
                   </Link>
                 );
               })}
+              {/* Global Search Bar */}
+              <div className="flex-1 max-w-md">
+                <SearchBar />
+              </div>
             </nav>
 
             {/* Right Side Actions */}
