@@ -105,6 +105,18 @@ Thumbs.db
 prisma/migrations/
 .env
 
+# Sensitive files
+DATABASE_URL.txt
+*.txt.bak
+
 # Turbo
 .turbo
 .vercel
+
+# Test artifacts and reports
+test-artifacts/
+test-results/
+playwright-report/
+*.png
+*.jpg
+*.jpeg
