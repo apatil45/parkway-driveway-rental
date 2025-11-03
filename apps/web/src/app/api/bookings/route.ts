@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { createBookingSchema, bookingQuerySchema, type CreateBookingInput, type BookingQueryParams } from '@/lib/validations';
+import { sendEmail, emailTemplates } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -213,6 +214,12 @@ export async function POST(request: NextRequest) {
         paymentIntentId: paymentIntentId || undefined
       },
       include: {
+        user: {
+          select: {
+            email: true,
+            name: true
+          }
+        },
         driveway: {
           select: {
             id: true,
@@ -223,6 +230,7 @@ export async function POST(request: NextRequest) {
               select: {
                 id: true,
                 name: true,
+                email: true,
                 phone: true
               }
             }
@@ -230,6 +238,42 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Create notifications for booking creation
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: booking.userId,
+          title: 'Booking Created',
+          message: `Your booking for ${booking.driveway.title} has been created. Please complete payment to confirm.`,
+          type: 'info'
+        },
+        {
+          userId: booking.driveway.ownerId,
+          title: 'New Booking Request',
+          message: `You have a new booking request for ${booking.driveway.title}`,
+          type: 'info'
+        }
+      ]
+    });
+
+    // Send email notification (if email service is configured)
+    try {
+      await sendEmail({
+        to: booking.user.email,
+        ...emailTemplates.bookingConfirmation({
+          drivewayTitle: booking.driveway.title,
+          address: booking.driveway.address,
+          startTime: booking.startTime.toISOString(),
+          endTime: booking.endTime.toISOString(),
+          totalPrice: booking.totalPrice,
+          bookingId: booking.id
+        })
+      });
+    } catch (emailError) {
+      // Email failure shouldn't break booking creation
+      console.error('Failed to send booking email:', emailError);
+    }
 
     return NextResponse.json(
       createApiResponse(booking, 'Booking created successfully', 201),

@@ -340,7 +340,7 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                   </p>
                   <button
                     onClick={() => setShowBookingForm(true)}
-                    className="btn btn-primary w-full"
+                    className="btn btn-primary w-full min-h-[48px] text-base"
                   >
                     Book Now
                   </button>
@@ -355,7 +355,8 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                       type="datetime-local"
                       value={bookingForm.startTime}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, startTime: e.target.value }))}
-                      className="input"
+                      className="input text-base min-h-[44px]"
+                      style={{ fontSize: '16px' }}
                       required
                     />
                   </div>
@@ -368,7 +369,8 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                       type="datetime-local"
                       value={bookingForm.endTime}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, endTime: e.target.value }))}
-                      className="input"
+                      className="input text-base min-h-[44px]"
+                      style={{ fontSize: '16px' }}
                       required
                     />
                   </div>
@@ -380,7 +382,8 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                     <textarea
                       value={bookingForm.specialRequests}
                       onChange={(e) => setBookingForm(prev => ({ ...prev, specialRequests: e.target.value }))}
-                      className="input"
+                      className="input text-base min-h-[88px] resize-y"
+                      style={{ fontSize: '16px' }}
                       rows={3}
                     />
                   </div>
@@ -398,7 +401,8 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                           ...prev,
                           vehicleInfo: { ...prev.vehicleInfo, make: e.target.value }
                         }))}
-                        className="input"
+                        className="input text-base min-h-[44px]"
+                        style={{ fontSize: '16px' }}
                       />
                       <input
                         type="text"
@@ -408,7 +412,8 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                           ...prev,
                           vehicleInfo: { ...prev.vehicleInfo, model: e.target.value }
                         }))}
-                        className="input"
+                        className="input text-base min-h-[44px]"
+                        style={{ fontSize: '16px' }}
                       />
                       <input
                         type="text"
@@ -418,7 +423,8 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                           ...prev,
                           vehicleInfo: { ...prev.vehicleInfo, color: e.target.value }
                         }))}
-                        className="input"
+                        className="input text-base min-h-[44px]"
+                        style={{ fontSize: '16px' }}
                       />
                       <input
                         type="text"
@@ -428,7 +434,8 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                           ...prev,
                           vehicleInfo: { ...prev.vehicleInfo, licensePlate: e.target.value }
                         }))}
-                        className="input"
+                        className="input text-base min-h-[44px]"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                   </div>
@@ -437,14 +444,14 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
                     <button
                       type="button"
                       onClick={() => setShowBookingForm(false)}
-                      className="btn btn-secondary flex-1"
+                      className="btn btn-secondary flex-1 min-h-[48px] text-base"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={bookingLoading}
-                      className="btn btn-primary flex-1"
+                      className="btn btn-primary flex-1 min-h-[48px] text-base"
                     >
                       {bookingLoading ? 'Booking...' : 'Confirm Booking'}
                     </button>

@@ -43,7 +43,8 @@ export default function Button({
     <button
       className={`${baseClasses} ${variantClass} ${sizeClass} ${
         isDisabled ? 'opacity-50 cursor-not-allowed' : ''
-      } ${fullWidth ? 'w-full' : ''} ${className}`}
+      } ${fullWidth ? 'w-full' : ''} min-h-[44px] min-w-[44px] touch-manipulation ${className}`}
+      style={{ touchAction: 'manipulation' }}
       disabled={isDisabled}
       {...props}
     >

@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/Toast';
+import { ReviewForm } from '@/components/ui';
 
 interface Booking {
   id: string;
@@ -48,6 +49,8 @@ export default function BookingsPage() {
     totalPages: 0
   });
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
+  const [existingReviews, setExistingReviews] = useState<Record<string, { id: string; rating: number; comment?: string }>>({});
 
   const router = useRouter();
   const { user } = useAuth();
@@ -56,6 +59,32 @@ export default function BookingsPage() {
   useEffect(() => {
     fetchBookings();
   }, [router, statusFilter]);
+
+  // Fetch existing reviews for completed bookings
+  useEffect(() => {
+    if (bookings.length > 0 && user) {
+      const completedBookings = bookings.filter(b => b.status === 'COMPLETED');
+      completedBookings.forEach(async (booking) => {
+        try {
+          const response = await api.get(`/reviews?drivewayId=${booking.driveway.id}&userId=${user.id}`);
+          const reviews = response.data.data?.reviews || [];
+          if (reviews.length > 0) {
+            const review = reviews[0];
+            setExistingReviews(prev => ({
+              ...prev,
+              [booking.driveway.id]: {
+                id: review.id,
+                rating: review.rating,
+                comment: review.comment
+              }
+            }));
+          }
+        } catch (err) {
+          // No review exists yet, that's fine
+        }
+      });
+    }
+  }, [bookings, user]);
 
   const fetchBookings = async (page = 1) => {
     try {
@@ -296,19 +325,78 @@ export default function BookingsPage() {
                   </div>
                 )}
 
+                {/* Review Form for Completed Bookings (Driver only) */}
+                {booking.status === 'COMPLETED' && user && booking.driveway.owner.id !== user.id && (
+                  <div className="mt-6 pt-6 border-t border-[color:rgb(var(--color-border))]">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium text-gray-900">Leave a Review</h4>
+                      {existingReviews[booking.driveway.id] && (
+                        <button
+                          onClick={() => {
+                            const newExpanded = new Set(expandedReviews);
+                            if (newExpanded.has(booking.id)) {
+                              newExpanded.delete(booking.id);
+                            } else {
+                              newExpanded.add(booking.id);
+                            }
+                            setExpandedReviews(newExpanded);
+                          }}
+                          className="text-sm text-primary-600 hover:text-primary-800"
+                        >
+                          {expandedReviews.has(booking.id) ? 'Hide Review' : 'Update Review'}
+                        </button>
+                      )}
+                    </div>
+                    {(expandedReviews.has(booking.id) || !existingReviews[booking.driveway.id]) && (
+                      <ReviewForm
+                        drivewayId={booking.driveway.id}
+                        bookingId={booking.id}
+                        existingReview={existingReviews[booking.driveway.id]}
+                        onSuccess={() => {
+                          fetchBookings(pagination.page);
+                          const newExpanded = new Set(expandedReviews);
+                          newExpanded.delete(booking.id);
+                          setExpandedReviews(newExpanded);
+                        }}
+                      />
+                    )}
+                    {existingReviews[booking.driveway.id] && !expandedReviews.has(booking.id) && (
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-yellow-400 text-lg">★</span>
+                          <span className="font-medium">{existingReviews[booking.driveway.id].rating} / 5</span>
+                        </div>
+                        {existingReviews[booking.driveway.id].comment && (
+                          <p className="text-gray-600 text-sm">{existingReviews[booking.driveway.id].comment}</p>
+                        )}
+                        <button
+                          onClick={() => {
+                            const newExpanded = new Set(expandedReviews);
+                            newExpanded.add(booking.id);
+                            setExpandedReviews(newExpanded);
+                          }}
+                          className="mt-2 text-sm text-primary-600 hover:text-primary-800"
+                        >
+                          Update Review
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex justify-between items-center pt-4 border-t border-[color:rgb(var(--color-border))]">
-                  <div className="flex space-x-4">
+                  <div className="flex flex-wrap gap-2 sm:gap-4">
                     <Link
                       href={`/driveway/${booking.driveway.id}`}
-                      className="text-primary-600 hover:text-primary-800 text-sm font-medium"
+                      className="text-primary-600 hover:text-primary-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-primary-50 transition-colors"
                     >
                       View Driveway
                     </Link>
                     {booking.status === 'PENDING' && (
                       <button
                         onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                       >
                         Cancel Booking
                       </button>
@@ -318,13 +406,13 @@ export default function BookingsPage() {
                       <>
                         <button
                           onClick={() => handleStatusChange(booking.id, 'CONFIRMED')}
-                          className="text-green-600 hover:text-green-800 text-sm font-medium"
+                          className="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-green-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                         >
                           Confirm
                         </button>
                         <button
                           onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                         >
                           Cancel
                         </button>

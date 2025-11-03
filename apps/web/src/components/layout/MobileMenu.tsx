@@ -39,6 +39,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         { href: '/driveways', label: 'My Driveways' },
         { href: '/bookings', label: 'My Bookings' },
         { href: '/dashboard', label: 'Dashboard' },
+        { href: '/profile', label: 'Profile' },
       ]
     : [
         { href: '/search', label: 'Search Parking' },
@@ -122,11 +123,11 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                 </div>
                 <Link
-                  href="/dashboard"
+                  href="/profile"
                   onClick={onClose}
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
                 >
-                  Settings
+                  Profile Settings
                 </Link>
               </>
             ) : (

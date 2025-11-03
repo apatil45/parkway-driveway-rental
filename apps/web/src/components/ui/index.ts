@@ -9,3 +9,4 @@ export { default as FloatingActions } from './FloatingActions';
 export { ToastProvider, useToast } from './Toast';
 export { default as Skeleton, SkeletonCard, SkeletonList } from './Skeleton';
 export { default as ReviewForm } from './ReviewForm';
+export { default as NotificationCenter } from './NotificationCenter';

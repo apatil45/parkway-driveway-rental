@@ -30,11 +30,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            className={`w-full ${leftIcon ? 'pl-9' : 'px-3'} ${rightIcon ? 'pr-9' : 'px-3'} py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+            className={`w-full ${leftIcon ? 'pl-9' : 'px-3'} ${rightIcon ? 'pr-9' : 'px-3'} py-2.5 text-base border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[44px] ${
               error
                 ? 'border-red-300 focus:ring-red-500'
                 : 'border-[color:rgb(var(--color-border))]'
             } ${className}`}
+            style={{ fontSize: '16px' }}
             {...props}
           />
           {rightIcon && (

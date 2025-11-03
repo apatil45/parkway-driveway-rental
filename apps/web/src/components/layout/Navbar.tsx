@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks';
 import UserMenu from './UserMenu';
 import MobileMenu from './MobileMenu';
 import SearchBar from './SearchBar';
+import { NotificationCenter } from '@/components/ui';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -63,21 +64,28 @@ export default function Navbar() {
               </div>
             </nav>
 
-            {/* Right Side Actions */}
-            <div className="flex items-center space-x-4">
-              {/* Desktop Auth/Actions */}
-              <div className="hidden lg:flex items-center space-x-4">
-                {isAuthenticated ? (
-                  <>
-                    <Link
-                      href="/dashboard"
-                      className="text-sm font-medium text-gray-600 hover:text-gray-900"
-                    >
-                      Dashboard
-                    </Link>
-                    <UserMenu />
-                  </>
-                ) : (
+                {/* Right Side Actions */}
+                <div className="flex items-center space-x-4">
+                  {/* Desktop Auth/Actions */}
+                  <div className="hidden lg:flex items-center space-x-4">
+                     {isAuthenticated ? (
+                       <>
+                         <Link
+                           href="/dashboard"
+                           className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                         >
+                           Dashboard
+                         </Link>
+                         <Link
+                           href="/profile"
+                           className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                         >
+                           Profile
+                         </Link>
+                         <NotificationCenter />
+                         <UserMenu />
+                       </>
+                     ) : (
                   <>
                     <Link
                       href="/login"
