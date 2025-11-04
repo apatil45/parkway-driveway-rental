@@ -279,7 +279,7 @@ export async function POST(request: NextRequest) {
     });
     });
 
-    // Create notifications for booking creation
+    // Create notifications for booking creation (renter and owner)
     await prisma.notification.createMany({
       data: [
         {
