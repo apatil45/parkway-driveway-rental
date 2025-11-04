@@ -285,13 +285,13 @@ export async function POST(request: NextRequest) {
         {
           userId: booking.userId,
           title: 'Booking Created',
-          message: `Your booking for ${booking.driveway.title} has been created. Please complete payment to confirm.`,
+          message: 'Your booking for ' + booking.driveway.title + ' has been created. Please complete payment to confirm.',
           type: 'info'
         },
         {
           userId: booking.driveway.owner.id,
           title: 'New Booking Request',
-          message: `You have a new booking request for ${booking.driveway.title}`,
+          message: 'You have a new booking request for ' + booking.driveway.title,
           type: 'info'
         }
       ]
