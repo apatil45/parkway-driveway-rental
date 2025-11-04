@@ -108,13 +108,30 @@ export default function DrivewayDetailsPage() {
       // Validate required fields
       if (!bookingForm.startTime || !bookingForm.endTime) {
         showToast('Please fill in both start and end times', 'error');
+        setBookingLoading(false);
+        return;
+      }
+
+      if (!drivewayId) {
+        showToast('Invalid driveway ID', 'error');
+        setBookingLoading(false);
         return;
       }
 
       // Convert datetime-local format (YYYY-MM-DDTHH:mm) to ISO string
       // datetime-local doesn't include timezone, so we need to create a proper Date object
-      const startTimeISO = new Date(bookingForm.startTime).toISOString();
-      const endTimeISO = new Date(bookingForm.endTime).toISOString();
+      const startDate = new Date(bookingForm.startTime);
+      const endDate = new Date(bookingForm.endTime);
+      
+      // Validate dates
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        showToast('Invalid date format', 'error');
+        setBookingLoading(false);
+        return;
+      }
+
+      const startTimeISO = startDate.toISOString();
+      const endTimeISO = endDate.toISOString();
 
       // Prepare vehicle info - only include if all fields are filled
       const vehicleInfo = bookingForm.vehicleInfo.make && 
@@ -122,20 +139,30 @@ export default function DrivewayDetailsPage() {
                           bookingForm.vehicleInfo.color && 
                           bookingForm.vehicleInfo.licensePlate
         ? {
-            make: bookingForm.vehicleInfo.make,
-            model: bookingForm.vehicleInfo.model,
-            color: bookingForm.vehicleInfo.color,
-            licensePlate: bookingForm.vehicleInfo.licensePlate
+            make: bookingForm.vehicleInfo.make.trim(),
+            model: bookingForm.vehicleInfo.model.trim(),
+            color: bookingForm.vehicleInfo.color.trim(),
+            licensePlate: bookingForm.vehicleInfo.licensePlate.trim()
           }
         : undefined;
 
-      const response = await api.post('/bookings', {
+      // Prepare request body
+      const requestBody: any = {
         drivewayId: drivewayId,
         startTime: startTimeISO,
-        endTime: endTimeISO,
-        specialRequests: bookingForm.specialRequests || undefined,
-        vehicleInfo
-      });
+        endTime: endTimeISO
+      };
+
+      // Only include optional fields if they have values
+      if (bookingForm.specialRequests && bookingForm.specialRequests.trim()) {
+        requestBody.specialRequests = bookingForm.specialRequests.trim();
+      }
+
+      if (vehicleInfo) {
+        requestBody.vehicleInfo = vehicleInfo;
+      }
+
+      const response = await api.post('/bookings', requestBody);
 
       const booking = response.data?.data;
       
@@ -159,9 +186,31 @@ export default function DrivewayDetailsPage() {
         });
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to create booking';
+      console.error('Booking error:', err);
+      
+      // Extract detailed error message
+      let errorMessage = 'Failed to create booking';
+      
+      if (err.response?.data) {
+        const errorData = err.response.data;
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = typeof errorData.error === 'string' 
+            ? errorData.error 
+            : JSON.stringify(errorData.error);
+        } else if (errorData.errors) {
+          // Handle validation errors array
+          const validationErrors = Array.isArray(errorData.errors)
+            ? errorData.errors.map((e: any) => e.message || e).join(', ')
+            : JSON.stringify(errorData.errors);
+          errorMessage = `Validation failed: ${validationErrors}`;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       showToast(errorMessage, 'error');
-      console.error('Booking error:', err.response?.data || err);
     } finally {
       setBookingLoading(false);
     }
