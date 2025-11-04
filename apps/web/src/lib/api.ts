@@ -11,6 +11,24 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Track if we're currently refreshing to avoid multiple refresh calls
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (error?: any) => void;
+}> = [];
+
+const processQueue = (error: any = null) => {
+  failedQueue.forEach(promise => {
+    if (error) {
+      promise.reject(error);
+    } else {
+      promise.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -22,24 +40,67 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor with global error handling
+// Response interceptor with global error handling and automatic token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    
+    // Handle 401 errors with automatic token refresh
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Try to refresh the token
+        await api.post('/auth/refresh');
+        
+        // Process queued requests
+        processQueue();
+        isRefreshing = false;
+        
+        // Retry the original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed - clear queue and reject
+        processQueue(refreshError);
+        isRefreshing = false;
+        
+        // If we're in the browser, redirect to login
+        if (typeof window !== 'undefined') {
+          // Only redirect if not already on login page
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }
+        
+        const appError = createAppError(error);
+        return Promise.reject({
+          ...appError,
+          originalError: error,
+          axiosError: error,
+        });
+      }
+    }
+
+    // For all other errors, use the structured error handling
     const appError = createAppError(error);
     
     // Log error for debugging
     logError(error, 'API Request');
-    
-    // Handle specific error types
-    if (appError.type === ErrorType.AUTHENTICATION && appError.statusCode === 401) {
-      // Don't auto-redirect here - let components handle it
-      // But we can clear any stale tokens if needed
-      if (typeof window !== 'undefined') {
-        // Auth errors are handled by useAuth hook
-        // Just pass through for component-level handling
-      }
-    }
     
     // For network errors, show user-friendly message
     if (appError.type === ErrorType.NETWORK) {
