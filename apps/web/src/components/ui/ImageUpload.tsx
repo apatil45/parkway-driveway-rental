@@ -20,6 +20,7 @@ export default function ImageUpload({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -125,16 +126,19 @@ export default function ImageUpload({
               className="hidden"
               id="image-upload-input"
             />
-            <label htmlFor="image-upload-input">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={disabled || uploading}
-                className="cursor-pointer"
-              >
-                {uploading ? 'Uploading...' : `Upload ${maxImages > 1 ? 'Images' : 'Image'}`}
-              </Button>
-            </label>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={disabled || uploading}
+              className="cursor-pointer"
+              onClick={() => {
+                if (fileInputRef.current && !disabled && !uploading) {
+                  fileInputRef.current.click();
+                }
+              }}
+            >
+              {uploading ? 'Uploading...' : `Upload ${maxImages > 1 ? 'Images' : 'Image'}`}
+            </Button>
             <p className="text-xs text-gray-500 mt-1">
               JPEG, PNG, WebP, or GIF (max 10MB each)
             </p>
@@ -165,18 +169,29 @@ export default function ImageUpload({
                     disabled={disabled || uploading}
                     className="hidden"
                     id={`replace-image-${index}`}
+                    ref={(el) => {
+                      if (el) {
+                        replaceInputRefs.current.set(index, el);
+                      } else {
+                        replaceInputRefs.current.delete(index);
+                      }
+                    }}
                   />
-                  <label htmlFor={`replace-image-${index}`}>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={disabled || uploading}
-                      className="cursor-pointer"
-                    >
-                      Replace
-                    </Button>
-                  </label>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={disabled || uploading}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      const input = replaceInputRefs.current.get(index);
+                      if (input && !disabled && !uploading) {
+                        input.click();
+                      }
+                    }}
+                  >
+                    Replace
+                  </Button>
                   <Button
                     type="button"
                     variant="secondary"

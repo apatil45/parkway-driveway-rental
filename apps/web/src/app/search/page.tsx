@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList } from '@/components/ui';
+import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import MapView from '@/components/ui/MapView';
@@ -67,11 +67,51 @@ function SearchPageContent() {
   const [viewMode, setViewMode] = useState<'map' | 'list' | 'split'>('split');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
+
+  // Auto-detect user location on mount
+  useEffect(() => {
+    if (navigator.geolocation && !filters.latitude && !filters.longitude) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setFilters(prev => ({
+            ...prev,
+            latitude: String(latitude),
+            longitude: String(longitude),
+          }));
+          showToast('Location detected! You can now search nearby driveways.', 'success');
+        },
+        (error) => {
+          // Silently fail - user can manually set location
+          console.log('Location detection failed:', error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        }
+      );
+    }
+  }, []); // Only run once on mount
+
+  // Trigger map resize when view mode changes
+  useEffect(() => {
+    if (viewMode === 'map' || viewMode === 'split') {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => {
+        // Trigger window resize event to force map to recalculate size
+        window.dispatchEvent(new Event('resize'));
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     performSearch();
@@ -250,11 +290,16 @@ function SearchPageContent() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
-                <Input
-                  type="text"
+                <AddressAutocomplete
+                  label="Location"
                   value={filters.location}
-                  onChange={(e) => handleFilterChange('location', e.target.value)}
+                  onChange={(address) => {
+                    handleFilterChange('location', address);
+                  }}
+                  onLocationSelect={(lat, lon) => {
+                    handleFilterChange('latitude', String(lat));
+                    handleFilterChange('longitude', String(lon));
+                  }}
                   placeholder="City or address"
                   className="text-sm"
                 />
@@ -380,11 +425,15 @@ function SearchPageContent() {
       <div className={`flex ${viewMode === 'split' ? 'flex-col lg:flex-row' : 'flex-col'} h-[calc(100vh-4rem)]`}>
         {/* Map Section */}
         {(viewMode === 'map' || viewMode === 'split') && (
-          <div className={`${
-            viewMode === 'split' 
-              ? 'w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200' 
-              : 'w-full h-full'
-          } relative bg-gray-100`}>
+          <div 
+            ref={mapContainerRef}
+            key={viewMode} // Force re-render when view mode changes
+            className={`${
+              viewMode === 'split' 
+                ? 'w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200' 
+                : 'w-full h-full'
+            } relative bg-gray-100`}
+          >
             {!emptyResults && (
               <MapView
                 center={mapCenter}

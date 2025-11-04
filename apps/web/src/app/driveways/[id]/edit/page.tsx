@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Input, Button, ImageUpload } from '@/components/ui';
+import { Card, Input, Button, ImageUpload, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import api from '@/lib/api';
@@ -13,7 +13,16 @@ export default function EditDrivewayPage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', address: '', pricePerHour: '', capacity: '', images: [] as string[], amenities: '' });
+  const [form, setForm] = useState({ 
+    title: '', 
+    address: '', 
+    pricePerHour: '', 
+    capacity: '', 
+    images: [] as string[], 
+    amenities: '',
+    latitude: 0,
+    longitude: 0
+  });
 
   useEffect(() => {
     (async () => {
@@ -28,6 +37,8 @@ export default function EditDrivewayPage({ params }: { params: { id: string } })
           capacity: String(d.capacity),
           images: d.images || [],
           amenities: (d.amenities || []).join(', '),
+          latitude: d.latitude || 0,
+          longitude: d.longitude || 0,
         });
       } finally {
         setLoading(false);
@@ -40,14 +51,22 @@ export default function EditDrivewayPage({ params }: { params: { id: string } })
     setSaving(true);
     setError('');
     try {
-      await api.patch(`/driveways/${params.id}`, {
+      const updateData: any = {
         title: form.title,
         address: form.address,
         pricePerHour: Number(form.pricePerHour),
         capacity: Number(form.capacity),
         images: form.images || [],
         amenities: form.amenities ? form.amenities.split(',').map(s => s.trim()) : [],
-      });
+      };
+      
+      // Only update coordinates if they changed (address was selected from autocomplete)
+      if (form.latitude && form.longitude) {
+        updateData.latitude = form.latitude;
+        updateData.longitude = form.longitude;
+      }
+      
+      await api.patch(`/driveways/${params.id}`, updateData);
       showToast('Driveway updated successfully!', 'success');
       router.push('/driveways');
     } catch (e: any) {
@@ -77,7 +96,17 @@ export default function EditDrivewayPage({ params }: { params: { id: string } })
           <form className="space-y-4" onSubmit={onSubmit}>
             {error && <div className="text-red-600 text-sm">{error}</div>}
             <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-            <Input label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
+            <AddressAutocomplete
+              label="Address"
+              value={form.address}
+              onChange={(address) => setForm({ ...form, address })}
+              onLocationSelect={(lat, lon) => {
+                setForm({ ...form, latitude: lat, longitude: lon });
+              }}
+              placeholder="Start typing an address..."
+              required
+              disabled={saving}
+            />
             <Input label="Price per hour (USD)" type="number" value={form.pricePerHour} onChange={(e) => setForm({ ...form, pricePerHour: e.target.value })} required />
             <Input label="Capacity" type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} required />
             <ImageUpload

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Input, Button, ImageUpload } from '@/components/ui';
+import { Card, Input, Button, ImageUpload, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/Toast';
@@ -173,13 +173,12 @@ export default function ProfilePage() {
 
               {/* Address */}
               <div>
-                <Input
+                <AddressAutocomplete
                   label="Address"
-                  type="text"
                   value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  onChange={(address) => setForm({ ...form, address })}
                   placeholder="Enter your address"
-                  leftIcon={<MapPinIcon className="w-5 h-5" />}
+                  disabled={saving}
                 />
               </div>
 

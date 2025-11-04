@@ -61,12 +61,51 @@ const LeafletMap = dynamic(async () => {
 
     const parkingIcon = createParkingIcon();
     
-    // Component to handle map updates
+    // Component to handle map updates and resize
     const MapUpdater = ({ center }: { center: [number, number] }) => {
       const map = useMap();
       useEffect(() => {
         map.setView(center, map.getZoom());
+        // Invalidate size to fix rendering issues
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 100);
       }, [center, map]);
+      
+      // Handle window resize
+      useEffect(() => {
+        const handleResize = () => {
+          setTimeout(() => {
+            map.invalidateSize();
+          }, 100);
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+      }, [map]);
+      
+      return null;
+    };
+    
+    // Component to handle map container resize
+    const MapResizeHandler = () => {
+      const map = useMap();
+      useEffect(() => {
+        // Trigger invalidateSize when component mounts or container size changes
+        const timer = setTimeout(() => {
+          map.invalidateSize();
+        }, 100);
+        
+        // Also trigger on next frame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            map.invalidateSize();
+          }, 100);
+        });
+        
+        return () => clearTimeout(timer);
+      }, [map]);
+      
       return null;
     };
     
@@ -80,6 +119,7 @@ const LeafletMap = dynamic(async () => {
         zoomControl={true}
       >
         <MapUpdater center={center} />
+        <MapResizeHandler />
         <TileLayer 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

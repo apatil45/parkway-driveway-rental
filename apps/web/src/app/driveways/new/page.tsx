@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Input, Button, ImageUpload } from '@/components/ui';
+import { Card, Input, Button, ImageUpload, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import api from '@/lib/api';
@@ -12,20 +12,36 @@ export default function NewDrivewayPage() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', address: '', pricePerHour: '', capacity: '', images: [] as string[], amenities: '' });
+  const [form, setForm] = useState({ 
+    title: '', 
+    address: '', 
+    pricePerHour: '', 
+    capacity: '', 
+    images: [] as string[], 
+    amenities: '',
+    latitude: 0,
+    longitude: 0
+  });
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
+      if (!form.latitude || !form.longitude) {
+        throw new Error('Please select an address from the suggestions');
+      }
+      
       await api.post('/driveways', {
         title: form.title,
         address: form.address,
+        latitude: form.latitude,
+        longitude: form.longitude,
         pricePerHour: Number(form.pricePerHour),
         capacity: Number(form.capacity),
         images: form.images || [],
         amenities: form.amenities ? form.amenities.split(',').map(s => s.trim()) : [],
+        carSize: ['small', 'medium', 'large', 'extra-large'], // Default to all sizes
       });
       showToast('Driveway created successfully!', 'success');
       router.push('/driveways');
@@ -46,7 +62,17 @@ export default function NewDrivewayPage() {
           <form className="space-y-4" onSubmit={onSubmit}>
             {error && <div className="text-red-600 text-sm">{error}</div>}
             <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-            <Input label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
+            <AddressAutocomplete
+              label="Address"
+              value={form.address}
+              onChange={(address) => setForm({ ...form, address })}
+              onLocationSelect={(lat, lon) => {
+                setForm({ ...form, latitude: lat, longitude: lon });
+              }}
+              placeholder="Start typing an address..."
+              required
+              disabled={loading}
+            />
             <Input label="Price per hour (USD)" type="number" value={form.pricePerHour} onChange={(e) => setForm({ ...form, pricePerHour: e.target.value })} required />
             <Input label="Capacity" type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} required />
             <ImageUpload
