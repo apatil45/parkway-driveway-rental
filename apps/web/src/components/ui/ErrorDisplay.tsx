@@ -4,9 +4,9 @@
  */
 
 import React from 'react';
-import { ErrorMessage } from './ErrorMessage';
+import ErrorMessage from './ErrorMessage';
 import { ErrorCategory, createAppError, getErrorAction } from '@/lib/errors';
-import { Button } from './Button';
+import Button from './Button';
 
 interface ErrorDisplayProps {
   error: any;
