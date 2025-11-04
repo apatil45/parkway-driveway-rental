@@ -6,7 +6,7 @@ import { requireAuth } from '@/lib/auth-middleware';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Use centralized auth middleware
     const authResult = await requireAuth(request);
@@ -18,9 +18,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const body = await request.json();
     const { isRead } = body;
 
+    const { id } = await params;
     // Verify notification belongs to user
     const notification = await prisma.notification.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!notification) {
@@ -38,7 +39,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     const updated = await prisma.notification.update({
-      where: { id: params.id },
+      where: { id },
       data: { isRead: isRead === true || isRead === 'true' }
     });
 
@@ -55,7 +56,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Use centralized auth middleware
     const authResult = await requireAuth(request);
@@ -64,9 +65,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     const userId = authResult.userId!;
 
+    const { id } = await params;
     // Verify notification belongs to user
     const notification = await prisma.notification.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!notification) {
@@ -84,7 +86,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     await prisma.notification.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json(

@@ -277,6 +277,7 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+    });
 
     // Create notifications for booking creation
     await prisma.notification.createMany({

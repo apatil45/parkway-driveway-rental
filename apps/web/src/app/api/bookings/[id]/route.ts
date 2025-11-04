@@ -6,7 +6,7 @@ import { requireAuth } from '@/lib/auth-middleware';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Use centralized auth middleware
     const authResult = await requireAuth(request);
@@ -21,8 +21,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json(createApiError('Missing status', 400, 'VALIDATION_ERROR'), { status: 400 });
     }
 
+    const { id } = await params;
     const booking = await prisma.booking.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { driveway: { select: { ownerId: true } } },
     });
     if (!booking) {

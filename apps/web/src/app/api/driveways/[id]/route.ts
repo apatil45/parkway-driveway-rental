@@ -7,7 +7,7 @@ import { createDrivewaySchema } from '@/lib/validations';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Use centralized auth middleware
     const authResult = await requireAuth(request);
@@ -31,9 +31,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       );
     }
 
+    const { id } = await params;
     // Check if driveway exists and user owns it
     const existing = await prisma.driveway.findUnique({ 
-      where: { id: params.id }, 
+      where: { id }, 
       select: { id: true, ownerId: true } 
     });
     
@@ -60,7 +61,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (body.isAvailable !== undefined) updateData.isAvailable = Boolean(body.isAvailable);
 
     const updated = await prisma.driveway.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: { 
         id: true, 
@@ -86,10 +87,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const driveway = await prisma.driveway.findUnique({
       where: { id },

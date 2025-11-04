@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
         });
 
         if (!existingBooking) {
-          console.error(`[WEBHOOK] Booking not found for payment intent: ${paymentIntentId}`);
+          console.error('[WEBHOOK] Booking not found for payment intent: ' + paymentIntentId);
           return NextResponse.json({ received: true, warning: 'Booking not found' });
         }
 
         // Only update if booking is in a valid state (not already cancelled or expired)
         if (existingBooking.status === 'CANCELLED' || existingBooking.status === 'EXPIRED') {
-          console.warn(`[WEBHOOK] Payment succeeded but booking is ${existingBooking.status}: ${existingBooking.id`);
+          console.warn('[WEBHOOK] Payment succeeded but booking is ' + existingBooking.status + ': ' + existingBooking.id);
           return NextResponse.json({ received: true, warning: 'Booking is cancelled or expired' });
         }
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (updatedBookings.count === 0) {
-          console.warn(`[WEBHOOK] No bookings updated for payment intent: ${paymentIntentId}`);
+          console.warn('[WEBHOOK] No bookings updated for payment intent: ' + paymentIntentId);
           return NextResponse.json({ received: true, warning: 'No bookings updated' });
         }
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           where: { paymentIntentId },
           include: {
             user: { select: { email: true, name: true } },
-            driveway: { select: { title: true, address: true, owner: { select: { email: true, name: true } } } }
+            driveway: { select: { title: true, address: true, owner: { select: { id: true, email: true, name: true } } } }
           }
         });
 
@@ -97,20 +97,20 @@ export async function POST(request: NextRequest) {
               {
                 userId: booking.userId,
                 title: 'Booking Confirmed',
-                message: `Your booking for ${booking.driveway.title} has been confirmed!`,
+                message: 'Your booking for ' + booking.driveway.title + ' has been confirmed!',
                 type: 'success'
               },
               {
-                userId: booking.driveway.ownerId,
+                userId: booking.driveway.owner.id,
                 title: 'Payment Received',
-                message: `You received $${booking.totalPrice.toFixed(2)} for ${booking.driveway.title}`,
+                message: 'You received $' + booking.totalPrice.toFixed(2) + ' for ' + booking.driveway.title,
                 type: 'success'
               }
             ]
           });
         }
         
-        console.log(`[WEBHOOK] Payment succeeded for intent: ${paymentIntentId}`);
+        console.log('[WEBHOOK] Payment succeeded for intent: ' + paymentIntentId);
       } else if (event.type === 'payment_intent.payment_failed') {
         const paymentIntent = event.data.object as any;
         const paymentIntentId = paymentIntent.id;
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
           },
         });
         
-        console.log(`[WEBHOOK] Payment failed for intent: ${paymentIntentId}`);
+        console.log('[WEBHOOK] Payment failed for intent: ' + paymentIntentId);
       }
       
       return NextResponse.json({ received: true, type: event.type });

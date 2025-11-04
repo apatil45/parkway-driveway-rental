@@ -6,7 +6,7 @@ import { requireAuth } from '@/lib/auth-middleware';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Use centralized auth middleware
     const authResult = await requireAuth(request);
@@ -15,9 +15,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     const userId = authResult.userId!;
 
+    const { id } = await params;
     // Check if review exists and belongs to user
     const review = await prisma.review.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!review) {
@@ -35,7 +36,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     await prisma.review.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json(

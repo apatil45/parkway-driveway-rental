@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select } from '@/components/ui';
+import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import MapView from '@/components/ui/MapView';

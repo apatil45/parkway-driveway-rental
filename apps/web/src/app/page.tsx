@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { AppLayout } from '@/components/layout'
+import { MagnifyingGlassIcon, MapPinIcon, CurrencyDollarIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 
 export default function Home() {
   return (
