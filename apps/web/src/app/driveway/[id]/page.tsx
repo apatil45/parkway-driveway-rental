@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -54,7 +54,8 @@ interface BookingForm {
   };
 }
 
-export default function DrivewayDetailsPage({ params }: { params: { id: string } }) {
+export default function DrivewayDetailsPage() {
+  const params = useParams();
   const [driveway, setDriveway] = useState<Driveway | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -75,25 +76,29 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
   const router = useRouter();
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchDriveway();
-  }, [params.id, router]);
+  const drivewayId = params?.id as string;
 
-  const fetchDriveway = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/driveways/${params.id}`);
-      setDriveway(response.data.data);
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        setError('Driveway not found');
-      } else {
-        setError('Failed to load driveway details');
+  useEffect(() => {
+    if (!drivewayId) return;
+    
+    const fetchDriveway = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get(`/driveways/${drivewayId}`);
+        setDriveway(response.data.data);
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          setError('Driveway not found');
+        } else {
+          setError('Failed to load driveway details');
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchDriveway();
+  }, [drivewayId]);
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +130,7 @@ export default function DrivewayDetailsPage({ params }: { params: { id: string }
         : undefined;
 
       const response = await api.post('/bookings', {
-        drivewayId: params.id,
+        drivewayId: drivewayId,
         startTime: startTimeISO,
         endTime: endTimeISO,
         specialRequests: bookingForm.specialRequests || undefined,
