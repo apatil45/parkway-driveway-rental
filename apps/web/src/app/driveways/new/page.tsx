@@ -2,16 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Input, Button, ImageUpload, AddressAutocomplete } from '@/components/ui';
+import { Card, Input, Button, ImageUpload, AddressAutocomplete, ErrorDisplay } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
+import { useErrorHandler } from '@/hooks';
 import api from '@/lib/api';
 
 export default function NewDrivewayPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { handleError } = useErrorHandler({ context: 'NewDrivewayPage' });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<any>(null);
   const [form, setForm] = useState({ 
     title: '', 
     address: '', 
@@ -46,9 +48,9 @@ export default function NewDrivewayPage() {
       showToast('Driveway created successfully!', 'success');
       router.push('/driveways');
     } catch (e: any) {
-      const errorMsg = e.response?.data?.message || 'Failed to create driveway';
-      setError(errorMsg);
-      showToast(errorMsg, 'error');
+      // Use professional error handler - automatically shows toast and logs error
+      const appError = handleError(e);
+      setError(e); // Set error for inline display
     } finally {
       setLoading(false);
     }
@@ -60,7 +62,7 @@ export default function NewDrivewayPage() {
         <h1 className="text-3xl font-bold mb-6">New Driveway</h1>
         <Card>
           <form className="space-y-4" onSubmit={onSubmit}>
-            {error && <div className="text-red-600 text-sm">{error}</div>}
+            {error && <ErrorDisplay error={error} inline />}
             <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
             <AddressAutocomplete
               label="Address"

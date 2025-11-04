@@ -5,6 +5,7 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import Breadcrumbs from './Breadcrumbs';
 import FloatingActions from '@/components/ui/FloatingActions';
+import { useOffline } from '@/hooks';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -19,6 +20,9 @@ export default function AppLayout({
   showFooter = true,
   showFloatingActions = true,
 }: AppLayoutProps) {
+  // Detect offline status (shows toast automatically)
+  useOffline();
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />

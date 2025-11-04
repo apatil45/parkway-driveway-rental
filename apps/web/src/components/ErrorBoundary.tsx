@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { ErrorMessage } from './ui';
+import { logError } from '@/lib/errors';
 
 interface Props {
   children: ReactNode;
@@ -24,8 +25,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    // You can log to an error reporting service here
+    // Log error using our error logging system
+    logError(error, `ErrorBoundary: ${errorInfo.componentStack || 'Unknown component'}`);
+    
+    // TODO: Integrate with error reporting service
+    // Example: Sentry.captureException(error, { extra: errorInfo });
   }
 
   render() {

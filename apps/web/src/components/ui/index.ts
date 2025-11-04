@@ -4,6 +4,7 @@ export { default as Select } from './Select';
 export { default as Card } from './Card';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as ErrorMessage } from './ErrorMessage';
+export { default as ErrorDisplay } from './ErrorDisplay';
 export { default as ImageUpload } from './ImageUpload';
 export { default as AddressAutocomplete } from './AddressAutocomplete';
 export { default as FloatingActions } from './FloatingActions';
