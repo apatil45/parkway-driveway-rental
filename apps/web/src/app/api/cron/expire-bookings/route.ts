@@ -5,8 +5,12 @@ import { createApiResponse } from '@parkway/shared';
 /**
  * Cron Job: Expire PENDING bookings that haven't been paid
  * 
- * This endpoint should be called by Vercel Cron Jobs every 15 minutes
+ * This endpoint is called by Vercel Cron Jobs once per day (Hobby plan limitation)
  * Vercel Cron config: vercel.json
+ * Schedule: Daily at midnight (0 0 * * *)
+ * 
+ * Note: Due to Vercel Hobby plan limitations, this runs once per day instead of every 15 minutes.
+ * Bookings that should expire within 15 minutes will be caught on the next daily run.
  * 
  * Expires bookings that:
  * - Are PENDING status

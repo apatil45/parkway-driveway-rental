@@ -5,8 +5,12 @@ import { createApiResponse } from '@parkway/shared';
 /**
  * Cron Job: Mark bookings as COMPLETED after endTime
  * 
- * This endpoint should be called by Vercel Cron Jobs every hour
+ * This endpoint is called by Vercel Cron Jobs once per day (Hobby plan limitation)
  * Vercel Cron config: vercel.json
+ * Schedule: Daily at 1 AM (0 1 * * *)
+ * 
+ * Note: Due to Vercel Hobby plan limitations, this runs once per day instead of hourly.
+ * Bookings are marked as completed when their endTime has passed.
  * 
  * Completes bookings that:
  * - Are CONFIRMED status
