@@ -517,6 +517,12 @@ export default function AddressAutocomplete({
     setFavorites(getFavoriteLocations());
   }, []);
   
+  // Store latest fetchSuggestions in a ref for voice recognition
+  const fetchSuggestionsRef = useRef(fetchSuggestions);
+  useEffect(() => {
+    fetchSuggestionsRef.current = fetchSuggestions;
+  }, [fetchSuggestions]);
+  
   // Initialize voice recognition
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -529,17 +535,27 @@ export default function AddressAutocomplete({
           recognition.lang = 'en-US';
           
           recognition.onresult = (event: SpeechRecognitionEvent) => {
-            const transcript = event.results[0][0].transcript;
-            onChange(transcript);
+            const transcript = event.results[0][0].transcript.trim();
             setIsListening(false);
-            if (transcript.length >= 2) {
-              debouncedFetch(transcript);
-            }
+            onChange(transcript);
+            // Trigger search after a small delay to ensure state is updated
+            setTimeout(() => {
+              if (transcript.length >= 2) {
+                fetchSuggestionsRef.current(transcript);
+              } else if (transcript.length === 0 || transcript.length === 1) {
+                fetchSuggestionsRef.current(transcript);
+              }
+            }, 100);
           };
           
-          recognition.onerror = () => {
+          recognition.onerror = (event: any) => {
             setIsListening(false);
-            setError('Voice recognition failed. Please try again.');
+            const errorMessage = event.error === 'no-speech' 
+              ? 'No speech detected. Please try again.' 
+              : event.error === 'audio-capture'
+              ? 'No microphone found. Please check your microphone.'
+              : 'Voice recognition failed. Please try again.';
+            setError(errorMessage);
           };
           
           recognition.onend = () => {
@@ -1038,24 +1054,24 @@ export default function AddressAutocomplete({
       
       {/* Error message */}
       {error && (
-        <div className="mt-1 text-xs text-amber-600 flex items-center gap-1">
-          <InformationCircleIcon className="w-4 h-4" />
-          <span>{error}</span>
+        <div className="mt-1 text-xs text-amber-600 flex items-center gap-1 bg-white p-2 rounded border border-amber-200">
+          <InformationCircleIcon className="w-4 h-4 text-amber-600" />
+          <span className="text-amber-600">{error}</span>
         </div>
       )}
       
       {/* Fuzzy suggestion */}
       {fuzzySuggestion && (
-        <div className="mt-1 text-xs text-blue-600 flex items-center gap-1">
-          <InformationCircleIcon className="w-4 h-4" />
-          <span>Did you mean: </span>
+        <div className="mt-1 text-xs text-blue-600 flex items-center gap-1 bg-white p-2 rounded border border-blue-200">
+          <InformationCircleIcon className="w-4 h-4 text-blue-600" />
+          <span className="text-blue-600">Did you mean: </span>
           <button
             type="button"
             onClick={() => {
               onChange(fuzzySuggestion);
-              debouncedFetch(fuzzySuggestion);
+              fetchSuggestions(fuzzySuggestion);
             }}
-            className="underline font-medium hover:text-blue-800"
+            className="underline font-medium text-blue-700 hover:text-blue-800"
           >
             {fuzzySuggestion}
           </button>

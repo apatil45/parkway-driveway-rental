@@ -126,8 +126,8 @@ const LeafletMap = dynamic(async () => {
             {selectedPosition ? (
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Selected location:</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm text-gray-700 mb-1 font-medium">Selected location:</p>
+                  <p className="text-sm font-medium text-gray-900 bg-white p-2 rounded border border-gray-200">
                     {loading ? 'Loading address...' : address}
                   </p>
                 </div>
@@ -147,7 +147,7 @@ const LeafletMap = dynamic(async () => {
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-gray-600 text-center">
+              <p className="text-sm text-gray-700 text-center bg-white p-2 rounded">
                 Click on the map to select a location
               </p>
             )}
