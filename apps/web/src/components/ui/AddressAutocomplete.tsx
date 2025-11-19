@@ -534,32 +534,52 @@ export default function AddressAutocomplete({
         try {
           const recognition = new SpeechRecognition();
           recognition.continuous = false;
-          recognition.interimResults = false;
+          recognition.interimResults = true; // Enable to see partial results
           recognition.lang = 'en-US';
+          recognition.maxAlternatives = 1;
           
           recognition.onresult = (event: SpeechRecognitionEvent) => {
-            console.log('Voice recognition result:', event);
+            console.log('Voice recognition result event:', event);
+            console.log('Results length:', event.results?.length);
+            console.log('Is final:', event.results?.[0]?.[0]?.isFinal);
+            
             try {
-              if (event.results && event.results.length > 0 && event.results[0] && event.results[0].length > 0) {
-                const transcript = event.results[0][0].transcript.trim();
-                console.log('Transcript received:', transcript);
+              if (event.results && event.results.length > 0) {
+                // Get the last result (most recent)
+                const result = event.results[event.results.length - 1];
+                console.log('Last result:', result);
                 
-                if (transcript) {
-                  setIsListening(false);
-                  // Use ref to get latest onChange
-                  onChangeRef.current(transcript);
+                if (result && result.length > 0) {
+                  const transcript = result[0].transcript.trim();
+                  const isFinal = result[0].isFinal;
                   
-                  // Trigger search after a small delay to ensure state is updated
-                  setTimeout(() => {
-                    if (fetchSuggestionsRef.current) {
-                      console.log('Triggering search with transcript:', transcript);
-                      fetchSuggestionsRef.current(transcript);
-                    } else {
-                      console.error('fetchSuggestionsRef.current is null');
-                    }
-                  }, 200);
+                  console.log('Transcript:', transcript, 'Is final:', isFinal);
+                  
+                  // Only process final results
+                  if (isFinal && transcript) {
+                    console.log('Processing final transcript:', transcript);
+                    setIsListening(false);
+                    // Use ref to get latest onChange
+                    onChangeRef.current(transcript);
+                    
+                    // Trigger search after a small delay to ensure state is updated
+                    setTimeout(() => {
+                      if (fetchSuggestionsRef.current) {
+                        console.log('Triggering search with transcript:', transcript);
+                        fetchSuggestionsRef.current(transcript);
+                      } else {
+                        console.error('fetchSuggestionsRef.current is null');
+                      }
+                    }, 200);
+                  } else if (!isFinal) {
+                    console.log('Interim result (not final yet):', transcript);
+                    // Optionally show interim results in UI
+                  } else {
+                    console.warn('Empty transcript received');
+                    setIsListening(false);
+                  }
                 } else {
-                  console.warn('Empty transcript received');
+                  console.warn('No transcript in result');
                   setIsListening(false);
                 }
               } else {
@@ -575,21 +595,40 @@ export default function AddressAutocomplete({
           
           recognition.onerror = (event: any) => {
             console.error('Voice recognition error:', event);
+            console.error('Error details:', {
+              error: event.error,
+              message: event.message,
+              timeStamp: event.timeStamp
+            });
             setIsListening(false);
-            const errorMessage = event.error === 'no-speech' 
-              ? 'No speech detected. Please try again.' 
-              : event.error === 'audio-capture'
-              ? 'No microphone found. Please check your microphone.'
-              : event.error === 'not-allowed'
-              ? 'Microphone permission denied. Please allow microphone access.'
-              : event.error === 'aborted'
-              ? 'Voice recognition was aborted.'
-              : `Voice recognition error: ${event.error || 'Unknown error'}`;
-            setError(errorMessage);
+            
+            // Don't show error for 'no-speech' if user manually stopped
+            if (event.error === 'no-speech') {
+              console.warn('No speech detected - this is normal if user didn\'t speak or stopped manually');
+              // Only show error if we were actually listening (not manually stopped)
+              // Check if this was a manual stop by checking if isListening was true
+            } else {
+              const errorMessage = event.error === 'audio-capture'
+                ? 'No microphone found. Please check your microphone.'
+                : event.error === 'not-allowed'
+                ? 'Microphone permission denied. Please allow microphone access.'
+                : event.error === 'aborted'
+                ? 'Voice recognition was aborted.'
+                : `Voice recognition error: ${event.error || 'Unknown error'}`;
+              setError(errorMessage);
+            }
           };
           
           recognition.onend = () => {
             console.log('Voice recognition ended');
+            console.log('isListening state:', isListening);
+            // If recognition ended but we never got a result, it might be due to silence
+            // Don't show error if user manually stopped it
+            if (isListening) {
+              console.warn('Recognition ended without result - might be due to silence or timeout');
+              // Only show error if we were actually listening (not manually stopped)
+              // The onerror handler will show the actual error if there was one
+            }
             setIsListening(false);
           };
           
@@ -869,8 +908,12 @@ export default function AddressAutocomplete({
     }
     
     if (isListening) {
-      console.log('Stopping voice recognition');
-      recognitionRef.current.stop();
+      console.log('Stopping voice recognition (user clicked stop)');
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
+      }
       setIsListening(false);
     } else {
       try {
@@ -1101,6 +1144,14 @@ export default function AddressAutocomplete({
           </button>
         </div>
       </div>
+      
+      {/* Listening indicator */}
+      {isListening && (
+        <div className="mt-1 text-xs text-blue-600 flex items-center gap-1 bg-blue-50 p-2 rounded border border-blue-200 animate-pulse">
+          <MicrophoneIcon className="w-4 h-4 text-red-600 animate-pulse" />
+          <span className="text-blue-700 font-medium">Listening... Speak now or click to stop</span>
+        </div>
+      )}
       
       {/* Error message */}
       {error && (
