@@ -519,10 +519,16 @@ export default function AddressAutocomplete({
   
   // Store latest fetchSuggestions in a ref for voice recognition (initialized as null, will be set after fetchSuggestions is defined)
   const fetchSuggestionsRef = useRef<((query: string) => Promise<void>) | null>(null);
+  const onChangeRef = useRef(onChange);
   
-  // Initialize voice recognition
+  // Update onChange ref when it changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  
+  // Initialize voice recognition (only once on mount)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !recognitionRef.current) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         try {
@@ -532,33 +538,64 @@ export default function AddressAutocomplete({
           recognition.lang = 'en-US';
           
           recognition.onresult = (event: SpeechRecognitionEvent) => {
-            const transcript = event.results[0][0].transcript.trim();
-            setIsListening(false);
-            onChange(transcript);
-            // Trigger search after a small delay to ensure state is updated
-            setTimeout(() => {
-              if (fetchSuggestionsRef.current) {
-                if (transcript.length >= 2) {
-                  fetchSuggestionsRef.current(transcript);
-                } else if (transcript.length === 0 || transcript.length === 1) {
-                  fetchSuggestionsRef.current(transcript);
+            console.log('Voice recognition result:', event);
+            try {
+              if (event.results && event.results.length > 0 && event.results[0] && event.results[0].length > 0) {
+                const transcript = event.results[0][0].transcript.trim();
+                console.log('Transcript received:', transcript);
+                
+                if (transcript) {
+                  setIsListening(false);
+                  // Use ref to get latest onChange
+                  onChangeRef.current(transcript);
+                  
+                  // Trigger search after a small delay to ensure state is updated
+                  setTimeout(() => {
+                    if (fetchSuggestionsRef.current) {
+                      console.log('Triggering search with transcript:', transcript);
+                      fetchSuggestionsRef.current(transcript);
+                    } else {
+                      console.error('fetchSuggestionsRef.current is null');
+                    }
+                  }, 200);
+                } else {
+                  console.warn('Empty transcript received');
+                  setIsListening(false);
                 }
+              } else {
+                console.warn('No results in voice recognition event');
+                setIsListening(false);
               }
-            }, 100);
+            } catch (error) {
+              console.error('Error processing voice recognition result:', error);
+              setIsListening(false);
+              setError('Error processing voice input. Please try again.');
+            }
           };
           
           recognition.onerror = (event: any) => {
+            console.error('Voice recognition error:', event);
             setIsListening(false);
             const errorMessage = event.error === 'no-speech' 
               ? 'No speech detected. Please try again.' 
               : event.error === 'audio-capture'
               ? 'No microphone found. Please check your microphone.'
-              : 'Voice recognition failed. Please try again.';
+              : event.error === 'not-allowed'
+              ? 'Microphone permission denied. Please allow microphone access.'
+              : event.error === 'aborted'
+              ? 'Voice recognition was aborted.'
+              : `Voice recognition error: ${event.error || 'Unknown error'}`;
             setError(errorMessage);
           };
           
           recognition.onend = () => {
+            console.log('Voice recognition ended');
             setIsListening(false);
+          };
+          
+          recognition.onstart = () => {
+            console.log('Voice recognition started');
+            setIsListening(true);
           };
           
           recognitionRef.current = recognition;
@@ -571,7 +608,7 @@ export default function AddressAutocomplete({
         setVoiceSupported(false);
       }
     }
-  }, [onChange]);
+  }, []); // Empty dependency array - only initialize once
   
   // Get user location
   useEffect(() => {
@@ -832,16 +869,25 @@ export default function AddressAutocomplete({
     }
     
     if (isListening) {
+      console.log('Stopping voice recognition');
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
       try {
-        recognitionRef.current.start();
-        setIsListening(true);
+        console.log('Starting voice recognition');
         setError(null);
-      } catch (error) {
+        // Check if already started
+        if (recognitionRef.current) {
+          recognitionRef.current.start();
+          // Don't set isListening here - let onstart handler do it
+        }
+      } catch (error: any) {
+        console.error('Error starting voice recognition:', error);
         setIsListening(false);
-        setError('Voice search failed. Please try again.');
+        const errorMsg = error?.message?.includes('already started') || error?.message?.includes('started')
+          ? 'Voice recognition is already active.'
+          : `Voice search failed: ${error?.message || 'Please try again.'}`;
+        setError(errorMsg);
       }
     }
   };
