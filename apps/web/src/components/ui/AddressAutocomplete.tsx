@@ -544,7 +544,6 @@ export default function AddressAutocomplete({
           recognition.onresult = (event: SpeechRecognitionEvent) => {
             console.log('Voice recognition result event:', event);
             console.log('Results length:', event.results?.length);
-            console.log('Is final:', event.results?.[0]?.[0]?.isFinal);
             
             try {
               if (event.results && event.results.length > 0) {
@@ -554,7 +553,7 @@ export default function AddressAutocomplete({
                 
                 if (result && result.length > 0) {
                   const transcript = result[0].transcript.trim();
-                  const isFinal = result[0].isFinal;
+                  const isFinal = result.isFinal; // isFinal is on the result, not the alternative
                   
                   console.log('Transcript:', transcript, 'Is final:', isFinal);
                   
