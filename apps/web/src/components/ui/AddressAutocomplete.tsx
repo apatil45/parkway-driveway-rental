@@ -555,7 +555,7 @@ export default function AddressAutocomplete({
                   
                   console.log('Transcript:', transcript, 'Is final:', isFinal);
                   
-                  // Only process final results
+                  // Process final results immediately
                   if (isFinal && transcript) {
                     console.log('Processing final transcript:', transcript);
                     setIsListening(false);
@@ -571,9 +571,11 @@ export default function AddressAutocomplete({
                         console.error('fetchSuggestionsRef.current is null');
                       }
                     }, 200);
-                  } else if (!isFinal) {
+                  } else if (!isFinal && transcript) {
                     console.log('Interim result (not final yet):', transcript);
-                    // Optionally show interim results in UI
+                    // Store interim result - we'll use it if recognition ends without final result
+                    // Update input with interim result so user can see what's being recognized
+                    onChangeRef.current(transcript);
                   } else {
                     console.warn('Empty transcript received');
                     setIsListening(false);
@@ -622,12 +624,30 @@ export default function AddressAutocomplete({
           recognition.onend = () => {
             console.log('Voice recognition ended');
             console.log('isListening state:', isListening);
+            
+            // Check if we have any results (even if not final)
+            // This handles the case where user stops manually but we have interim results
+            if (recognitionRef.current) {
+              // Try to get the last result from the recognition object
+              // Note: This might not work in all browsers, but worth trying
+              console.log('Checking for any captured speech...');
+            }
+            
             // If recognition ended but we never got a result, it might be due to silence
             // Don't show error if user manually stopped it
             if (isListening) {
-              console.warn('Recognition ended without result - might be due to silence or timeout');
-              // Only show error if we were actually listening (not manually stopped)
-              // The onerror handler will show the actual error if there was one
+              console.warn('Recognition ended without final result - might be due to silence, timeout, or manual stop');
+              // Check if input has any value (from interim results)
+              if (inputRef.current && inputRef.current.value.trim().length > 0) {
+                console.log('Found interim result in input, triggering search:', inputRef.current.value);
+                // Use the value from input (which might have interim results)
+                const interimValue = inputRef.current.value.trim();
+                if (interimValue.length >= 2 && fetchSuggestionsRef.current) {
+                  setTimeout(() => {
+                    fetchSuggestionsRef.current?.(interimValue);
+                  }, 100);
+                }
+              }
             }
             setIsListening(false);
           };
@@ -910,6 +930,17 @@ export default function AddressAutocomplete({
     if (isListening) {
       console.log('Stopping voice recognition (user clicked stop)');
       try {
+        // Before stopping, check if we have any interim results
+        if (inputRef.current && inputRef.current.value.trim().length > 0) {
+          const interimValue = inputRef.current.value.trim();
+          console.log('Stopping with interim result:', interimValue);
+          // Process the interim result as final since user is stopping
+          if (interimValue.length >= 2 && fetchSuggestionsRef.current) {
+            setTimeout(() => {
+              fetchSuggestionsRef.current?.(interimValue);
+            }, 100);
+          }
+        }
         recognitionRef.current.stop();
       } catch (error) {
         console.error('Error stopping recognition:', error);
@@ -1147,9 +1178,15 @@ export default function AddressAutocomplete({
       
       {/* Listening indicator */}
       {isListening && (
-        <div className="mt-1 text-xs text-blue-600 flex items-center gap-1 bg-blue-50 p-2 rounded border border-blue-200 animate-pulse">
-          <MicrophoneIcon className="w-4 h-4 text-red-600 animate-pulse" />
-          <span className="text-blue-700 font-medium">Listening... Speak now or click to stop</span>
+        <div className="mt-1 text-sm text-blue-700 flex items-center gap-2 bg-blue-50 p-3 rounded-lg border-2 border-blue-300 shadow-sm">
+          <div className="relative">
+            <MicrophoneIcon className="w-5 h-5 text-red-600 animate-pulse" />
+            <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-75"></div>
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-blue-900">🎤 Listening...</p>
+            <p className="text-xs text-blue-600 mt-0.5">Speak your search query clearly. Click the mic again to stop.</p>
+          </div>
         </div>
       )}
       
