@@ -497,11 +497,13 @@ export default function AddressAutocomplete({
   const [cachedResults, setCachedResults] = useState<AddressSuggestion[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [listeningStartTime, setListeningStartTime] = useState<number | null>(null);
+  const listeningStartTimeRef = useRef<number | null>(null); // Use ref to persist across closures
   const [fuzzySuggestion, setFuzzySuggestion] = useState<string | null>(null);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const retryCountRef = useRef<number>(0); // Track retry attempts
   
   // Rotate placeholder text
   useEffect(() => {
@@ -598,18 +600,44 @@ export default function AddressAutocomplete({
           
           recognition.onerror = (event: any) => {
             console.error('Voice recognition error:', event);
+            const startTime = listeningStartTimeRef.current;
+            const duration = startTime ? Date.now() - startTime : 0;
             console.error('Error details:', {
               error: event.error,
               message: event.message,
-              timeStamp: event.timeStamp
+              timeStamp: event.timeStamp,
+              listeningDuration: duration + 'ms'
             });
             setIsListening(false);
             
-            // Don't show error for 'no-speech' if user manually stopped
+            // Don't show error for 'no-speech' if user manually stopped or if it happened too quickly
             if (event.error === 'no-speech') {
-              console.warn('No speech detected - this is normal if user didn\'t speak or stopped manually');
-              // Only show error if we were actually listening (not manually stopped)
-              // Check if this was a manual stop by checking if isListening was true
+              console.warn('No speech detected - duration was:', duration, 'ms');
+              // If it happened very quickly (< 2 seconds), it might be a browser quirk - try restarting once
+              if (duration > 0 && duration < 2000 && retryCountRef.current < 1) {
+                console.warn('No-speech error happened too quickly - might be browser issue, will retry once');
+                retryCountRef.current += 1;
+                // Retry after a short delay
+                setTimeout(() => {
+                  if (recognitionRef.current && !isListening) {
+                    console.log('Retrying voice recognition...');
+                    try {
+                      recognitionRef.current.start();
+                    } catch (retryError) {
+                      console.error('Retry failed:', retryError);
+                      retryCountRef.current = 0;
+                    }
+                  }
+                }, 500);
+                return; // Don't set isListening to false yet
+              } else if (duration >= 5000) {
+                // After 5 seconds, show helpful message
+                setError('No speech detected. Please speak clearly after clicking the microphone.');
+                setTimeout(() => setError(null), 4000);
+                retryCountRef.current = 0; // Reset retry count
+              } else {
+                retryCountRef.current = 0; // Reset retry count
+              }
             } else {
               const errorMessage = event.error === 'audio-capture'
                 ? 'No microphone found. Please check your microphone.'
@@ -620,13 +648,17 @@ export default function AddressAutocomplete({
                 : `Voice recognition error: ${event.error || 'Unknown error'}`;
               setError(errorMessage);
             }
+            // Don't reset listeningStartTime here - let onend handle it
           };
           
           recognition.onend = () => {
             console.log('Voice recognition ended');
             console.log('isListening state:', isListening);
-            const listeningDuration = listeningStartTime ? Date.now() - listeningStartTime : 0;
+            // Use ref to get the actual start time (not state which might be stale)
+            const startTime = listeningStartTimeRef.current;
+            const listeningDuration = startTime ? Date.now() - startTime : 0;
             console.log('Total listening duration:', listeningDuration, 'ms');
+            console.log('Start time from ref:', startTime);
             
             // Check if we have any results (even if not final)
             // This handles the case where user stops manually but we have interim results
@@ -650,21 +682,31 @@ export default function AddressAutocomplete({
                     fetchSuggestionsRef.current?.(interimValue);
                   }, 100);
                 }
-              } else if (listeningDuration < 2000) {
+              } else if (listeningDuration > 0 && listeningDuration < 2000) {
                 console.warn('Recognition ended too quickly - user may have stopped before speaking');
                 setError('Please speak clearly after clicking the microphone. Wait at least 2 seconds.');
                 setTimeout(() => setError(null), 4000);
+              } else if (listeningDuration === 0) {
+                console.warn('Listening duration is 0 - start time was not captured properly');
               }
             }
             setIsListening(false);
             setListeningStartTime(null);
+            listeningStartTimeRef.current = null; // Reset ref too
           };
           
           recognition.onstart = () => {
             console.log('Voice recognition started');
+            const startTime = Date.now();
             setIsListening(true);
-            setListeningStartTime(Date.now());
-            console.log('Listening start time recorded');
+            setListeningStartTime(startTime);
+            listeningStartTimeRef.current = startTime; // Store in ref too
+            console.log('Listening start time recorded:', startTime);
+            // Reset retry count on successful start
+            if (retryCountRef.current > 0) {
+              console.log('Voice recognition restarted successfully after retry');
+              retryCountRef.current = 0;
+            }
           };
           
           recognitionRef.current = recognition;
@@ -940,7 +982,9 @@ export default function AddressAutocomplete({
     if (isListening) {
       // Check if minimum listening time has passed (2 seconds)
       const minListeningTime = 2000; // 2 seconds
-      const timeSinceStart = listeningStartTime ? Date.now() - listeningStartTime : 0;
+      // Use ref to get accurate time (state might be stale)
+      const startTime = listeningStartTimeRef.current;
+      const timeSinceStart = startTime ? Date.now() - startTime : 0;
       
       if (timeSinceStart < minListeningTime) {
         const remainingTime = Math.ceil((minListeningTime - timeSinceStart) / 1000);
@@ -975,11 +1019,14 @@ export default function AddressAutocomplete({
       }
       setIsListening(false);
       setListeningStartTime(null);
+      listeningStartTimeRef.current = null;
     } else {
       try {
         console.log('Starting voice recognition');
         setError(null);
         setListeningStartTime(null);
+        listeningStartTimeRef.current = null;
+        retryCountRef.current = 0; // Reset retry count when manually starting
         // Check if already started
         if (recognitionRef.current) {
           recognitionRef.current.start();
@@ -989,6 +1036,7 @@ export default function AddressAutocomplete({
         console.error('Error starting voice recognition:', error);
         setIsListening(false);
         setListeningStartTime(null);
+        listeningStartTimeRef.current = null;
         const errorMsg = error?.message?.includes('already started') || error?.message?.includes('started')
           ? 'Voice recognition is already active.'
           : `Voice search failed: ${error?.message || 'Please try again.'}`;
