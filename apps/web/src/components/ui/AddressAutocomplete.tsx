@@ -497,6 +497,7 @@ export default function AddressAutocomplete({
   const [cachedResults, setCachedResults] = useState<AddressSuggestion[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [fuzzySuggestion, setFuzzySuggestion] = useState<string | null>(null);
+  const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -521,30 +522,38 @@ export default function AddressAutocomplete({
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-          const transcript = event.results[0][0].transcript;
-          onChange(transcript);
-          setIsListening(false);
-          if (transcript.length >= 2) {
-            debouncedFetch(transcript);
-          }
-        };
-        
-        recognition.onerror = () => {
-          setIsListening(false);
-          setError('Voice recognition failed. Please try again.');
-        };
-        
-        recognition.onend = () => {
-          setIsListening(false);
-        };
-        
-        recognitionRef.current = recognition;
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = false;
+          recognition.interimResults = false;
+          recognition.lang = 'en-US';
+          
+          recognition.onresult = (event: SpeechRecognitionEvent) => {
+            const transcript = event.results[0][0].transcript;
+            onChange(transcript);
+            setIsListening(false);
+            if (transcript.length >= 2) {
+              debouncedFetch(transcript);
+            }
+          };
+          
+          recognition.onerror = () => {
+            setIsListening(false);
+            setError('Voice recognition failed. Please try again.');
+          };
+          
+          recognition.onend = () => {
+            setIsListening(false);
+          };
+          
+          recognitionRef.current = recognition;
+          setVoiceSupported(true);
+        } catch (error) {
+          console.error('Voice recognition initialization failed:', error);
+          setVoiceSupported(false);
+        }
+      } else {
+        setVoiceSupported(false);
       }
     }
   }, [onChange]);
@@ -987,20 +996,27 @@ export default function AddressAutocomplete({
           {loading && (
             <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
           )}
-          {recognitionRef.current && (
-            <button
-              type="button"
-              onClick={handleVoiceSearch}
-              className={`p-1 transition-colors ${
-                isListening 
-                  ? 'text-red-600 animate-pulse' 
-                  : 'text-gray-400 hover:text-primary-600'
-              }`}
-              title={isListening ? 'Listening... Click to stop' : 'Voice search'}
-            >
-              <MicrophoneIcon className="w-5 h-5" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleVoiceSearch}
+            disabled={!voiceSupported}
+            className={`p-1 transition-colors ${
+              isListening 
+                ? 'text-red-600 animate-pulse' 
+                : voiceSupported
+                ? 'text-gray-400 hover:text-primary-600'
+                : 'text-gray-300 cursor-not-allowed opacity-50'
+            }`}
+            title={
+              isListening 
+                ? 'Listening... Click to stop' 
+                : voiceSupported 
+                ? 'Voice search' 
+                : 'Voice search not supported in this browser'
+            }
+          >
+            <MicrophoneIcon className="w-5 h-5" />
+          </button>
           <button
             type="button"
             onClick={() => setShowMapPicker(true)}
