@@ -242,7 +242,7 @@ async function getNearbyPlaces(lat: number, lon: number): Promise<AddressSuggest
           lon: data.lon,
           place_id: Date.now(),
           isNearby: true,
-          category: 'address',
+          category: 'address' as const,
         }];
       }
     }
@@ -282,7 +282,7 @@ async function searchPOIs(query: string, userLocation: { lat: number; lon: numbe
       return data.map(item => ({
         ...item,
         isPOI: true,
-        category: 'poi',
+        category: 'poi' as const,
         distance: userLocation 
           ? calculateDistance(userLocation.lat, userLocation.lon, parseFloat(item.lat), parseFloat(item.lon))
           : undefined,
@@ -376,7 +376,7 @@ function getTimeBasedSuggestions(favorites: FavoriteLocation[]): AddressSuggesti
         lon: String(workFavorites[0].lon),
         place_id: workFavorites[0].timestamp,
         isFavorite: true,
-        category: 'favorite',
+        category: 'favorite' as const,
       });
     }
   }
@@ -391,7 +391,7 @@ function getTimeBasedSuggestions(favorites: FavoriteLocation[]): AddressSuggesti
         lon: String(homeFavorites[0].lon),
         place_id: homeFavorites[0].timestamp,
         isFavorite: true,
-        category: 'favorite',
+        category: 'favorite' as const,
       });
     }
   }
@@ -624,7 +624,7 @@ export default function AddressAutocomplete({
         // These would need to be geocoded, but for now we'll just show them as text suggestions
       }
       
-      const allSuggestions = [...timeBasedSuggestions, ...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
+      const allSuggestions: AddressSuggestion[] = [...timeBasedSuggestions, ...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
       if (allSuggestions.length > 0) {
         setSuggestions(allSuggestions);
         setShowSuggestions(true);
@@ -685,12 +685,12 @@ export default function AddressAutocomplete({
             distance,
             isRecent: !!savedMatch,
             isFavorite: !!favoriteMatch,
-            category: favoriteMatch ? 'favorite' : savedMatch ? 'recent' : 'address',
+            category: (favoriteMatch ? 'favorite' : savedMatch ? 'recent' : 'address') as 'favorite' | 'recent' | 'address',
           };
         });
         
         // Combine POI and address results
-        const allResults = [...poiResults, ...enhancedSuggestions];
+        const allResults: AddressSuggestion[] = [...poiResults, ...enhancedSuggestions];
         
         // Smart ranking
         const rankedSuggestions = allResults.sort((a, b) => {
@@ -974,7 +974,7 @@ export default function AddressAutocomplete({
                   : undefined,
               }));
               
-              const allSuggestions = [...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
+              const allSuggestions: AddressSuggestion[] = [...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
               if (allSuggestions.length > 0) {
                 setSuggestions(allSuggestions);
                 setShowSuggestions(true);
