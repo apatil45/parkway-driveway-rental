@@ -87,7 +87,7 @@ export default function Home() {
             <div className="container py-16">
               <div className="max-w-4xl mx-auto text-center">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  Welcome back, {user.name?.split(' ')[0]}! 👋
+                  Welcome back, {user.name?.split(' ')[0]}!
                 </h1>
                 <p className="text-xl md:text-2xl mb-8 text-primary-100">
                   {isOwner && isDriver
