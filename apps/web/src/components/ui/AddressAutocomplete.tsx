@@ -1,6 +1,38 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+
+// Type declarations for Web Speech API
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: Event) => void;
+  onend: () => void;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: SpeechRecognitionResult;
+  length: number;
+}
+
+interface SpeechRecognitionResult {
+  [index: number]: SpeechRecognitionAlternative;
+  length: number;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
 import { 
   MapPinIcon, 
   ClockIcon, 
@@ -10,7 +42,8 @@ import {
   XMarkIcon,
   BuildingOfficeIcon,
   HomeIcon,
-  BriefcaseIcon
+  BriefcaseIcon,
+  MicrophoneIcon
 } from '@heroicons/react/24/outline';
 import MapPickerModal from './MapPickerModal';
 
@@ -48,6 +81,7 @@ interface FavoriteLocation {
 // Storage keys
 const ADDRESS_HISTORY_KEY = 'parkway_address_history';
 const FAVORITES_KEY = 'parkway_favorite_locations';
+const SEARCH_ANALYTICS_KEY = 'parkway_search_analytics';
 const MAX_HISTORY_ITEMS = 10;
 const MAX_FAVORITES = 5;
 
@@ -267,6 +301,167 @@ function highlightMatch(text: string, query: string): string {
   return text.replace(regex, '<mark class="bg-yellow-200 font-semibold">$1</mark>');
 }
 
+// Levenshtein distance for fuzzy matching
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix: number[][] = [];
+  const len1 = str1.length;
+  const len2 = str2.length;
+  
+  for (let i = 0; i <= len2; i++) {
+    matrix[i] = [i];
+  }
+  
+  for (let j = 0; j <= len1; j++) {
+    matrix[0][j] = j;
+  }
+  
+  for (let i = 1; i <= len2; i++) {
+    for (let j = 1; j <= len1; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  
+  return matrix[len2][len1];
+}
+
+// Fuzzy search - find closest match
+function findFuzzyMatch(query: string, suggestions: AddressSuggestion[]): string | null {
+  if (!query || query.length < 3) return null;
+  
+  const queryLower = query.toLowerCase();
+  let bestMatch: { suggestion: AddressSuggestion; distance: number } | null = null;
+  const maxDistance = Math.max(2, Math.floor(query.length * 0.3)); // Allow 30% typos
+  
+  for (const suggestion of suggestions) {
+    const nameLower = suggestion.display_name.toLowerCase();
+    const distance = levenshteinDistance(queryLower, nameLower.substring(0, queryLower.length + 5));
+    
+    if (distance <= maxDistance && (!bestMatch || distance < bestMatch.distance)) {
+      bestMatch = { suggestion, distance };
+    }
+  }
+  
+  return bestMatch && bestMatch.distance <= maxDistance ? bestMatch.suggestion.display_name : null;
+}
+
+// Get time-based context
+function getTimeBasedContext(): 'morning' | 'afternoon' | 'evening' | 'night' {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 22) return 'evening';
+  return 'night';
+}
+
+// Get time-based suggestions
+function getTimeBasedSuggestions(favorites: FavoriteLocation[]): AddressSuggestion[] {
+  const timeContext = getTimeBasedContext();
+  const suggestions: AddressSuggestion[] = [];
+  
+  // Morning (5am-12pm): Suggest work locations
+  if (timeContext === 'morning') {
+    const workFavorites = favorites.filter(f => f.icon === 'work');
+    if (workFavorites.length > 0) {
+      suggestions.push({
+        display_name: `Parking near ${workFavorites[0].name}`,
+        lat: String(workFavorites[0].lat),
+        lon: String(workFavorites[0].lon),
+        place_id: workFavorites[0].timestamp,
+        isFavorite: true,
+        category: 'favorite',
+      });
+    }
+  }
+  
+  // Evening (5pm-10pm): Suggest home locations
+  if (timeContext === 'evening') {
+    const homeFavorites = favorites.filter(f => f.icon === 'home');
+    if (homeFavorites.length > 0) {
+      suggestions.push({
+        display_name: `Parking near ${homeFavorites[0].name}`,
+        lat: String(homeFavorites[0].lat),
+        lon: String(homeFavorites[0].lon),
+        place_id: homeFavorites[0].timestamp,
+        isFavorite: true,
+        category: 'favorite',
+      });
+    }
+  }
+  
+  return suggestions;
+}
+
+// Search analytics interface
+interface SearchAnalytics {
+  searchHistory: Array<{
+    query: string;
+    timestamp: number;
+    selected?: boolean;
+  }>;
+  preferences: {
+    preferredPriceRange?: { min: number; max: number };
+    preferredAmenities?: string[];
+    commonLocations?: string[];
+  };
+}
+
+// Get search analytics
+function getSearchAnalytics(): SearchAnalytics {
+  if (typeof window === 'undefined') {
+    return { searchHistory: [], preferences: {} };
+  }
+  try {
+    const stored = localStorage.getItem(SEARCH_ANALYTICS_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch (e) {
+    console.error('Error reading search analytics:', e);
+  }
+  return { searchHistory: [], preferences: {} };
+}
+
+// Save search to analytics
+function saveSearchToAnalytics(query: string, selected: boolean = false) {
+  if (typeof window === 'undefined') return;
+  try {
+    const analytics = getSearchAnalytics();
+    analytics.searchHistory.push({
+      query,
+      timestamp: Date.now(),
+      selected,
+    });
+    
+    // Keep last 50 searches
+    if (analytics.searchHistory.length > 50) {
+      analytics.searchHistory = analytics.searchHistory.slice(-50);
+    }
+    
+    // Update common locations
+    if (selected) {
+      if (!analytics.preferences.commonLocations) {
+        analytics.preferences.commonLocations = [];
+      }
+      if (!analytics.preferences.commonLocations.includes(query)) {
+        analytics.preferences.commonLocations.push(query);
+        if (analytics.preferences.commonLocations.length > 10) {
+          analytics.preferences.commonLocations.shift();
+        }
+      }
+    }
+    
+    localStorage.setItem(SEARCH_ANALYTICS_KEY, JSON.stringify(analytics));
+  } catch (e) {
+    console.error('Error saving search analytics:', e);
+  }
+}
+
 interface AddressAutocompleteProps {
   value: string;
   onChange: (address: string) => void;
@@ -300,6 +495,9 @@ export default function AddressAutocomplete({
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [cachedResults, setCachedResults] = useState<AddressSuggestion[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const [fuzzySuggestion, setFuzzySuggestion] = useState<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -317,6 +515,39 @@ export default function AddressAutocomplete({
   useEffect(() => {
     setFavorites(getFavoriteLocations());
   }, []);
+  
+  // Initialize voice recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          const transcript = event.results[0][0].transcript;
+          onChange(transcript);
+          setIsListening(false);
+          if (transcript.length >= 2) {
+            debouncedFetch(transcript);
+          }
+        };
+        
+        recognition.onerror = () => {
+          setIsListening(false);
+          setError('Voice recognition failed. Please try again.');
+        };
+        
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+        
+        recognitionRef.current = recognition;
+      }
+    }
+  }, [onChange]);
   
   // Get user location
   useEffect(() => {
@@ -343,7 +574,10 @@ export default function AddressAutocomplete({
   
   // Fetch suggestions with error handling and caching
   const fetchSuggestions = useCallback(async (query: string) => {
-    // Show favorites, recent, and nearby when query is short
+    // Track search in analytics
+    saveSearchToAnalytics(query, false);
+    
+    // Show favorites, recent, nearby, and time-based suggestions when query is short
     if (!query || query.length < 2) {
       const recentAddresses = getSavedAddresses()
         .slice(0, 3)
@@ -371,7 +605,17 @@ export default function AddressAutocomplete({
           : undefined,
       }));
       
-      const allSuggestions = [...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
+      // Add time-based smart suggestions
+      const timeBasedSuggestions = getTimeBasedSuggestions(favorites);
+      
+      // Add common locations from analytics
+      const analytics = getSearchAnalytics();
+      const commonLocationSuggestions: AddressSuggestion[] = [];
+      if (analytics.preferences.commonLocations && analytics.preferences.commonLocations.length > 0) {
+        // These would need to be geocoded, but for now we'll just show them as text suggestions
+      }
+      
+      const allSuggestions = [...timeBasedSuggestions, ...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
       if (allSuggestions.length > 0) {
         setSuggestions(allSuggestions);
         setShowSuggestions(true);
@@ -464,8 +708,17 @@ export default function AddressAutocomplete({
           return scoreB - scoreA;
         });
         
-        setSuggestions(rankedSuggestions.slice(0, 8));
-        setShowSuggestions(rankedSuggestions.length > 0);
+        const topSuggestions = rankedSuggestions.slice(0, 8);
+        setSuggestions(topSuggestions);
+        setShowSuggestions(topSuggestions.length > 0);
+        
+        // Check for fuzzy matches if no exact results
+        if (topSuggestions.length === 0 || (topSuggestions.length < 3 && query.length >= 3)) {
+          const fuzzyMatch = findFuzzyMatch(query, cachedResults.length > 0 ? cachedResults : topSuggestions);
+          setFuzzySuggestion(fuzzyMatch);
+        } else {
+          setFuzzySuggestion(null);
+        }
       } else {
         // Use cached results on error
         if (cachedResults.length > 0) {
@@ -523,10 +776,12 @@ export default function AddressAutocomplete({
     const lon = parseFloat(suggestion.lon);
     
     saveAddressToHistory(address, lat, lon);
+    saveSearchToAnalytics(address, true); // Track selected search
     
     setShowSuggestions(false);
     setSuggestions([]);
     setSelectedIndex(-1);
+    setFuzzySuggestion(null);
     
     onChange(address);
     
@@ -539,6 +794,27 @@ export default function AddressAutocomplete({
         inputRef.current.blur();
       }
     }, 50);
+  };
+  
+  const handleVoiceSearch = () => {
+    if (!recognitionRef.current) {
+      setError('Voice search is not supported in your browser.');
+      return;
+    }
+    
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+        setError(null);
+      } catch (error) {
+        setIsListening(false);
+        setError('Voice search failed. Please try again.');
+      }
+    }
   };
   
   const handleMapPickerSelect = (lat: number, lon: number, address: string) => {
@@ -703,13 +979,27 @@ export default function AddressAutocomplete({
           placeholder={displayPlaceholder}
           required={required}
           disabled={disabled}
-          className="w-full pl-10 pr-20 py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full pl-10 pr-24 py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
         <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {loading && (
             <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+          )}
+          {recognitionRef.current && (
+            <button
+              type="button"
+              onClick={handleVoiceSearch}
+              className={`p-1 transition-colors ${
+                isListening 
+                  ? 'text-red-600 animate-pulse' 
+                  : 'text-gray-400 hover:text-primary-600'
+              }`}
+              title={isListening ? 'Listening... Click to stop' : 'Voice search'}
+            >
+              <MicrophoneIcon className="w-5 h-5" />
+            </button>
           )}
           <button
             type="button"
@@ -738,6 +1028,24 @@ export default function AddressAutocomplete({
         </div>
       )}
       
+      {/* Fuzzy suggestion */}
+      {fuzzySuggestion && (
+        <div className="mt-1 text-xs text-blue-600 flex items-center gap-1">
+          <InformationCircleIcon className="w-4 h-4" />
+          <span>Did you mean: </span>
+          <button
+            type="button"
+            onClick={() => {
+              onChange(fuzzySuggestion);
+              debouncedFetch(fuzzySuggestion);
+            }}
+            className="underline font-medium hover:text-blue-800"
+          >
+            {fuzzySuggestion}
+          </button>
+        </div>
+      )}
+      
       {/* Search Tips Tooltip */}
       {showTips && (
         <div className="absolute z-50 mt-1 p-3 bg-white border border-gray-200 rounded-md shadow-lg max-w-xs">
@@ -755,6 +1063,8 @@ export default function AddressAutocomplete({
             <li>• Try "near [landmark]" for POI search</li>
             <li>• Use favorites for quick access</li>
             <li>• Click map icon to pick location visually</li>
+            {recognitionRef.current && <li>• Use microphone for voice search</li>}
+            <li>• Smart suggestions based on time of day</li>
           </ul>
         </div>
       )}
