@@ -191,7 +191,7 @@ function deleteFavoriteLocation(id: string) {
 async function getNearbyPlaces(lat: number, lon: number): Promise<AddressSuggestion[]> {
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1&countrycodes=us`,
       {
         headers: {
           'User-Agent': 'Parkway Driveway Rental Platform',
@@ -235,7 +235,7 @@ async function searchPOIs(query: string, userLocation: { lat: number; lon: numbe
     }
     
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&addressdetails=1&countrycodes=us`,
       {
         headers: {
           'User-Agent': 'Parkway Driveway Rental Platform',
@@ -392,7 +392,7 @@ export default function AddressAutocomplete({
       
       // Regular address search
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1&bounded=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1&bounded=1&countrycodes=us`,
         {
           headers: {
             'User-Agent': 'Parkway Driveway Rental Platform',
