@@ -517,11 +517,8 @@ export default function AddressAutocomplete({
     setFavorites(getFavoriteLocations());
   }, []);
   
-  // Store latest fetchSuggestions in a ref for voice recognition
-  const fetchSuggestionsRef = useRef(fetchSuggestions);
-  useEffect(() => {
-    fetchSuggestionsRef.current = fetchSuggestions;
-  }, [fetchSuggestions]);
+  // Store latest fetchSuggestions in a ref for voice recognition (initialized as null, will be set after fetchSuggestions is defined)
+  const fetchSuggestionsRef = useRef<((query: string) => Promise<void>) | null>(null);
   
   // Initialize voice recognition
   useEffect(() => {
@@ -540,10 +537,12 @@ export default function AddressAutocomplete({
             onChange(transcript);
             // Trigger search after a small delay to ensure state is updated
             setTimeout(() => {
-              if (transcript.length >= 2) {
-                fetchSuggestionsRef.current(transcript);
-              } else if (transcript.length === 0 || transcript.length === 1) {
-                fetchSuggestionsRef.current(transcript);
+              if (fetchSuggestionsRef.current) {
+                if (transcript.length >= 2) {
+                  fetchSuggestionsRef.current(transcript);
+                } else if (transcript.length === 0 || transcript.length === 1) {
+                  fetchSuggestionsRef.current(transcript);
+                }
               }
             }, 100);
           };
@@ -772,6 +771,11 @@ export default function AddressAutocomplete({
       setLoading(false);
     }
   }, [userLocation, nearbyPlaces, favorites, cachedResults]);
+  
+  // Update ref with latest fetchSuggestions
+  useEffect(() => {
+    fetchSuggestionsRef.current = fetchSuggestions;
+  }, [fetchSuggestions]);
   
   const debouncedFetch = useRef(
     debounce((query: string) => {
