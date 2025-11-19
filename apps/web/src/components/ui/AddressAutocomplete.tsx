@@ -1,16 +1,30 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPinIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { 
+  MapPinIcon, 
+  ClockIcon, 
+  StarIcon, 
+  MapIcon,
+  InformationCircleIcon,
+  XMarkIcon,
+  BuildingOfficeIcon,
+  HomeIcon,
+  BriefcaseIcon
+} from '@heroicons/react/24/outline';
+import MapPickerModal from './MapPickerModal';
 
 interface AddressSuggestion {
   display_name: string;
   lat: string;
   lon: string;
   place_id: number;
-  distance?: number; // Distance in km from user location
-  isRecent?: boolean; // From address history
-  isNearby?: boolean; // Nearby places from reverse geocoding
+  distance?: number;
+  isRecent?: boolean;
+  isNearby?: boolean;
+  isFavorite?: boolean;
+  isPOI?: boolean;
+  category?: 'address' | 'landmark' | 'recent' | 'favorite' | 'poi';
 }
 
 interface SavedAddress {
@@ -21,16 +35,41 @@ interface SavedAddress {
   usageCount: number;
 }
 
-interface AddressAutocompleteProps {
-  value: string;
-  onChange: (address: string) => void;
-  onLocationSelect?: (lat: number, lon: number) => void;
-  placeholder?: string;
-  label?: string;
-  required?: boolean;
-  disabled?: boolean;
-  className?: string;
+interface FavoriteLocation {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lon: number;
+  icon?: 'home' | 'work' | 'custom';
+  timestamp: number;
 }
+
+// Storage keys
+const ADDRESS_HISTORY_KEY = 'parkway_address_history';
+const FAVORITES_KEY = 'parkway_favorite_locations';
+const MAX_HISTORY_ITEMS = 10;
+const MAX_FAVORITES = 5;
+
+// Popular search suggestions
+const POPULAR_SEARCHES = [
+  'Airport parking',
+  'Downtown parking',
+  'Event parking',
+  'Stadium parking',
+  'Shopping mall parking',
+  'Hospital parking',
+  'University parking',
+];
+
+// Dynamic placeholder texts
+const PLACEHOLDER_TEXTS = [
+  'Search for parking near...',
+  'Try "airport parking" or "downtown"',
+  'Enter an address or landmark',
+  'Search by location name',
+  'Find parking near your destination',
+];
 
 // Debounce function
 function debounce<T extends (...args: any[]) => void>(
@@ -44,13 +83,9 @@ function debounce<T extends (...args: any[]) => void>(
   };
 }
 
-// Address history storage key
-const ADDRESS_HISTORY_KEY = 'parkway_address_history';
-const MAX_HISTORY_ITEMS = 10;
-
-// Calculate distance between two coordinates (Haversine formula)
+// Calculate distance (Haversine formula)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // Earth radius in km
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = 
@@ -61,14 +96,12 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
-// Get saved addresses from localStorage
+// Get saved addresses
 function getSavedAddresses(): SavedAddress[] {
   if (typeof window === 'undefined') return [];
   try {
     const stored = localStorage.getItem(ADDRESS_HISTORY_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
+    if (stored) return JSON.parse(stored);
   } catch (e) {
     console.error('Error reading address history:', e);
   }
@@ -85,11 +118,9 @@ function saveAddressToHistory(address: string, lat: number, lon: number) {
     );
     
     if (existingIndex >= 0) {
-      // Update existing - increment usage and update timestamp
       history[existingIndex].usageCount += 1;
       history[existingIndex].timestamp = Date.now();
     } else {
-      // Add new
       history.push({
         address,
         lat,
@@ -99,7 +130,6 @@ function saveAddressToHistory(address: string, lat: number, lon: number) {
       });
     }
     
-    // Sort by usage count and timestamp, keep top MAX_HISTORY_ITEMS
     history.sort((a, b) => {
       if (b.usageCount !== a.usageCount) return b.usageCount - a.usageCount;
       return b.timestamp - a.timestamp;
@@ -112,7 +142,52 @@ function saveAddressToHistory(address: string, lat: number, lon: number) {
   }
 }
 
-// Get nearby places using reverse geocoding
+// Get favorite locations
+function getFavoriteLocations(): FavoriteLocation[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(FAVORITES_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch (e) {
+    console.error('Error reading favorites:', e);
+  }
+  return [];
+}
+
+// Save favorite location
+function saveFavoriteLocation(favorite: FavoriteLocation) {
+  if (typeof window === 'undefined') return;
+  try {
+    const favorites = getFavoriteLocations();
+    const existingIndex = favorites.findIndex(f => f.id === favorite.id);
+    
+    if (existingIndex >= 0) {
+      favorites[existingIndex] = favorite;
+    } else {
+      if (favorites.length >= MAX_FAVORITES) {
+        favorites.shift(); // Remove oldest
+      }
+      favorites.push(favorite);
+    }
+    
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+  } catch (e) {
+    console.error('Error saving favorite:', e);
+  }
+}
+
+// Delete favorite location
+function deleteFavoriteLocation(id: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const favorites = getFavoriteLocations().filter(f => f.id !== id);
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+  } catch (e) {
+    console.error('Error deleting favorite:', e);
+  }
+}
+
+// Get nearby places
 async function getNearbyPlaces(lat: number, lon: number): Promise<AddressSuggestion[]> {
   try {
     const response = await fetch(
@@ -131,8 +206,9 @@ async function getNearbyPlaces(lat: number, lon: number): Promise<AddressSuggest
           display_name: data.display_name,
           lat: data.lat,
           lon: data.lon,
-          place_id: Date.now(), // Use timestamp as unique ID
+          place_id: Date.now(),
           isNearby: true,
+          category: 'address',
         }];
       }
     }
@@ -142,11 +218,71 @@ async function getNearbyPlaces(lat: number, lon: number): Promise<AddressSuggest
   return [];
 }
 
+// Search POIs (Points of Interest)
+async function searchPOIs(query: string, userLocation: { lat: number; lon: number } | null): Promise<AddressSuggestion[]> {
+  try {
+    // Check if query looks like a POI search
+    const poiKeywords = ['near', 'airport', 'stadium', 'mall', 'hospital', 'university', 'park', 'beach'];
+    const isPOISearch = poiKeywords.some(keyword => query.toLowerCase().includes(keyword));
+    
+    if (!isPOISearch && !query.toLowerCase().includes('near')) {
+      return [];
+    }
+    
+    let searchQuery = query;
+    if (query.toLowerCase().startsWith('near ')) {
+      searchQuery = query.substring(5);
+    }
+    
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'Parkway Driveway Rental Platform',
+        },
+      }
+    );
+    
+    if (response.ok) {
+      const data: AddressSuggestion[] = await response.json();
+      return data.map(item => ({
+        ...item,
+        isPOI: true,
+        category: 'poi',
+        distance: userLocation 
+          ? calculateDistance(userLocation.lat, userLocation.lon, parseFloat(item.lat), parseFloat(item.lon))
+          : undefined,
+      }));
+    }
+  } catch (error) {
+    console.error('POI search error:', error);
+  }
+  return [];
+}
+
+// Highlight matching text
+function highlightMatch(text: string, query: string): string {
+  if (!query) return text;
+  const regex = new RegExp(`(${query})`, 'gi');
+  return text.replace(regex, '<mark class="bg-yellow-200 font-semibold">$1</mark>');
+}
+
+interface AddressAutocompleteProps {
+  value: string;
+  onChange: (address: string) => void;
+  onLocationSelect?: (lat: number, lon: number) => void;
+  placeholder?: string;
+  label?: string;
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
+}
+
 export default function AddressAutocomplete({
   value,
   onChange,
   onLocationSelect,
-  placeholder = 'Enter address...',
+  placeholder,
   label,
   required = false,
   disabled = false,
@@ -158,10 +294,31 @@ export default function AddressAutocomplete({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [nearbyPlaces, setNearbyPlaces] = useState<AddressSuggestion[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteLocation[]>([]);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [showTips, setShowTips] = useState(false);
+  const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [cachedResults, setCachedResults] = useState<AddressSuggestion[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Get user location on mount
+  // Rotate placeholder text
+  useEffect(() => {
+    if (!placeholder) {
+      const interval = setInterval(() => {
+        setCurrentPlaceholder((prev) => (prev + 1) % PLACEHOLDER_TEXTS.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [placeholder]);
+  
+  // Load favorites
+  useEffect(() => {
+    setFavorites(getFavoriteLocations());
+  }, []);
+  
+  // Get user location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -169,25 +326,24 @@ export default function AddressAutocomplete({
           const { latitude, longitude } = position.coords;
           setUserLocation({ lat: latitude, lon: longitude });
           
-          // Get nearby places for quick suggestions
           const nearby = await getNearbyPlaces(latitude, longitude);
           setNearbyPlaces(nearby);
         },
         () => {
-          // Silently fail - user can manually search
+          // Silently fail
         },
         {
           enableHighAccuracy: false,
           timeout: 3000,
-          maximumAge: 300000, // 5 minutes
+          maximumAge: 300000,
         }
       );
     }
   }, []);
-
-  // Fetch suggestions from Nominatim API with smart ranking
+  
+  // Fetch suggestions with error handling and caching
   const fetchSuggestions = useCallback(async (query: string) => {
-    // Show recent addresses and nearby places when query is too short
+    // Show favorites, recent, and nearby when query is short
     if (!query || query.length < 2) {
       const recentAddresses = getSavedAddresses()
         .slice(0, 3)
@@ -197,54 +353,75 @@ export default function AddressAutocomplete({
           lon: String(addr.lon),
           place_id: addr.timestamp,
           isRecent: true,
+          category: 'recent' as const,
           distance: userLocation
             ? calculateDistance(userLocation.lat, userLocation.lon, addr.lat, addr.lon)
             : undefined,
         }));
       
-      const allSuggestions = [...recentAddresses, ...nearbyPlaces];
+      const favoriteSuggestions = favorites.map(fav => ({
+        display_name: fav.address,
+        lat: String(fav.lat),
+        lon: String(fav.lon),
+        place_id: fav.timestamp,
+        isFavorite: true,
+        category: 'favorite' as const,
+        distance: userLocation
+          ? calculateDistance(userLocation.lat, userLocation.lon, fav.lat, fav.lon)
+          : undefined,
+      }));
+      
+      const allSuggestions = [...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
       if (allSuggestions.length > 0) {
         setSuggestions(allSuggestions);
         setShowSuggestions(true);
+        setError(null);
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
       }
       return;
     }
-
+    
     setLoading(true);
+    setError(null);
+    
     try {
-      // Use Nominatim API (OpenStreetMap) - completely free
-      // Increase limit to get more results for better ranking
+      // Try POI search first if applicable
+      const poiResults = await searchPOIs(query, userLocation);
+      
+      // Regular address search
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1&bounded=1`,
         {
           headers: {
-            'User-Agent': 'Parkway Driveway Rental Platform', // Required by Nominatim
+            'User-Agent': 'Parkway Driveway Rental Platform',
           },
         }
       );
-
+      
       if (response.ok) {
         const data: AddressSuggestion[] = await response.json();
         
-        // Get saved addresses for matching
-        const savedAddresses = getSavedAddresses();
+        // Cache results for fallback
+        setCachedResults(data);
         
-        // Enhance suggestions with ranking data
+        const savedAddresses = getSavedAddresses();
+        const favoriteAddresses = favorites;
+        
+        // Enhance suggestions
         const enhancedSuggestions = data.map(suggestion => {
           const lat = parseFloat(suggestion.lat);
           const lon = parseFloat(suggestion.lon);
           
-          // Check if it's in history
           const savedMatch = savedAddresses.find(
-            saved => 
-              Math.abs(saved.lat - lat) < 0.001 && 
-              Math.abs(saved.lon - lon) < 0.001
+            saved => Math.abs(saved.lat - lat) < 0.001 && Math.abs(saved.lon - lon) < 0.001
           );
           
-          // Calculate distance if user location is available
+          const favoriteMatch = favoriteAddresses.find(
+            fav => Math.abs(fav.lat - lat) < 0.001 && Math.abs(fav.lon - lon) < 0.001
+          );
+          
           let distance: number | undefined;
           if (userLocation) {
             distance = calculateDistance(userLocation.lat, userLocation.lon, lat, lon);
@@ -254,109 +431,140 @@ export default function AddressAutocomplete({
             ...suggestion,
             distance,
             isRecent: !!savedMatch,
+            isFavorite: !!favoriteMatch,
+            category: favoriteMatch ? 'favorite' : savedMatch ? 'recent' : 'address',
           };
         });
         
-        // Smart ranking: prioritize by relevance, distance, and history
-        const rankedSuggestions = enhancedSuggestions.sort((a, b) => {
+        // Combine POI and address results
+        const allResults = [...poiResults, ...enhancedSuggestions];
+        
+        // Smart ranking
+        const rankedSuggestions = allResults.sort((a, b) => {
           let scoreA = 0;
           let scoreB = 0;
           
-          // History boost (high priority)
+          if (a.isFavorite) scoreA += 150;
+          if (b.isFavorite) scoreB += 150;
           if (a.isRecent) scoreA += 100;
           if (b.isRecent) scoreB += 100;
+          if (a.isPOI) scoreA += 30;
+          if (b.isPOI) scoreB += 30;
           
-          // Distance boost (closer = higher score)
           if (a.distance !== undefined && b.distance !== undefined) {
-            scoreA += Math.max(0, 50 - a.distance); // Closer = higher score
+            scoreA += Math.max(0, 50 - a.distance);
             scoreB += Math.max(0, 50 - b.distance);
           } else if (a.distance !== undefined) scoreA += 25;
           else if (b.distance !== undefined) scoreB += 25;
           
-          // Exact match boost (if query matches start of address)
           const queryLower = query.toLowerCase();
           if (a.display_name.toLowerCase().startsWith(queryLower)) scoreA += 10;
           if (b.display_name.toLowerCase().startsWith(queryLower)) scoreB += 10;
           
-          return scoreB - scoreA; // Higher score first
+          return scoreB - scoreA;
         });
         
-        // Take top 8 suggestions
         setSuggestions(rankedSuggestions.slice(0, 8));
         setShowSuggestions(rankedSuggestions.length > 0);
       } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
+        // Use cached results on error
+        if (cachedResults.length > 0) {
+          setSuggestions(cachedResults.slice(0, 5));
+          setShowSuggestions(true);
+          setError('Showing cached results. Check your connection.');
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+          setError('Unable to search. Please check your connection.');
+        }
       }
     } catch (error) {
       console.error('Address autocomplete error:', error);
-      setSuggestions([]);
-      setShowSuggestions(false);
+      // Use cached results on error
+      if (cachedResults.length > 0) {
+        setSuggestions(cachedResults.slice(0, 5));
+        setShowSuggestions(true);
+        setError('Showing cached results. Check your connection.');
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setError('Search unavailable. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
-  }, [userLocation, nearbyPlaces]);
-
-  // Debounced fetch function
+  }, [userLocation, nearbyPlaces, favorites, cachedResults]);
+  
   const debouncedFetch = useRef(
     debounce((query: string) => {
       fetchSuggestions(query);
     }, 300)
   ).current;
-
-  // Handle input change
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
     setSelectedIndex(-1);
+    setError(null);
     
-    // Show suggestions even with 0-1 characters (recent/nearby)
-    // Full search from 2 characters
     if (newValue.length >= 2) {
       debouncedFetch(newValue);
     } else if (newValue.length === 0 || newValue.length === 1) {
-      // Show recent addresses and nearby places
       debouncedFetch(newValue);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
     }
   };
-
-  // Handle suggestion selection
+  
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
     const address = suggestion.display_name;
     const lat = parseFloat(suggestion.lat);
     const lon = parseFloat(suggestion.lon);
     
-    // Save to history
     saveAddressToHistory(address, lat, lon);
     
-    // Close suggestions first
     setShowSuggestions(false);
     setSuggestions([]);
     setSelectedIndex(-1);
     
-    // Update input value - this should trigger onChange in parent
     onChange(address);
     
-    // Trigger location select callback immediately
     if (onLocationSelect) {
       onLocationSelect(lat, lon);
     }
     
-    // Small delay to ensure state updates before blurring
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.blur();
       }
     }, 50);
   };
-
-  // Handle keyboard navigation
+  
+  const handleMapPickerSelect = (lat: number, lon: number, address: string) => {
+    onChange(address);
+    if (onLocationSelect) {
+      onLocationSelect(lat, lon);
+    }
+  };
+  
+  const handleFavoriteClick = (favorite: FavoriteLocation) => {
+    onChange(favorite.address);
+    if (onLocationSelect) {
+      onLocationSelect(favorite.lat, favorite.lon);
+    }
+  };
+  
+  const handleAddFavorite = () => {
+    if (value && onLocationSelect) {
+      // This would need coordinates - for now just show a message
+      // In a real implementation, you'd get coordinates from the selected suggestion
+    }
+  };
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSuggestions || suggestions.length === 0) return;
-
+    
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -380,8 +588,15 @@ export default function AddressAutocomplete({
         break;
     }
   };
-
-  // Close suggestions when clicking outside
+  
+  // Group suggestions by category
+  const groupedSuggestions = suggestions.reduce((acc, suggestion) => {
+    const category = suggestion.category || 'address';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(suggestion);
+    return acc;
+  }, {} as Record<string, AddressSuggestion[]>);
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -392,12 +607,11 @@ export default function AddressAutocomplete({
         setSelectedIndex(-1);
       }
     };
-
+    
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Scroll selected suggestion into view
+  
   useEffect(() => {
     if (selectedIndex >= 0 && showSuggestions) {
       const selectedElement = containerRef.current?.querySelector(
@@ -408,7 +622,9 @@ export default function AddressAutocomplete({
       }
     }
   }, [selectedIndex, showSuggestions]);
-
+  
+  const displayPlaceholder = placeholder || PLACEHOLDER_TEXTS[currentPlaceholder];
+  
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {label && (
@@ -417,6 +633,27 @@ export default function AddressAutocomplete({
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
+      
+      {/* Favorites Bar */}
+      {favorites.length > 0 && !value && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {favorites.map((fav) => {
+            const Icon = fav.icon === 'home' ? HomeIcon : fav.icon === 'work' ? BriefcaseIcon : MapPinIcon;
+            return (
+              <button
+                key={fav.id}
+                type="button"
+                onClick={() => handleFavoriteClick(fav)}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                <Icon className="w-3 h-3 text-primary-600" />
+                <span>{fav.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      
       <div className="relative">
         <input
           ref={inputRef}
@@ -425,7 +662,6 @@ export default function AddressAutocomplete({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            // Show recent addresses and nearby places when focused with empty/short input
             if (value.length < 2) {
               const recentAddresses = getSavedAddresses()
                 .slice(0, 3)
@@ -435,12 +671,25 @@ export default function AddressAutocomplete({
                   lon: String(addr.lon),
                   place_id: addr.timestamp,
                   isRecent: true,
+                  category: 'recent' as const,
                   distance: userLocation
                     ? calculateDistance(userLocation.lat, userLocation.lon, addr.lat, addr.lon)
                     : undefined,
                 }));
               
-              const allSuggestions = [...recentAddresses, ...nearbyPlaces];
+              const favoriteSuggestions = favorites.map(fav => ({
+                display_name: fav.address,
+                lat: String(fav.lat),
+                lon: String(fav.lon),
+                place_id: fav.timestamp,
+                isFavorite: true,
+                category: 'favorite' as const,
+                distance: userLocation
+                  ? calculateDistance(userLocation.lat, userLocation.lon, fav.lat, fav.lon)
+                  : undefined,
+              }));
+              
+              const allSuggestions = [...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
               if (allSuggestions.length > 0) {
                 setSuggestions(allSuggestions);
                 setShowSuggestions(true);
@@ -448,76 +697,183 @@ export default function AddressAutocomplete({
             } else if (suggestions.length > 0) {
               setShowSuggestions(true);
             } else if (value.length >= 2) {
-              // Trigger search if we have enough characters
               debouncedFetch(value);
             }
           }}
-          placeholder={placeholder}
+          placeholder={displayPlaceholder}
           required={required}
           disabled={disabled}
-          className="w-full pl-10 pr-4 py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full pl-10 pr-20 py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
         <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        {loading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+        
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {loading && (
             <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={() => setShowMapPicker(true)}
+            className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+            title="Pick on map"
+          >
+            <MapIcon className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowTips(!showTips)}
+            className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+            title="Search tips"
+          >
+            <InformationCircleIcon className="w-5 h-5" />
+          </button>
+        </div>
       </div>
-
+      
+      {/* Error message */}
+      {error && (
+        <div className="mt-1 text-xs text-amber-600 flex items-center gap-1">
+          <InformationCircleIcon className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+      
+      {/* Search Tips Tooltip */}
+      {showTips && (
+        <div className="absolute z-50 mt-1 p-3 bg-white border border-gray-200 rounded-md shadow-lg max-w-xs">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-900">Search Tips</h3>
+            <button
+              onClick={() => setShowTips(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+          <ul className="text-xs text-gray-600 space-y-1">
+            <li>• Search by address or landmark name</li>
+            <li>• Try "near [landmark]" for POI search</li>
+            <li>• Use favorites for quick access</li>
+            <li>• Click map icon to pick location visually</li>
+          </ul>
+        </div>
+      )}
+      
       {/* Suggestions Dropdown */}
-      {showSuggestions && suggestions.length > 0 && (
+      {showSuggestions && (suggestions.length > 0 || (!value && POPULAR_SEARCHES.length > 0)) && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {suggestions.map((suggestion, index) => {
-            const isRecent = suggestion.isRecent;
-            const isNearby = suggestion.isNearby;
-            const distance = suggestion.distance;
-            
-            return (
-              <button
-                key={`${suggestion.place_id}-${index}`}
-                type="button"
-                data-suggestion-index={index}
-                onClick={() => handleSelectSuggestion(suggestion)}
-                className={`w-full text-left px-4 py-3 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors ${
-                  index === selectedIndex ? 'bg-primary-50' : ''
-                } ${index !== suggestions.length - 1 ? 'border-b border-gray-100' : ''}`}
-              >
-                <div className="flex items-start gap-2">
-                  {isRecent ? (
-                    <ClockIcon className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                  ) : (
-                    <MapPinIcon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm text-gray-900 block truncate">
-                      {suggestion.display_name}
-                    </span>
-                    {(isRecent || isNearby || distance !== undefined) && (
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {isRecent && (
-                          <span className="text-xs text-orange-600 font-medium">Recent</span>
-                        )}
-                        {isNearby && (
-                          <span className="text-xs text-blue-600 font-medium">Nearby</span>
-                        )}
-                        {distance !== undefined && distance < 50 && (
-                          <span className="text-xs text-gray-500">
-                            {distance < 1 
-                              ? `${Math.round(distance * 1000)}m away` 
-                              : `${distance.toFixed(1)}km away`}
-                          </span>
+          {/* Popular Searches (when input is empty) */}
+          {!value && POPULAR_SEARCHES.length > 0 && (
+            <div className="p-2 border-b border-gray-100">
+              <div className="px-2 py-1 mb-1">
+                <span className="text-xs font-medium text-gray-500">Popular Searches</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {POPULAR_SEARCHES.slice(0, 4).map((search, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      onChange(search);
+                      debouncedFetch(search);
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                  >
+                    {search}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Grouped Suggestions */}
+          {Object.entries(groupedSuggestions).map(([category, categorySuggestions]) => (
+            <div key={category}>
+              {Object.keys(groupedSuggestions).length > 1 && (
+                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                  <span className="text-xs font-medium text-gray-500 uppercase">
+                    {category === 'favorite' ? 'Favorites' : 
+                     category === 'recent' ? 'Recent' : 
+                     category === 'poi' ? 'Landmarks' : 'Addresses'}
+                  </span>
+                </div>
+              )}
+              {categorySuggestions.map((suggestion, index) => {
+                const globalIndex = suggestions.indexOf(suggestion);
+                const isRecent = suggestion.isRecent;
+                const isNearby = suggestion.isNearby;
+                const isFavorite = suggestion.isFavorite;
+                const isPOI = suggestion.isPOI;
+                const distance = suggestion.distance;
+                const highlightedName = highlightMatch(suggestion.display_name, value);
+                
+                return (
+                  <button
+                    key={`${suggestion.place_id}-${index}`}
+                    type="button"
+                    data-suggestion-index={globalIndex}
+                    onClick={() => handleSelectSuggestion(suggestion)}
+                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors ${
+                      globalIndex === selectedIndex ? 'bg-primary-50' : ''
+                    } ${index !== categorySuggestions.length - 1 ? 'border-b border-gray-100' : ''}`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {isFavorite ? (
+                        <StarIcon className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0 fill-current" />
+                      ) : isRecent ? (
+                        <ClockIcon className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                      ) : isPOI ? (
+                        <BuildingOfficeIcon className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <MapPinIcon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span 
+                          className="text-sm text-gray-900 block truncate"
+                          dangerouslySetInnerHTML={{ __html: highlightedName }}
+                        />
+                        {(isRecent || isNearby || isFavorite || isPOI || distance !== undefined) && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {isFavorite && (
+                              <span className="text-xs text-yellow-600 font-medium">Favorite</span>
+                            )}
+                            {isRecent && (
+                              <span className="text-xs text-orange-600 font-medium">Recent</span>
+                            )}
+                            {isPOI && (
+                              <span className="text-xs text-blue-600 font-medium">Landmark</span>
+                            )}
+                            {isNearby && (
+                              <span className="text-xs text-blue-600 font-medium">Nearby</span>
+                            )}
+                            {distance !== undefined && distance < 50 && (
+                              <span className="text-xs text-gray-500">
+                                {distance < 1 
+                                  ? `${Math.round(distance * 1000)}m away` 
+                                  : `${distance.toFixed(1)}km away`}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
+      )}
+      
+      {/* Map Picker Modal */}
+      {showMapPicker && (
+        <MapPickerModal
+          isOpen={showMapPicker}
+          onClose={() => setShowMapPicker(false)}
+          onLocationSelect={handleMapPickerSelect}
+          initialCenter={userLocation ? [userLocation.lat, userLocation.lon] : undefined}
+        />
       )}
     </div>
   );
 }
-
