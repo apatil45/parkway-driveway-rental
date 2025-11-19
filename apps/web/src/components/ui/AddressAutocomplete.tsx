@@ -496,6 +496,7 @@ export default function AddressAutocomplete({
   const [error, setError] = useState<string | null>(null);
   const [cachedResults, setCachedResults] = useState<AddressSuggestion[]>([]);
   const [isListening, setIsListening] = useState(false);
+  const [listeningStartTime, setListeningStartTime] = useState<number | null>(null);
   const [fuzzySuggestion, setFuzzySuggestion] = useState<string | null>(null);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -624,6 +625,8 @@ export default function AddressAutocomplete({
           recognition.onend = () => {
             console.log('Voice recognition ended');
             console.log('isListening state:', isListening);
+            const listeningDuration = listeningStartTime ? Date.now() - listeningStartTime : 0;
+            console.log('Total listening duration:', listeningDuration, 'ms');
             
             // Check if we have any results (even if not final)
             // This handles the case where user stops manually but we have interim results
@@ -647,14 +650,21 @@ export default function AddressAutocomplete({
                     fetchSuggestionsRef.current?.(interimValue);
                   }, 100);
                 }
+              } else if (listeningDuration < 2000) {
+                console.warn('Recognition ended too quickly - user may have stopped before speaking');
+                setError('Please speak clearly after clicking the microphone. Wait at least 2 seconds.');
+                setTimeout(() => setError(null), 4000);
               }
             }
             setIsListening(false);
+            setListeningStartTime(null);
           };
           
           recognition.onstart = () => {
             console.log('Voice recognition started');
             setIsListening(true);
+            setListeningStartTime(Date.now());
+            console.log('Listening start time recorded');
           };
           
           recognitionRef.current = recognition;
@@ -928,7 +938,21 @@ export default function AddressAutocomplete({
     }
     
     if (isListening) {
+      // Check if minimum listening time has passed (2 seconds)
+      const minListeningTime = 2000; // 2 seconds
+      const timeSinceStart = listeningStartTime ? Date.now() - listeningStartTime : 0;
+      
+      if (timeSinceStart < minListeningTime) {
+        const remainingTime = Math.ceil((minListeningTime - timeSinceStart) / 1000);
+        console.log(`Please wait ${remainingTime} more second(s) before stopping. Keep speaking...`);
+        setError(`Please keep speaking for ${remainingTime} more second(s)...`);
+        // Clear error after a moment
+        setTimeout(() => setError(null), 2000);
+        return; // Don't stop yet
+      }
+      
       console.log('Stopping voice recognition (user clicked stop)');
+      console.log('Was listening for:', timeSinceStart, 'ms');
       try {
         // Before stopping, check if we have any interim results
         if (inputRef.current && inputRef.current.value.trim().length > 0) {
@@ -940,16 +964,22 @@ export default function AddressAutocomplete({
               fetchSuggestionsRef.current?.(interimValue);
             }, 100);
           }
+        } else {
+          console.warn('No speech captured before stopping');
+          setError('No speech detected. Please try again and speak clearly.');
+          setTimeout(() => setError(null), 3000);
         }
         recognitionRef.current.stop();
       } catch (error) {
         console.error('Error stopping recognition:', error);
       }
       setIsListening(false);
+      setListeningStartTime(null);
     } else {
       try {
         console.log('Starting voice recognition');
         setError(null);
+        setListeningStartTime(null);
         // Check if already started
         if (recognitionRef.current) {
           recognitionRef.current.start();
@@ -958,6 +988,7 @@ export default function AddressAutocomplete({
       } catch (error: any) {
         console.error('Error starting voice recognition:', error);
         setIsListening(false);
+        setListeningStartTime(null);
         const errorMsg = error?.message?.includes('already started') || error?.message?.includes('started')
           ? 'Voice recognition is already active.'
           : `Voice search failed: ${error?.message || 'Please try again.'}`;
@@ -1185,7 +1216,11 @@ export default function AddressAutocomplete({
           </div>
           <div className="flex-1">
             <p className="font-semibold text-blue-900">🎤 Listening...</p>
-            <p className="text-xs text-blue-600 mt-0.5">Speak your search query clearly. Click the mic again to stop.</p>
+            <p className="text-xs text-blue-600 mt-0.5">
+              {listeningStartTime && Date.now() - listeningStartTime < 2000 
+                ? 'Wait 2 seconds, then speak your search query clearly...'
+                : 'Speak your search query clearly. Click the mic again to stop.'}
+            </p>
           </div>
         </div>
       )}
