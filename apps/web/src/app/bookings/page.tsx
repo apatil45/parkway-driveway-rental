@@ -117,6 +117,17 @@ export default function BookingsPage() {
   };
 
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
+    // Show confirmation dialog for cancellations
+    if (newStatus === 'CANCELLED') {
+      const confirmed = window.confirm(
+        'Are you sure you want to cancel this booking? ' +
+        'This action cannot be undone. If payment was completed, refunds will be processed according to our cancellation policy.'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       await api.patch(`/bookings/${bookingId}`, { status: newStatus });
@@ -273,23 +284,52 @@ export default function BookingsPage() {
                 {/* Booking Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <div>
-                    <h4 className="font-medium text-gray-900">Start Time</h4>
-                    <p className="text-gray-600">{formatDate(booking.startTime)}</p>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Start Time</h4>
+                      <p className="text-gray-600">{formatDate(booking.startTime)}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">End Time</h4>
+                      <p className="text-gray-600">{formatDate(booking.endTime)}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Duration</h4>
+                      <p className="text-gray-600">
+                        {Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / (1000 * 60 * 60))} hours
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Booked On</h4>
+                      <p className="text-gray-600">{formatDate(booking.createdAt)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">End Time</h4>
-                    <p className="text-gray-600">{formatDate(booking.endTime)}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">Duration</h4>
-                    <p className="text-gray-600">
-                      {Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / (1000 * 60 * 60))} hours
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">Booked On</h4>
-                    <p className="text-gray-600">{formatDate(booking.createdAt)}</p>
-                  </div>
+
+                  {/* Booking Expiry Warning for PENDING bookings */}
+                  {booking.status === 'PENDING' && (
+                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-yellow-800">
+                            Payment Required
+                          </p>
+                          <p className="text-sm text-yellow-700">
+                            This booking will expire in 15 minutes if payment is not completed. Please complete payment to confirm your booking.
+                          </p>
+                          {booking.paymentStatus === 'PENDING' && (
+                            <Link
+                              href={`/checkout?bookingId=${booking.id}`}
+                              className="mt-2 inline-block text-sm font-medium text-yellow-800 hover:text-yellow-900 underline"
+                            >
+                              Complete Payment Now →
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Vehicle Information */}

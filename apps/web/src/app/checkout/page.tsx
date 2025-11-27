@@ -102,14 +102,14 @@ function CheckoutContent() {
           {/* Booking Summary */}
           <Card>
             <h2 className="text-xl font-semibold mb-4">Booking Summary</h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Driveway:</span>
                 <span className="font-medium">{booking.driveway.title}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Address:</span>
-                <span className="font-medium">{booking.driveway.address}</span>
+                <span className="font-medium text-right max-w-xs">{booking.driveway.address}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Start Time:</span>
@@ -123,11 +123,23 @@ function CheckoutContent() {
                   {new Date(booking.endTime).toLocaleString()}
                 </span>
               </div>
-              <div className="flex justify-between pt-2 border-t">
-                <span className="text-lg font-semibold">Total:</span>
-                <span className="text-lg font-bold text-primary-600">
-                  ${booking.totalPrice.toFixed(2)}
+              <div className="flex justify-between">
+                <span className="text-gray-600">Duration:</span>
+                <span className="font-medium">
+                  {Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / (1000 * 60 * 60))} hours
                 </span>
+              </div>
+              <div className="pt-2 border-t">
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium">${booking.totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-lg font-semibold">Total:</span>
+                  <span className="text-lg font-bold text-primary-600">
+                    ${booking.totalPrice.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
           </Card>

@@ -72,6 +72,8 @@ export default function DrivewayDetailsPage() {
   });
   const [bookingLoading, setBookingLoading] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  const [calculatedHours, setCalculatedHours] = useState<number | null>(null);
 
   const router = useRouter();
   const { showToast } = useToast();
@@ -99,6 +101,27 @@ export default function DrivewayDetailsPage() {
 
     fetchDriveway();
   }, [drivewayId]);
+
+  // Calculate price when times change
+  useEffect(() => {
+    if (bookingForm.startTime && bookingForm.endTime && driveway) {
+      const start = new Date(bookingForm.startTime);
+      const end = new Date(bookingForm.endTime);
+      
+      if (start.getTime() < end.getTime() && start.getTime() > new Date().getTime()) {
+        const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        const price = Math.round(hours * driveway.pricePerHour * 100) / 100;
+        setCalculatedHours(hours);
+        setCalculatedPrice(price);
+      } else {
+        setCalculatedPrice(null);
+        setCalculatedHours(null);
+      }
+    } else {
+      setCalculatedPrice(null);
+      setCalculatedHours(null);
+    }
+  }, [bookingForm.startTime, bookingForm.endTime, driveway]);
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -428,6 +451,29 @@ export default function DrivewayDetailsPage() {
                       required
                     />
                   </div>
+
+                  {/* Price Preview */}
+                  {calculatedPrice !== null && calculatedHours !== null && (
+                    <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-sm text-gray-600">Duration</p>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {calculatedHours.toFixed(1)} {calculatedHours === 1 ? 'hour' : 'hours'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">Total Price</p>
+                          <p className="text-2xl font-bold text-primary-600">
+                            ${calculatedPrice.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        @ ${driveway.pricePerHour.toFixed(2)}/hour
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
