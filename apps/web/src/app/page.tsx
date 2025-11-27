@@ -38,6 +38,8 @@ export default function Home() {
   const router = useRouter();
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true);
   const [searchLocation, setSearchLocation] = useState('');
 
   const isOwner = user?.roles.includes('OWNER');
@@ -57,7 +59,21 @@ export default function Home() {
       }
     };
 
+    // Fetch real reviews for testimonials
+    const fetchTestimonials = async () => {
+      try {
+        const response = await api.get('/reviews?limit=3&page=1');
+        setTestimonials(response.data.data?.reviews || []);
+      } catch (error) {
+        console.error('Failed to fetch testimonials:', error);
+        // Don't block page rendering if testimonials fail
+      } finally {
+        setTestimonialsLoading(false);
+      }
+    };
+
     fetchStats();
+    fetchTestimonials();
   }, []);
 
   const handleSearch = (lat: number, lon: number) => {
@@ -304,25 +320,25 @@ export default function Home() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                 <div className="text-center">
                   <div className="text-4xl md:text-5xl font-bold text-primary-600 mb-2">
-                    {stats.totalUsers > 0 ? stats.totalUsers.toLocaleString() : '1K+'}
+                    {stats.totalUsers.toLocaleString()}
                   </div>
                   <div className="text-gray-600 font-medium">Active Users</div>
                 </div>
                 <div className="text-center">
                   <div className="text-4xl md:text-5xl font-bold text-primary-600 mb-2">
-                    {stats.activeDriveways > 0 ? stats.activeDriveways.toLocaleString() : '500+'}
+                    {stats.activeDriveways.toLocaleString()}
                   </div>
                   <div className="text-gray-600 font-medium">Available Spaces</div>
                 </div>
                 <div className="text-center">
                   <div className="text-4xl md:text-5xl font-bold text-primary-600 mb-2">
-                    {stats.completedBookings > 0 ? stats.completedBookings.toLocaleString() : '10K+'}
+                    {stats.completedBookings.toLocaleString()}
                   </div>
                   <div className="text-gray-600 font-medium">Successful Bookings</div>
                 </div>
                 <div className="text-center">
                   <div className="text-4xl md:text-5xl font-bold text-primary-600 mb-2">
-                    {stats.averageRating > 0 ? `${stats.averageRating.toFixed(1)}★` : '4.8★'}
+                    {stats.averageRating > 0 ? `${stats.averageRating.toFixed(1)}★` : '—'}
                   </div>
                   <div className="text-gray-600 font-medium">Average Rating</div>
                 </div>
@@ -429,7 +445,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
+        {/* Testimonials Section - Using Real Reviews */}
         <section className="py-24 bg-gray-50">
           <div className="container">
             <div className="text-center mb-16">
@@ -441,70 +457,80 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card>
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <StarIcon key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-4 italic">
-                  "Parkway has completely solved my parking problem. I can always find a spot near my office, 
-                  and the prices are reasonable. Highly recommend!"
+            {testimonialsLoading ? (
+              <div className="grid md:grid-cols-3 gap-8">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded mb-4"></div>
+                    <div className="h-24 bg-gray-200 rounded mb-4"></div>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : testimonials && testimonials.length > 0 ? (
+              <div className="grid md:grid-cols-3 gap-8">
+                {testimonials.slice(0, 3).map((review: any) => {
+                  const initials = review.user?.name
+                    ?.split(' ')
+                    .map((n: string) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2) || 'U';
+                  return (
+                    <Card key={review.id}>
+                      <div className="flex items-center mb-4">
+                        {[...Array(5)].map((_, i) => (
+                          <StarIcon
+                            key={i}
+                            className={`w-5 h-5 ${
+                              i < review.rating
+                                ? 'text-yellow-400 fill-current'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-gray-700 mb-4 italic">
+                        "{review.comment}"
+                      </p>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                          {review.user?.avatar ? (
+                            <img
+                              src={review.user.avatar}
+                              alt={review.user.name}
+                              className="w-10 h-10 rounded-full"
+                            />
+                          ) : (
+                            <span className="text-primary-700 font-semibold text-sm">
+                              {initials}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold">
+                            {review.user?.name || 'Anonymous'}
+                          </div>
+                          <div className="text-sm text-gray-600">Verified User</div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600">
+                  No reviews yet. Be the first to share your experience!
                 </p>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-primary-700 font-semibold">JD</span>
-                  </div>
-                  <div>
-                    <div className="font-semibold">John D.</div>
-                    <div className="text-sm text-gray-600">Regular Driver</div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card>
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <StarIcon key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-4 italic">
-                  "I've been listing my driveway for 6 months and made over $2,000 in passive income. 
-                  The process is so simple and the platform handles everything."
-                </p>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-green-700 font-semibold">SM</span>
-                  </div>
-                  <div>
-                    <div className="font-semibold">Sarah M.</div>
-                    <div className="text-sm text-gray-600">Property Owner</div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card>
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <StarIcon key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-4 italic">
-                  "The app is intuitive and the customer service is excellent. I've never had any issues, 
-                  and the payment process is seamless."
-                </p>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-blue-700 font-semibold">MR</span>
-                  </div>
-                  <div>
-                    <div className="font-semibold">Mike R.</div>
-                    <div className="text-sm text-gray-600">Both Driver & Owner</div>
-                  </div>
-                </div>
-              </Card>
-            </div>
+              </div>
+            )}
           </div>
         </section>
 

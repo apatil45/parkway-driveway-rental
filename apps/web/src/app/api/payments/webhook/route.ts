@@ -7,12 +7,13 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   const sig = request.headers.get('stripe-signature');
   const signingSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
-  if (signingSecret && sig) {
+  if (signingSecret && sig && stripeSecret) {
     try {
       const raw = await request.text();
       const stripeModule = await import('stripe');
-      const stripe = new stripeModule.default(process.env.STRIPE_SECRET_KEY!);
+      const stripe = new stripeModule.default(stripeSecret);
       const event = stripe.webhooks.constructEvent(raw, sig, signingSecret);
       
       // Handle payment intent events
@@ -66,6 +67,19 @@ export async function POST(request: NextRequest) {
             driveway: { select: { title: true, address: true, owner: { select: { id: true, email: true, name: true } } } }
           }
         });
+
+        // Verify payment intent metadata matches booking (if available)
+        if (booking && event.data.object) {
+          const paymentIntent = event.data.object as any;
+          if (paymentIntent.metadata?.bookingId && paymentIntent.metadata.bookingId !== booking.id) {
+            console.warn('[WEBHOOK] Payment intent metadata mismatch:', {
+              metadataBookingId: paymentIntent.metadata.bookingId,
+              actualBookingId: booking.id,
+              paymentIntentId
+            });
+            // Continue anyway as the paymentIntentId match is the primary verification
+          }
+        }
 
         if (booking) {
           // Send confirmation email to driver
@@ -139,8 +153,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
   }
-  // Stub fallback
-  return NextResponse.json({ received: true, stub: true });
+  
+  // Webhook secret is required for processing webhooks
+  if (!signingSecret || !stripeSecret) {
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) {
+      console.error('[WEBHOOK] STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY is not configured.');
+      console.error('[WEBHOOK] Webhook processing requires both environment variables.');
+      return NextResponse.json(
+        { error: 'Webhook processing is not configured', stub: true },
+        { status: 503 }
+      );
+    }
+    // In production, fail loudly
+    console.error('[WEBHOOK] CRITICAL: STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY is missing in production!');
+    return NextResponse.json(
+      { error: 'Webhook processing is not configured' },
+      { status: 503 }
+    );
+  }
+  
+  // If signature is missing but secrets are configured, return error
+  if (!sig) {
+    console.error('[WEBHOOK] Missing stripe-signature header');
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+  }
+  
+  // This should never be reached
+  return NextResponse.json({ error: 'Unexpected error' }, { status: 500 });
 }
 
 

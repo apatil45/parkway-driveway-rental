@@ -4,7 +4,29 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Prevent seeding in production
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isVercelProd = process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production';
+  
+  if (isProduction || isVercelProd) {
+    console.error('❌ Database seeding is not allowed in production environment!');
+    console.error('   This script should only be run in development.');
+    process.exit(1);
+  }
+
+  // Allow override with environment variable for testing
+  const allowSeed = process.env.ALLOW_SEED === 'true';
+  if (!allowSeed && process.env.NODE_ENV !== 'development') {
+    console.warn('⚠️  Seeding is only allowed in development or when ALLOW_SEED=true');
+    console.warn('   Set ALLOW_SEED=true if you really want to seed in this environment.');
+    process.exit(1);
+  }
+
   console.log('🌱 Starting database seeding...');
+  console.log('⚠️  WARNING: This will create test users with weak passwords!');
+  console.log('   Test credentials:');
+  console.log('   - owner@parkway.com / password123');
+  console.log('   - driver@parkway.com / password123');
 
   // Create or find test users
   const hashedPassword = await bcrypt.hash('password123', 10);

@@ -1,6 +1,37 @@
-import { Card } from '@/components/ui';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Card, LoadingSpinner } from '@/components/ui';
+import api from '@/lib/api';
+
+interface PublicStats {
+  totalUsers: number;
+  totalDriveways: number;
+  activeDriveways: number;
+  totalBookings: number;
+  completedBookings: number;
+  totalEarnings: number;
+  averageRating: number;
+}
 
 export default function AboutPage() {
+  const [stats, setStats] = useState<PublicStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get('/stats/public');
+        setStats(response.data.data);
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -129,24 +160,42 @@ export default function AboutPage() {
         <Card className="mb-16">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-8">Platform Statistics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div>
-                <div className="text-4xl font-bold text-primary-600 mb-2">1,000+</div>
-                <div className="text-gray-600">Active Users</div>
+            {loading ? (
+              <div className="py-8">
+                <LoadingSpinner />
               </div>
-              <div>
-                <div className="text-4xl font-bold text-primary-600 mb-2">500+</div>
-                <div className="text-gray-600">Listed Driveways</div>
+            ) : stats ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                  <div className="text-4xl font-bold text-primary-600 mb-2">
+                    {stats.totalUsers.toLocaleString()}
+                  </div>
+                  <div className="text-gray-600">Active Users</div>
+                </div>
+                <div>
+                  <div className="text-4xl font-bold text-primary-600 mb-2">
+                    {stats.activeDriveways.toLocaleString()}
+                  </div>
+                  <div className="text-gray-600">Listed Driveways</div>
+                </div>
+                <div>
+                  <div className="text-4xl font-bold text-primary-600 mb-2">
+                    {stats.completedBookings.toLocaleString()}
+                  </div>
+                  <div className="text-gray-600">Successful Bookings</div>
+                </div>
+                <div>
+                  <div className="text-4xl font-bold text-primary-600 mb-2">
+                    ${stats.totalEarnings > 0 ? stats.totalEarnings.toLocaleString() : '0'}
+                  </div>
+                  <div className="text-gray-600">Earned by Owners</div>
+                </div>
               </div>
-              <div>
-                <div className="text-4xl font-bold text-primary-600 mb-2">10,000+</div>
-                <div className="text-gray-600">Successful Bookings</div>
+            ) : (
+              <div className="py-8 text-gray-500">
+                Statistics coming soon
               </div>
-              <div>
-                <div className="text-4xl font-bold text-primary-600 mb-2">$50K+</div>
-                <div className="text-gray-600">Earned by Owners</div>
-              </div>
-            </div>
+            )}
           </div>
         </Card>
 
