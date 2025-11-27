@@ -44,13 +44,14 @@ export default function Home() {
   const isDriver = user?.roles.includes('DRIVER');
 
   useEffect(() => {
-    // Fetch public stats
+    // Fetch public stats (non-blocking - page can render without stats)
     const fetchStats = async () => {
       try {
         const response = await api.get('/stats/public');
         setStats(response.data.data);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
+        // Don't block page rendering if stats fail
       } finally {
         setStatsLoading(false);
       }
@@ -67,7 +68,22 @@ export default function Home() {
     setSearchLocation(value);
   };
 
-  if (authLoading || statsLoading) {
+  // Only wait for auth to load, not stats (stats can load in background)
+  // Add timeout to prevent infinite loading
+  const [authTimeout, setAuthTimeout] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (authLoading) {
+        setAuthTimeout(true);
+      }
+    }, 5000); // 5 second timeout
+    
+    return () => clearTimeout(timer);
+  }, [authLoading]);
+
+  // Show loading only if auth is still loading and hasn't timed out
+  if (authLoading && !authTimeout) {
     return (
       <AppLayout showFooter={false}>
         <div className="min-h-screen flex items-center justify-center">

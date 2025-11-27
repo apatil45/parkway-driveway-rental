@@ -31,7 +31,34 @@ export function useAuth() {
   const router = useRouter();
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    let isMounted = true;
+    
+    // Set a timeout to prevent infinite loading
+    timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('[AUTH] Auth check timed out, assuming unauthenticated');
+        setAuthState(prev => {
+          // Only update if still loading
+          if (prev.loading) {
+            return {
+              ...prev,
+              loading: false,
+              isAuthenticated: false,
+              user: null
+            };
+          }
+          return prev;
+        });
+      }
+    }, 10000); // 10 second timeout
+    
     checkAuth();
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const checkAuth = async () => {

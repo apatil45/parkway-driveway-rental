@@ -47,7 +47,13 @@ api.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     
     // Handle 401 errors with automatic token refresh
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    // Skip token refresh for public endpoints that don't require auth
+    const publicEndpoints = ['/stats/public', '/health', '/test'];
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      originalRequest?.url?.includes(endpoint)
+    );
+    
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isPublicEndpoint) {
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
