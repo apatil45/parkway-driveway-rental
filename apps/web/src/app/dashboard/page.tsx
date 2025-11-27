@@ -14,8 +14,13 @@ import {
   StarIcon,
   HomeIcon,
   MagnifyingGlassIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  ArrowPathIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
+import { formatDistanceToNowStrict } from 'date-fns';
 
 interface User {
   id: string;
@@ -52,6 +57,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [refreshingStats, setRefreshingStats] = useState(false);
 
   // Prevent duplicate fetches in dev StrictMode and on transient re-renders
   const fetchedRef = useRef(false);
@@ -63,10 +70,16 @@ export default function DashboardPage() {
       // Fetch recent notifications for activity feed
       const fetchNotifications = async () => {
         try {
+          setNotificationsError(null);
           const response = await api.get('/notifications?limit=3&page=1');
           setNotifications(response.data.data?.notifications || []);
-        } catch (error) {
+        } catch (error: any) {
+          // User-friendly error handling - don't show intrusive errors
           console.error('Failed to fetch notifications:', error);
+          // Only set error if it's not a 401 (auth issues are handled elsewhere)
+          if (error.response?.status !== 401) {
+            setNotificationsError('Unable to load recent activity. You can still access all notifications from the notification center.');
+          }
         } finally {
           setNotificationsLoading(false);
         }
@@ -118,21 +131,63 @@ export default function DashboardPage() {
   const isOwner = user?.roles.includes('OWNER');
   const isDriver = user?.roles.includes('DRIVER');
 
+  const handleRefreshStats = async () => {
+    setRefreshingStats(true);
+    try {
+      await fetchStats();
+    } catch (error) {
+      console.error('Failed to refresh stats:', error);
+    } finally {
+      setRefreshingStats(false);
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await api.patch(`/notifications/${notificationId}`, { isRead: true });
+      setNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user?.name}!
-          </h1>
-          <p className="text-gray-600">
-            Manage your {isOwner ? 'driveways and bookings' : 'bookings'} from your dashboard.
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back, {user?.name}!
+            </h1>
+            <p className="text-gray-600">
+              Manage your {isOwner ? 'driveways and bookings' : 'bookings'} from your dashboard.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshStats}
+            disabled={refreshingStats || statsLoading}
+            className="flex items-center gap-2"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${refreshingStats ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         {/* Stats Cards */}
-        {stats && (
+        {statsLoading && !stats ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <div className="h-28"></div>
+              </Card>
+            ))}
+          </div>
+        ) : stats ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Link href="/bookings">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -192,6 +247,17 @@ export default function DashboardPage() {
               </Card>
             </Link>
           </div>
+        ) : (
+          <div className="mb-8">
+            <Card className="p-8 text-center">
+              <p className="text-gray-600 mb-4">No statistics available yet.</p>
+              <p className="text-sm text-gray-500">
+                {isOwner 
+                  ? 'Start by listing your first driveway to see your stats here.'
+                  : 'Make your first booking to see your statistics here.'}
+              </p>
+            </Card>
+          </div>
         )}
 
         {/* Quick Actions */}
@@ -204,8 +270,10 @@ export default function DashboardPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Manage Driveways</h3>
                 <p className="text-gray-600 mb-4">Add, edit, or remove your driveway listings</p>
-                <Link href="/driveways" className="btn btn-primary w-full">
-                  View Driveways
+                <Link href="/driveways">
+                  <Button variant="primary" className="w-full">
+                    View Driveways
+                  </Button>
                 </Link>
               </div>
             </Card>
@@ -219,8 +287,10 @@ export default function DashboardPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Find Parking</h3>
                 <p className="text-gray-600 mb-4">Search for available parking spots</p>
-                <Link href="/search" className="btn btn-primary w-full">
-                  Search Now
+                <Link href="/search">
+                  <Button variant="primary" className="w-full">
+                    Search Now
+                  </Button>
                 </Link>
               </div>
             </Card>
@@ -233,8 +303,10 @@ export default function DashboardPage() {
                 </div>
               <h3 className="text-lg font-semibold mb-2">My Bookings</h3>
               <p className="text-gray-600 mb-4">View and manage your bookings</p>
-              <Link href="/bookings" className="btn btn-primary w-full">
-                View Bookings
+              <Link href="/bookings">
+                <Button variant="primary" className="w-full">
+                  View Bookings
+                </Button>
               </Link>
             </div>
           </Card>
@@ -242,7 +314,34 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         <Card>
-          <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Recent Activity</h2>
+            {notifications.length >= 3 && (
+              <button
+                onClick={() => {
+                  // Trigger notification center to open
+                  const bellButton = document.querySelector('button[aria-label*="notification" i], button[aria-label*="bell" i]') as HTMLElement;
+                  if (bellButton) {
+                    bellButton.click();
+                  } else {
+                    // Fallback: scroll to top where notification center is
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+              >
+                View All
+              </button>
+            )}
+          </div>
+          {notificationsError && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+              <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-blue-800">{notificationsError}</p>
+              </div>
+            </div>
+          )}
           {notificationsLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
@@ -266,11 +365,11 @@ export default function DashboardPage() {
                     case 'success':
                       return <CheckCircleIcon className="w-5 h-5 text-green-700" />;
                     case 'error':
-                      return <CheckCircleIcon className="w-5 h-5 text-red-700" />;
+                      return <XCircleIcon className="w-5 h-5 text-red-700" />;
                     case 'warning':
-                      return <StarIcon className="w-5 h-5 text-yellow-700" />;
+                      return <ExclamationTriangleIcon className="w-5 h-5 text-yellow-700" />;
                     default:
-                      return <CurrencyDollarIcon className="w-5 h-5 text-blue-700" />;
+                      return <InformationCircleIcon className="w-5 h-5 text-blue-700" />;
                   }
                 };
                 
@@ -287,35 +386,42 @@ export default function DashboardPage() {
                   }
                 };
                 
-                const formatTimeAgo = (dateString: string) => {
-                  const date = new Date(dateString);
-                  const now = new Date();
-                  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-                  
-                  if (diffInSeconds < 60) return 'Just now';
-                  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-                  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-                  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-                  return date.toLocaleDateString();
-                };
                 
                 return (
                   <div
                     key={notification.id}
                     className={`flex items-center justify-between py-3 ${
                       index < notifications.length - 1 ? 'border-b border-gray-200' : ''
-                    }`}
+                    } ${!notification.isRead ? 'bg-blue-50/50' : ''}`}
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center flex-1">
                       <div className={`p-2 ${getBgColor()} rounded-lg mr-3`}>
                         {getIcon()}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                          {!notification.isRead && (
+                            <span className="w-2 h-2 bg-primary-600 rounded-full"></span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-600">{notification.message}</p>
                       </div>
                     </div>
-                    <span className="text-sm text-gray-500">{formatTimeAgo(notification.createdAt)}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-500">
+                        {formatDistanceToNowStrict(new Date(notification.createdAt), { addSuffix: true })}
+                      </span>
+                      {!notification.isRead && (
+                        <button
+                          onClick={() => handleMarkAsRead(notification.id)}
+                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                          title="Mark as read"
+                        >
+                          Mark read
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

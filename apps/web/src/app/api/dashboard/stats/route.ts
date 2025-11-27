@@ -67,16 +67,22 @@ export async function GET(request: NextRequest) {
         _sum: { totalPrice: true }
       }).then((result: any) => result._sum.totalPrice || 0) : 0,
 
-      // Average rating (from reviews)
-      prisma.review.aggregate({
-        where: {
-          OR: [
-            { userId }, // Reviews given by user
-            ...(isOwner ? [{ driveway: { ownerId: userId } }] : []) // Reviews for user's driveways
-          ]
-        },
-        _avg: { rating: true }
-      }).then((result: any) => result._avg.rating || 0)
+      // Average rating (role-specific)
+      // For owners: average rating of reviews for their driveways
+      // For drivers: average rating of reviews they've given (not meaningful, but kept for consistency)
+      isOwner
+        ? prisma.review.aggregate({
+            where: {
+              driveway: { ownerId: userId }
+            },
+            _avg: { rating: true }
+          }).then((result: any) => result._avg.rating || 0)
+        : prisma.review.aggregate({
+            where: {
+              userId // Reviews given by user (as driver)
+            },
+            _avg: { rating: true }
+          }).then((result: any) => result._avg.rating || 0)
     ]);
 
     const stats = {
