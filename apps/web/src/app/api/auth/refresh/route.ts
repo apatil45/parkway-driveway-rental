@@ -21,7 +21,11 @@ export async function POST(request: NextRequest) {
   try {
     const refresh = request.cookies.get('refresh_token')?.value;
     if (!refresh) {
-      console.error('[AUTH] Refresh: No refresh token cookie found');
+      // Don't log as error - this is expected for unauthenticated users
+      // Only log in development for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[AUTH] Refresh: No refresh token cookie found (expected for unauthenticated users)');
+      }
       return NextResponse.json({ success: false, message: 'No refresh token', statusCode: 401 }, { status: 401 });
     }
 
@@ -69,13 +73,17 @@ export async function POST(request: NextRequest) {
     
     // Set cookie with proper configuration
     const config = getCookieConfig(request);
-    res.cookies.set('access_token', access, {
+    const cookieOptions: any = {
       httpOnly: true,
       secure: config.secure,
       sameSite: config.sameSite,
       path: '/',
       maxAge: 60 * 15,
-    });
+    };
+    if (config.domain) {
+      cookieOptions.domain = config.domain;
+    }
+    res.cookies.set('access_token', access, cookieOptions);
     
     return res;
   } catch (e: any) {

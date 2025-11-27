@@ -82,6 +82,13 @@ After deploying to Vercel:
 
 ## Common Issues & Solutions
 
+### Issue: 401 errors in logs for unauthenticated users
+**Status**: ✅ **This is expected behavior, not an error**
+- The app checks authentication status on every page load
+- When users are not logged in (incognito mode, first visit), `/api/auth/me` returns 401
+- This is normal and handled gracefully by the frontend
+- Logging has been reduced to only show in development mode
+
 ### Issue: Cookies not being sent
 **Solution**: Ensure `withCredentials: true` is set in axios config (already done in `apps/web/src/lib/api.ts`)
 
@@ -91,11 +98,12 @@ After deploying to Vercel:
 ### Issue: Token expired immediately
 **Solution**: Check token expiration settings (access: 15min, refresh: 30 days)
 
-### Issue: Still getting 401 after fix
+### Issue: Still getting 401 after login
 **Solution**: 
-1. Clear browser cookies and try again
+1. Clear browser cookies and try logging in again
 2. Check Vercel function logs for detailed error messages
 3. Verify environment variables are set correctly
+4. Check browser DevTools → Application → Cookies to verify cookies are set
 
 ## Files Changed
 
