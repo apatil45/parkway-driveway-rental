@@ -104,6 +104,20 @@ parkway-platform/
 - 📱 PWA ready
 - 🌍 Global CDN
 
+### **AI & Data Engineering Features** 🤖
+- 📊 **Analytics & Event Tracking**: Comprehensive user behavior tracking
+- 🤖 **ML-Powered Pricing**: Dynamic price optimization recommendations
+- 📈 **Demand Forecasting**: Predictive analytics for booking patterns
+- 🎯 **Recommendation System**: Personalized driveway recommendations
+- 🔍 **Fraud Detection**: Anomaly detection for suspicious bookings
+- 📉 **Time-Series Analytics**: Hourly/daily metrics aggregation
+- 🗺️ **Geospatial Analytics**: PostGIS integration for advanced location queries
+- 📊 **Business Intelligence**: Advanced BI dashboard with KPIs
+- 🔄 **ETL Pipelines**: Automated data extraction, transformation, and loading
+- 📱 **Real-Time Metrics**: Live dashboard updates and streaming analytics
+
+> **See detailed documentation**: [`docs/ai-data-engineering-improvements.md`](docs/ai-data-engineering-improvements.md)
+
 ## 🛠️ **Development**
 
 ### **Available Scripts**
@@ -172,6 +186,10 @@ Deploy the monorepo on Vercel; it builds `apps/web` and hosts both frontend and 
 - **Component Docs**: Storybook (optional)
 - **Deployment**: Step-by-step guides
 - **Architecture**: Clean monorepo structure
+- **AI/Data Engineering**: 
+  - [Comprehensive Improvements Guide](docs/ai-data-engineering-improvements.md)
+  - [Quick Start Guide](docs/ai-data-engineering-quick-start.md)
+  - [Executive Summary](docs/ai-data-engineering-summary.md)
 
 ## 🤝 **Contributing**
 

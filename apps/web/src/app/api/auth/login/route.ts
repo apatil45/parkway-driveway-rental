@@ -8,6 +8,7 @@ import {
   createApiError 
 } from '@parkway/shared';
 import { loginSchema, type LoginInput } from '@/lib/validations';
+import { setAuthCookies } from '@/lib/cookie-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -135,25 +136,9 @@ export async function POST(request: NextRequest) {
       updatedAt: user.updatedAt
     };
 
-    // Set httpOnly cookies
+    // Set httpOnly cookies using utility function
     const res = NextResponse.json(createApiResponse({ user: userData }, 'Login successful'));
-    // Use secure cookies in production (HTTPS required)
-    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
-    const isSecure = isProd || request.url.startsWith('https://');
-    res.cookies.set('access_token', token, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 15, // 15 minutes
-    });
-    res.cookies.set('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    });
+    setAuthCookies(res, token, refreshToken, request);
     return res;
   } catch (error) {
     console.error('[AUTH] Login error:', error);
