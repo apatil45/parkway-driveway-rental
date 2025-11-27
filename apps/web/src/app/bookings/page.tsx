@@ -105,8 +105,8 @@ export default function BookingsPage() {
       setPagination(paginationData);
     } catch (err: any) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // Auth is handled by cookies and useAuth hook
+        // The API interceptor will handle token refresh or redirect
         router.push('/login');
       } else {
         setError('Failed to load bookings');

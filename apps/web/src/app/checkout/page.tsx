@@ -38,18 +38,24 @@ function CheckoutContent() {
   }, [bookingId]);
 
   const fetchBooking = async () => {
+    if (!bookingId) {
+      setError('No booking ID provided');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await api.get(`/bookings?limit=100`);
-      const bookings = response.data?.data?.bookings || [];
-      const foundBooking = bookings.find((b: Booking) => b.id === bookingId);
-      
-      if (foundBooking) {
-        setBooking(foundBooking);
-      } else {
-        setError('Booking not found');
-      }
+      // Fetch single booking directly by ID
+      const response = await api.get(`/bookings/${bookingId}`);
+      setBooking(response.data.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load booking');
+      if (err.response?.status === 404) {
+        setError('Booking not found');
+      } else if (err.response?.status === 403) {
+        setError('You are not authorized to view this booking');
+      } else {
+        setError(err.response?.data?.message || 'Failed to load booking');
+      }
     } finally {
       setLoading(false);
     }

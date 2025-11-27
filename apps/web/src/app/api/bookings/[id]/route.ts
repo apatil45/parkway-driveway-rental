@@ -6,6 +6,66 @@ import { requireAuth } from '@/lib/auth-middleware';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    // Use centralized auth middleware
+    const authResult = await requireAuth(request);
+    if (!authResult.success) {
+      return authResult.error!;
+    }
+    const userId = authResult.userId!;
+
+    const { id } = await params;
+    
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        driveway: {
+          select: {
+            id: true,
+            title: true,
+            address: true,
+            images: true,
+            owner: {
+              select: {
+                id: true,
+                name: true,
+                phone: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!booking) {
+      return NextResponse.json(
+        createApiError('Booking not found', 404, 'NOT_FOUND'),
+        { status: 404 }
+      );
+    }
+
+    // Check if user is the driver or owner
+    const isDriver = booking.userId === userId;
+    const isOwner = booking.driveway.owner?.id === userId;
+
+    if (!isDriver && !isOwner) {
+      return NextResponse.json(
+        createApiError('Not authorized to view this booking', 403, 'FORBIDDEN'),
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json(createApiResponse(booking, 'Booking retrieved successfully'));
+  } catch (error) {
+    console.error('Get booking error:', error);
+    return NextResponse.json(
+      createApiError('Failed to retrieve booking', 500, 'INTERNAL_ERROR'),
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Use centralized auth middleware

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { drivewaySearchSchema, createDrivewaySchema, type CreateDrivewayInput } from '@/lib/validations';
+import { requireAuth } from '@/lib/auth-middleware';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -169,23 +169,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('access_token')?.value;
-    if (!token) {
-      return NextResponse.json(createApiError('Unauthorized', 401, 'UNAUTHORIZED'), { status: 401 });
+    // Use centralized auth middleware
+    const authResult = await requireAuth(request);
+    if (!authResult.success) {
+      return authResult.error!;
     }
-    
-    let userId: string | undefined;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      userId = decoded.id;
-    } catch (error) {
-      console.error('JWT verification error:', error);
-      return NextResponse.json(createApiError('Unauthorized', 401, 'UNAUTHORIZED'), { status: 401 });
-    }
-    
-    if (!userId) {
-      return NextResponse.json(createApiError('Unauthorized', 401, 'UNAUTHORIZED'), { status: 401 });
-    }
+    const userId = authResult.userId!;
 
     const body = await request.json();
     

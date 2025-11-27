@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
+import { requireDevelopment } from '@/lib/api-protection';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
  * Debug endpoint to check auth environment setup
- * Remove this in production or protect with admin access
+ * Only available in development/preview environments
  */
 export async function GET() {
+  // Only allow in development/preview
+  const devCheck = requireDevelopment();
+  if (devCheck) return devCheck;
   const env = {
     hasJwtSecret: !!process.env.JWT_SECRET,
     hasJwtRefreshSecret: !!process.env.JWT_REFRESH_SECRET,
