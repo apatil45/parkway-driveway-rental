@@ -192,11 +192,13 @@ export async function POST(request: NextRequest) {
 
     // Use transaction to prevent race conditions
     const booking = await prisma.$transaction(async (tx) => {
-      // Check overlapping bookings against capacity (consider pending and confirmed)
+      // Check overlapping bookings against capacity (ONLY CONFIRMED bookings reserve spots)
+      // PENDING bookings don't reserve spots until payment is completed
       const overlappingCount = await tx.booking.count({
         where: {
           drivewayId,
-          status: { in: ['PENDING', 'CONFIRMED'] as any },
+          status: 'CONFIRMED', // Only paid/confirmed bookings reserve spots
+          paymentStatus: 'COMPLETED', // Double-check payment is completed
           // Overlap condition: existing.start < newEnd AND existing.end > newStart
           AND: [
             { startTime: { lt: end } },
@@ -255,25 +257,18 @@ export async function POST(request: NextRequest) {
     });
     });
 
-    // Create notifications for booking creation (renter and owner)
-    await prisma.notification.createMany({
-      data: [
-        {
-          userId: booking.userId,
-          title: 'Booking Created',
-          message: 'Your booking for ' + booking.driveway.title + ' has been created. Please complete payment to confirm.',
-          type: 'info'
-        },
-        {
-          userId: booking.driveway.owner.id,
-          title: 'New Booking Request',
-          message: 'You have a new booking request for ' + booking.driveway.title,
-          type: 'info'
-        }
-      ]
+    // Create notification ONLY for renter (owner will be notified after payment)
+    // Owner should NOT be notified until payment is completed and spot is reserved
+    await prisma.notification.create({
+      data: {
+        userId: booking.userId,
+        title: 'Booking Created',
+        message: 'Your booking for ' + booking.driveway.title + ' has been created. Please complete payment to confirm and reserve your spot.',
+        type: 'info'
+      }
     });
 
-    // Send email notification (if email service is configured)
+    // Send email notification ONLY to renter (owner will be notified after payment)
     try {
       await sendEmail({
         to: booking.user.email,

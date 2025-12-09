@@ -31,21 +31,132 @@ function CheckoutInner({
     setError('');
     
     try {
-      const result = await stripe.confirmPayment({ elements, redirect: 'if_required' });
+      const result = await stripe.confirmPayment({ 
+        elements, 
+        redirect: 'if_required'
+      });
       
       if (result.error) {
-        const errorMsg = result.error.message || 'Payment failed';
+        // Check if payment actually succeeded despite the error
+        // This can happen if payment intent is already confirmed (race condition)
+        const paymentIntent = result.error.payment_intent;
+        if (paymentIntent && paymentIntent.status === 'succeeded') {
+          // Payment actually succeeded - treat as success (handles race condition)
+          const paymentIntentId = paymentIntent.id;
+          showToast('Payment confirmed! Your booking is now confirmed.', 'success');
+          
+          // Verify and update booking status in background
+          if (bookingId && paymentIntentId) {
+            setTimeout(() => {
+              fetch('/api/payments/verify', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                  paymentIntentId,
+                  bookingId
+                })
+              }).catch(() => {
+                // Silently ignore - webhook will handle it
+              });
+            }, 0);
+          }
+          
+          if (onSuccess) {
+            onSuccess();
+          }
+          setLoading(false);
+          return;
+        }
+        
+        // Real error - log and show to user
+        console.error('[StripeCheckout] Payment error:', {
+          message: result.error.message,
+          type: result.error.type,
+          code: result.error.code
+        });
+        
+        const errorMsg = result.error.message 
+          || result.error.code
+          || 'A processing error occurred. Please try again.';
+        
         setError(errorMsg);
         showToast(errorMsg, 'error');
-      } else {
-        // Payment succeeded
-        showToast('Payment confirmed! Your booking is now confirmed.', 'success');
+        setLoading(false);
+        return;
+      }
+      
+      // Payment succeeded
+      if (!result.paymentIntent) {
+        setError('Payment completed but no payment intent returned');
+        showToast('Payment completed but verification failed. Please check your bookings.', 'warning');
+        setLoading(false);
         if (onSuccess) {
           onSuccess();
         }
+        return;
+      }
+      
+      // Get payment intent ID
+      const paymentIntentId = typeof result.paymentIntent === 'string' 
+        ? result.paymentIntent 
+        : result.paymentIntent.id;
+      
+      if (!paymentIntentId) {
+        setError('Payment completed but no payment intent ID found');
+        showToast('Payment completed but verification failed. Please check your bookings.', 'warning');
+        setLoading(false);
+        if (onSuccess) {
+          onSuccess();
+        }
+        return;
+      }
+      
+      showToast('Payment confirmed! Your booking is now confirmed.', 'success');
+      
+      // Verify and update booking status in background (completely non-blocking)
+      // Webhook is the source of truth - this is just for instant feedback
+      if (bookingId && paymentIntentId) {
+        // Fire and forget - don't wait, don't catch errors
+        // Use setTimeout to make it truly async and non-blocking
+        setTimeout(() => {
+          fetch('/api/payments/verify', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              paymentIntentId,
+              bookingId
+            })
+          }).catch(() => {
+            // Silently ignore - webhook will handle it
+          });
+        }, 0);
+      }
+      
+      if (onSuccess) {
+        // Redirect immediately - webhook will update booking status
+        onSuccess();
       }
     } catch (err: any) {
-      setError(err.message || 'Payment failed');
+      console.error('[StripeCheckout] Unexpected payment error:', err);
+      console.error('[StripeCheckout] Error details:', {
+        message: err?.message,
+        stack: err?.stack,
+        name: err?.name,
+        toString: err?.toString()
+      });
+      
+      const errorMsg = err?.message 
+        || err?.toString() 
+        || (typeof err === 'string' ? err : 'Payment failed. Please try again.');
+      
+      setError(errorMsg);
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }

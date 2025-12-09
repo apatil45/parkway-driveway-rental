@@ -120,3 +120,9 @@ playwright-report/
 *.png
 *.jpg
 *.jpeg
+
+# Temporary documentation files
+BOOKING_PAYMENT_*.md
+MAP_*.md
+PRODUCTION_BEHAVIOR.md
+CODE_STRUCTURE_*.md

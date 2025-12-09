@@ -100,9 +100,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json(createApiError('Driver can only cancel', 403, 'FORBIDDEN'), { status: 403 });
       }
     } else if (isOwner) {
-      // Owner may CONFIRM or CANCEL
-      if (status !== 'CONFIRMED' && status !== 'CANCELLED') {
-        return NextResponse.json(createApiError('Owner can confirm or cancel', 403, 'FORBIDDEN'), { status: 403 });
+      // Owner can only CANCEL (not confirm)
+      // Confirmation only happens automatically via webhook after payment is completed
+      if (status !== 'CANCELLED') {
+        return NextResponse.json(
+          createApiError('Owner can only cancel bookings. Confirmation happens automatically after payment is completed.', 403, 'FORBIDDEN'),
+          { status: 403 }
+        );
       }
     } else {
       return NextResponse.json(createApiError('Not allowed', 403, 'FORBIDDEN'), { status: 403 });
@@ -116,10 +120,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       updateData.paymentStatus = 'FAILED';
     }
     
-    // If confirming, ensure payment is completed
+    // IMPORTANT: Owner cannot manually confirm without payment
+    // Only webhook can confirm booking after payment is completed
     if (status === 'CONFIRMED' && booking.paymentStatus !== 'COMPLETED') {
-      // Only allow if manually confirmed by owner (payment might be processed separately)
-      // Don't auto-update paymentStatus here - let webhook handle it
+      return NextResponse.json(
+        createApiError('Cannot confirm booking without completed payment. Payment must be processed first.', 400, 'PAYMENT_REQUIRED'),
+        { status: 400 }
+      );
     }
 
     const updated = await prisma.booking.update({

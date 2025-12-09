@@ -150,8 +150,11 @@ function CheckoutContent() {
             <StripeCheckout 
               amount={amountInCents} 
               bookingId={booking.id}
-              onSuccess={() => {
-                router.push(`/bookings?status=CONFIRMED`);
+              onSuccess={async () => {
+                // Wait a moment for webhook to process, then redirect
+                // The bookings page will auto-refresh if webhook hasn't processed yet
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                router.push(`/bookings`);
               }}
             />
           </Card>

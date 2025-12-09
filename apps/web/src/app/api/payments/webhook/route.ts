@@ -95,7 +95,8 @@ export async function POST(request: NextRequest) {
             })
           });
 
-          // Send payment received email to owner
+          // Send payment received email to owner (ONLY after payment is completed)
+          // This is when the spot is actually reserved and owner should be notified
           await sendEmail({
             to: booking.driveway.owner.email,
             ...emailTemplates.paymentReceived({
@@ -105,19 +106,20 @@ export async function POST(request: NextRequest) {
             })
           });
 
-          // Create notifications
+          // Create notifications (ONLY after payment is completed)
+          // Owner is notified here because payment is complete and spot is reserved
           await prisma.notification.createMany({
             data: [
               {
                 userId: booking.userId,
                 title: 'Booking Confirmed',
-                message: 'Your booking for ' + booking.driveway.title + ' has been confirmed!',
+                message: 'Your booking for ' + booking.driveway.title + ' has been confirmed! Your spot is reserved.',
                 type: 'success'
               },
               {
                 userId: booking.driveway.owner.id,
-                title: 'Payment Received',
-                message: 'You received $' + booking.totalPrice.toFixed(2) + ' for ' + booking.driveway.title,
+                title: 'New Booking Confirmed - Spot Reserved',
+                message: 'Payment received: $' + booking.totalPrice.toFixed(2) + ' for ' + booking.driveway.title + '. The spot is now reserved.',
                 type: 'success'
               }
             ]
@@ -145,6 +147,56 @@ export async function POST(request: NextRequest) {
         });
         
         console.log('[WEBHOOK] Payment failed for intent: ' + paymentIntentId);
+      } else if (event.type === 'payment_intent.refunded') {
+        const paymentIntent = event.data.object as any;
+        const paymentIntentId = paymentIntent.id;
+        
+        // Update booking with refunded payment status
+        const { prisma } = await import('@parkway/database');
+        const updatedBookings = await prisma.booking.updateMany({
+          where: { 
+            paymentIntentId,
+            status: { notIn: ['COMPLETED'] } // Don't update completed bookings
+          },
+          data: {
+            paymentStatus: 'REFUNDED',
+            // If booking was CONFIRMED, change back to CANCELLED since payment was refunded
+            status: 'CANCELLED'
+          },
+        });
+        
+        if (updatedBookings.count > 0) {
+          // Get booking details for notifications
+          const booking = await prisma.booking.findFirst({
+            where: { paymentIntentId },
+            include: {
+              user: { select: { email: true, name: true } },
+              driveway: { select: { title: true, owner: { select: { id: true, email: true, name: true } } } }
+            }
+          });
+          
+          if (booking) {
+            // Create notifications for refund
+            await prisma.notification.createMany({
+              data: [
+                {
+                  userId: booking.userId,
+                  title: 'Payment Refunded',
+                  message: 'Your payment for ' + booking.driveway.title + ' has been refunded. The booking has been cancelled.',
+                  type: 'info'
+                },
+                {
+                  userId: booking.driveway.owner.id,
+                  title: 'Payment Refunded',
+                  message: 'Payment for ' + booking.driveway.title + ' has been refunded. The spot is now available.',
+                  type: 'info'
+                }
+              ]
+            });
+          }
+        }
+        
+        console.log('[WEBHOOK] Payment refunded for intent: ' + paymentIntentId);
       }
       
       return NextResponse.json({ received: true, type: event.type });
