@@ -233,7 +233,7 @@ const LeafletMap = dynamic(async () => {
 
           <MarkerClusterGroup
             chunkedLoading
-            iconCreateFunction={(cluster) => {
+            iconCreateFunction={(cluster: any) => {
               const count = cluster.getChildCount();
               return leaflet.default.divIcon({
                 html: `<div style="
