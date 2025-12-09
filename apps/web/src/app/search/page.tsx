@@ -64,7 +64,7 @@ function SearchPageContent() {
     total: 0,
     totalPages: 0
   });
-  const [viewMode, setViewMode] = useState<'map' | 'list' | 'split'>('list');
+  const [viewMode] = useState<'map' | 'list' | 'split'>('split');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -285,42 +285,10 @@ function SearchPageContent() {
   return (
     <AppLayout showFooter={false}>
       <div className="min-h-screen bg-gray-50">
-      {/* View Mode Toggle */}
+      {/* Filters Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                onClick={() => setViewMode('map')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'map'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Map
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('split')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'split'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Both
-              </button>
-            </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
@@ -469,18 +437,13 @@ function SearchPageContent() {
       )}
 
       {/* Main Content Area - Split Layout */}
-      <div className={`flex ${viewMode === 'split' ? 'flex-col lg:flex-row' : 'flex-col'} h-[calc(100vh-4rem)]`}>
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
         {/* Map Section */}
-        {(viewMode === 'map' || viewMode === 'split') && (
-          <div 
-            ref={mapContainerRef}
-            key={`map-container-${viewMode}`}
-            className={`${
-              viewMode === 'split' 
-                ? 'w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200' 
-                : 'w-full h-full'
-            } relative bg-gray-100`}
-          >
+        <div 
+          ref={mapContainerRef}
+          key={`map-container-${viewMode}`}
+          className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200 relative bg-gray-100"
+        >
             {!emptyResults && canRenderMap && (
               <MapView
                 key={`mapview-${viewMode}-${mapCenter[0]}-${mapCenter[1]}`}
@@ -510,15 +473,9 @@ function SearchPageContent() {
               </div>
             )}
           </div>
-        )}
 
         {/* Listings Section */}
-        {(viewMode === 'list' || viewMode === 'split') && (
-          <div className={`${
-            viewMode === 'split' 
-              ? 'w-full lg:w-1/2 h-1/2 lg:h-full overflow-y-auto' 
-              : 'w-full h-full overflow-y-auto'
-          } bg-white`}>
+        <div className="w-full lg:w-1/2 h-1/2 lg:h-full overflow-y-auto bg-white">
             <div className="p-4 sm:p-6">
               {emptyResults ? (
                 <div className="text-center py-12">
@@ -663,7 +620,6 @@ function SearchPageContent() {
               )}
             </div>
           </div>
-        )}
       </div>
       </div>
     </AppLayout>
