@@ -14,6 +14,7 @@ const LeafletMap = dynamic(async () => {
     center,
     markers,
     height = '100%',
+    viewMode,
     onMarkerClick
   }: {
     center: [number, number];
@@ -27,15 +28,17 @@ const LeafletMap = dynamic(async () => {
       image?: string;
     }>;
     height?: string;
+    viewMode?: string;
     onMarkerClick?: (id: string) => void;
   }) => {
     const { MapContainer, TileLayer, Marker, Popup, useMap } = L;
     const mapInstanceRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const isInitializedRef = useRef(false);
-    const mapKeyRef = useRef<string>(`map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    const mapKeyRef = useRef<string>(`map-${viewMode || 'default'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
     const [canRender, setCanRender] = useState(false);
     const mountCountRef = useRef(0);
+    const previousViewModeRef = useRef<string | undefined>(viewMode);
 
     // Component to handle map updates
     const MapUpdater = ({ center }: { center: [number, number] }) => {
@@ -111,19 +114,42 @@ const LeafletMap = dynamic(async () => {
               delete (leafletEl as any)._leaflet_id;
               delete (leafletEl as any)._leaflet;
             }
-            el.remove();
+            try {
+              el.remove();
+            } catch (e) {
+              // Ignore if already removed
+            }
           });
           // Clear container tracking
           delete (container as any)._leaflet_id;
+          delete (container as any)._leaflet;
         }
       }
       isInitializedRef.current = false;
     };
 
+    // Reset refs and cleanup when viewMode changes
+    useEffect(() => {
+      if (previousViewModeRef.current !== viewMode) {
+        // View mode changed - reset everything
+        cleanupMap();
+        setCanRender(false);
+        isInitializedRef.current = false;
+        mapInstanceRef.current = null;
+        // Generate new key for this view mode
+        mapKeyRef.current = `map-${viewMode || 'default'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        previousViewModeRef.current = viewMode;
+      }
+    }, [viewMode]);
+
     // Synchronous cleanup before render (useLayoutEffect runs before browser paints)
     useLayoutEffect(() => {
       mountCountRef.current += 1;
       const currentMount = mountCountRef.current;
+      
+      // Always start with cleanup to ensure clean state
+      cleanupMap();
+      setCanRender(false);
       
       if (containerRef.current) {
         const container = containerRef.current;
@@ -137,6 +163,28 @@ const LeafletMap = dynamic(async () => {
           cleanupMap();
         }
         
+        // Also check for any Leaflet instances in the parent container
+        // This handles cases where the container is reused
+        const parent = container.parentElement;
+        if (parent) {
+          const parentLeafletContainers = parent.querySelectorAll('.leaflet-container');
+          parentLeafletContainers.forEach((el) => {
+            const leafletEl = el as HTMLElement;
+            if ((leafletEl as any)._leaflet_id) {
+              try {
+                const map = (leafletEl as any)._leaflet;
+                if (map && typeof map.remove === 'function') {
+                  map.remove();
+                }
+              } catch (e) {
+                // Ignore
+              }
+              delete (leafletEl as any)._leaflet_id;
+              delete (leafletEl as any)._leaflet;
+            }
+          });
+        }
+        
         // Small delay to ensure cleanup is complete before rendering
         // This prevents race condition between cleanup and initialization
         const timer = setTimeout(() => {
@@ -145,7 +193,7 @@ const LeafletMap = dynamic(async () => {
           if (mountCountRef.current === currentMount) {
             setCanRender(true);
           }
-        }, 10);
+        }, 100); // Increased delay to ensure cleanup completes
 
         return () => {
           clearTimeout(timer);
@@ -158,7 +206,7 @@ const LeafletMap = dynamic(async () => {
         cleanupMap();
         setCanRender(false);
       };
-    }, []);
+    }, [viewMode]); // Depend on viewMode to re-run when it changes
 
     // Ref callback
     const containerRefCallback = (node: HTMLDivElement | null) => {
@@ -206,7 +254,7 @@ const LeafletMap = dynamic(async () => {
           </div>
         ) : (
           <MapContainer
-            key={mapKeyRef.current}
+            key={`${mapKeyRef.current}-${viewMode || 'default'}`}
             center={center}
             zoom={13}
             style={{ height, width: '100%', zIndex: 0 }}
@@ -233,7 +281,7 @@ const LeafletMap = dynamic(async () => {
 
           <MarkerClusterGroup
             chunkedLoading
-            iconCreateFunction={(cluster) => {
+            iconCreateFunction={(cluster: any) => {
               const count = cluster.getChildCount();
               return leaflet.default.divIcon({
                 html: `<div style="
@@ -323,13 +371,15 @@ export default function MapView({
   center,
   markers,
   height = '100%',
+  viewMode,
   onMarkerClick
 }: {
   center: [number, number];
   markers: MapMarker[];
   height?: string;
+  viewMode?: string;
   onMarkerClick?: (id: string) => void;
 }) {
-  return <LeafletMap center={center} markers={markers} height={height} onMarkerClick={onMarkerClick} />;
+  return <LeafletMap center={center} markers={markers} height={height} viewMode={viewMode} onMarkerClick={onMarkerClick} />;
 }
 

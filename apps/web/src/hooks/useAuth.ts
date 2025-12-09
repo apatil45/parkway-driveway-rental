@@ -64,26 +64,39 @@ export function useAuth() {
   const checkAuth = async () => {
     try {
       const response = await api.get('/auth/me');
-      setAuthState({
-        user: response.data.data,
-        loading: false,
-        error: '',
-        isAuthenticated: true
-      });
+      const user = response.data.data;
+      
+      // If user is null, user is not authenticated (this is now a valid response)
+      if (user) {
+        setAuthState({
+          user,
+          loading: false,
+          error: '',
+          isAuthenticated: true
+        });
+      } else {
+        // No user - not authenticated
+        setAuthState({ user: null, loading: false, error: '', isAuthenticated: false });
+      }
     } catch (error: any) {
-      // Try refresh once on 401
+      // Try refresh once on 401 (for expired tokens)
       if (error.response?.status === 401) {
         try {
           await api.post('/auth/refresh');
           const me = await api.get('/auth/me');
-          setAuthState({
-            user: me.data.data,
-            loading: false,
-            error: '',
-            isAuthenticated: true
-          });
+          const user = me.data.data;
+          if (user) {
+            setAuthState({
+              user,
+              loading: false,
+              error: '',
+              isAuthenticated: true
+            });
+          } else {
+            setAuthState({ user: null, loading: false, error: '', isAuthenticated: false });
+          }
         } catch {
-          // Silently handle expected auth failures (no token)
+          // Silently handle expected auth failures (no token or refresh failed)
           setAuthState({ user: null, loading: false, error: '', isAuthenticated: false });
         }
       } else {

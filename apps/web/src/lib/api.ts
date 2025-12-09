@@ -48,7 +48,7 @@ api.interceptors.response.use(
     
     // Handle 401 errors with automatic token refresh
     // Skip token refresh for public endpoints that don't require auth
-    const publicEndpoints = ['/stats/public', '/health', '/test'];
+    const publicEndpoints = ['/stats/public', '/health', '/test', '/auth/me'];
     const isPublicEndpoint = publicEndpoints.some(endpoint => 
       originalRequest?.url?.includes(endpoint)
     );
