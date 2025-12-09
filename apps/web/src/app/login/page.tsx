@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input, Card, ErrorMessage } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { loginSchema, type LoginInput } from '@/lib/validations';
@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
   const { login } = useAuth();
 
   const {
@@ -34,7 +36,9 @@ export default function LoginPage() {
     const result = await login(data.email, data.password);
     
     if (result.success) {
-      router.push('/dashboard');
+      // Redirect to the original page if provided, otherwise go to dashboard
+      const redirectPath = redirect ? decodeURIComponent(redirect) : '/dashboard';
+      router.push(redirectPath);
     } else {
       setError(result.error);
     }

@@ -198,7 +198,15 @@ export default function StripeCheckout({
         // Otherwise create a new payment intent
         const res = await api.post('/payments/intent', bookingId ? { bookingId } : { amount });
         setClientSecret(res.data?.data?.clientSecret || '');
-      } catch (err) {
+      } catch (err: any) {
+        // Handle authentication errors gracefully
+        if (err.response?.status === 401) {
+          // User is not authenticated - redirect to login
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+          }
+          return;
+        }
         console.error('Failed to create payment intent:', err);
       }
     })();

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/hooks';
 import api from '@/lib/api';
 
 interface Driveway {
@@ -77,6 +78,7 @@ export default function DrivewayDetailsPage() {
 
   const router = useRouter();
   const { showToast } = useToast();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   const drivewayId = params?.id as string;
 
@@ -125,6 +127,14 @@ export default function DrivewayDetailsPage() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check authentication first
+    if (!isAuthenticated) {
+      const currentPath = window.location.pathname + window.location.search;
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+    
     setBookingLoading(true);
 
     try {
@@ -189,27 +199,31 @@ export default function DrivewayDetailsPage() {
 
       const booking = response.data?.data;
       
-      // Redirect to checkout page with booking ID
-      if (booking?.id) {
-        showToast('Booking created successfully! Redirecting to checkout...', 'success');
-        router.push(`/checkout?bookingId=${booking.id}`);
-      } else {
-        showToast('Booking created successfully!', 'success');
-        setShowBookingForm(false);
-        setBookingForm({
-          startTime: '',
-          endTime: '',
-          specialRequests: '',
-          vehicleInfo: {
-            make: '',
-            model: '',
-            color: '',
-            licensePlate: ''
-          }
-        });
+      // Ensure we have a valid booking response
+      if (!booking || !booking.id) {
+        console.error('Invalid booking response:', response.data);
+        showToast('Booking created but received invalid response. Please check your bookings.', 'error');
+        setBookingLoading(false);
+        // Still redirect to bookings page to let user check
+        router.push('/bookings');
+        return;
       }
+      
+      // Redirect to checkout page with booking ID
+      showToast('Booking created successfully! Redirecting to checkout...', 'success');
+      setBookingLoading(false); // Reset loading before redirect
+      router.push(`/checkout?bookingId=${booking.id}`);
     } catch (err: any) {
       console.error('Booking error:', err);
+      
+      // Handle 401 (authentication) errors explicitly
+      if (err.response?.status === 401) {
+        // Not authenticated - redirect to login with return path
+        const currentPath = window.location.pathname + window.location.search;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        setBookingLoading(false);
+        return;
+      }
       
       // Extract detailed error message
       let errorMessage = 'Failed to create booking';
@@ -550,7 +564,7 @@ export default function DrivewayDetailsPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={bookingLoading}
+                      disabled={bookingLoading || authLoading || !isAuthenticated}
                       className="btn btn-primary flex-1 min-h-[48px] text-base"
                     >
                       {bookingLoading ? 'Booking...' : 'Confirm Booking'}
