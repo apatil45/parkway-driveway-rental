@@ -111,10 +111,15 @@ const LeafletMap = dynamic(async () => {
               delete (leafletEl as any)._leaflet_id;
               delete (leafletEl as any)._leaflet;
             }
-            el.remove();
+            try {
+              el.remove();
+            } catch (e) {
+              // Ignore if already removed
+            }
           });
           // Clear container tracking
           delete (container as any)._leaflet_id;
+          delete (container as any)._leaflet;
         }
       }
       isInitializedRef.current = false;
@@ -124,6 +129,10 @@ const LeafletMap = dynamic(async () => {
     useLayoutEffect(() => {
       mountCountRef.current += 1;
       const currentMount = mountCountRef.current;
+      
+      // Always start with cleanup to ensure clean state
+      cleanupMap();
+      setCanRender(false);
       
       if (containerRef.current) {
         const container = containerRef.current;
@@ -137,6 +146,28 @@ const LeafletMap = dynamic(async () => {
           cleanupMap();
         }
         
+        // Also check for any Leaflet instances in the parent container
+        // This handles cases where the container is reused
+        const parent = container.parentElement;
+        if (parent) {
+          const parentLeafletContainers = parent.querySelectorAll('.leaflet-container');
+          parentLeafletContainers.forEach((el) => {
+            const leafletEl = el as HTMLElement;
+            if ((leafletEl as any)._leaflet_id) {
+              try {
+                const map = (leafletEl as any)._leaflet;
+                if (map && typeof map.remove === 'function') {
+                  map.remove();
+                }
+              } catch (e) {
+                // Ignore
+              }
+              delete (leafletEl as any)._leaflet_id;
+              delete (leafletEl as any)._leaflet;
+            }
+          });
+        }
+        
         // Small delay to ensure cleanup is complete before rendering
         // This prevents race condition between cleanup and initialization
         const timer = setTimeout(() => {
@@ -145,7 +176,7 @@ const LeafletMap = dynamic(async () => {
           if (mountCountRef.current === currentMount) {
             setCanRender(true);
           }
-        }, 10);
+        }, 50); // Increased delay to ensure cleanup completes
 
         return () => {
           clearTimeout(timer);

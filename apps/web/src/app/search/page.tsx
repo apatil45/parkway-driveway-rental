@@ -429,6 +429,7 @@ function SearchPageContent() {
           >
             {!emptyResults && (
               <MapView
+                key={`mapview-${viewMode}-${mapCenter[0]}-${mapCenter[1]}`}
                 center={mapCenter}
                 markers={mapMarkers}
                 height="100%"
