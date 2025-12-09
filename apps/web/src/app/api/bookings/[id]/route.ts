@@ -113,20 +113,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     // Ensure status and paymentStatus remain consistent
+    // At this point, status can only be 'CANCELLED' (enforced above)
     const updateData: any = { status };
     
     // If cancelling, also mark payment as failed if pending
     if (status === 'CANCELLED' && booking.paymentStatus === 'PENDING') {
       updateData.paymentStatus = 'FAILED';
-    }
-    
-    // IMPORTANT: Owner cannot manually confirm without payment
-    // Only webhook can confirm booking after payment is completed
-    if (status === 'CONFIRMED' && booking.paymentStatus !== 'COMPLETED') {
-      return NextResponse.json(
-        createApiError('Cannot confirm booking without completed payment. Payment must be processed first.', 400, 'PAYMENT_REQUIRED'),
-        { status: 400 }
-      );
     }
 
     const updated = await prisma.booking.update({
