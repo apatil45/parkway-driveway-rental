@@ -68,6 +68,7 @@ function SearchPageContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [canRenderMap, setCanRenderMap] = useState(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -104,6 +105,59 @@ function SearchPageContent() {
   useEffect(() => {
     performSearch();
   }, [router]);
+
+  // Cleanup Leaflet instances when viewMode changes
+  useEffect(() => {
+    // Prevent rendering MapView during cleanup
+    setCanRenderMap(false);
+    
+    // Cleanup function
+    const cleanup = () => {
+      if (mapContainerRef.current) {
+        const container = mapContainerRef.current;
+        
+        // Remove any Leaflet containers
+        const leafletContainers = container.querySelectorAll('.leaflet-container');
+        leafletContainers.forEach((el) => {
+          const leafletEl = el as HTMLElement;
+          if ((leafletEl as any)._leaflet_id) {
+            try {
+              const map = (leafletEl as any)._leaflet;
+              if (map && typeof map.remove === 'function') {
+                map.remove();
+              }
+            } catch (e) {
+              // Ignore cleanup errors
+            }
+            delete (leafletEl as any)._leaflet_id;
+            delete (leafletEl as any)._leaflet;
+          }
+          try {
+            el.remove();
+          } catch (e) {
+            // Ignore if already removed
+          }
+        });
+        
+        // Clear container tracking
+        delete (container as any)._leaflet_id;
+        delete (container as any)._leaflet;
+      }
+    };
+    
+    // Run cleanup immediately
+    cleanup();
+    
+    // Small delay to ensure cleanup completes before allowing render
+    const timer = setTimeout(() => {
+      setCanRenderMap(true);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      cleanup();
+    };
+  }, [viewMode]);
 
   const performSearch = async (page = 1) => {
     const params = {
@@ -427,9 +481,10 @@ function SearchPageContent() {
                 : 'w-full h-full'
             } relative bg-gray-100`}
           >
-            {!emptyResults && (
+            {!emptyResults && canRenderMap && (
               <MapView
                 key={`mapview-${viewMode}-${mapCenter[0]}-${mapCenter[1]}`}
+                viewMode={viewMode}
                 center={mapCenter}
                 markers={mapMarkers}
                 height="100%"
