@@ -36,6 +36,7 @@ function CheckoutInner({
         redirect: 'if_required'
       });
       
+      // Type guard: check if result has error
       if (result.error) {
         // Check if payment actually succeeded despite the error
         // This can happen if payment intent is already confirmed (race condition)
@@ -88,8 +89,10 @@ function CheckoutInner({
         return;
       }
       
-      // Payment succeeded
-      if (!result.paymentIntent) {
+      // Payment succeeded - result.paymentIntent should exist when there's no error
+      // Use type assertion to help TypeScript understand the discriminated union
+      const successResult = result as { paymentIntent: { id: string } | string };
+      if (!successResult.paymentIntent) {
         setError('Payment completed but no payment intent returned');
         showToast('Payment completed but verification failed. Please check your bookings.', 'warning');
         setLoading(false);
@@ -100,9 +103,9 @@ function CheckoutInner({
       }
       
       // Get payment intent ID
-      const paymentIntentId = typeof result.paymentIntent === 'string' 
-        ? result.paymentIntent 
-        : result.paymentIntent.id;
+      const paymentIntentId = typeof successResult.paymentIntent === 'string' 
+        ? successResult.paymentIntent 
+        : successResult.paymentIntent.id;
       
       if (!paymentIntentId) {
         setError('Payment completed but no payment intent ID found');
