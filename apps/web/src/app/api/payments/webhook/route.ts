@@ -147,9 +147,10 @@ export async function POST(request: NextRequest) {
         });
         
         console.log('[WEBHOOK] Payment failed for intent: ' + paymentIntentId);
-      } else if (event.type === 'payment_intent.refunded') {
-        const paymentIntent = event.data.object as any;
-        const paymentIntentId = paymentIntent.id;
+      } else if (event.type === 'charge.refunded') {
+        // Stripe sends charge.refunded event for refunds, not payment_intent.refunded
+        const charge = event.data.object as any;
+        const paymentIntentId = charge.payment_intent;
         
         // Update booking with refunded payment status
         const { prisma } = await import('@parkway/database');
