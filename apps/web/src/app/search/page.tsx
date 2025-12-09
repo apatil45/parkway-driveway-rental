@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
@@ -64,7 +64,7 @@ function SearchPageContent() {
     total: 0,
     totalPages: 0
   });
-  const [viewMode, setViewMode] = useState<'map' | 'list' | 'split'>('split');
+  const [viewMode, setViewMode] = useState<'map' | 'list' | 'split'>('list');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -100,18 +100,6 @@ function SearchPageContent() {
     }
   }, []); // Only run once on mount
 
-  // Trigger map resize when view mode changes
-  useEffect(() => {
-    if (viewMode === 'map' || viewMode === 'split') {
-      // Small delay to ensure DOM has updated
-      const timer = setTimeout(() => {
-        // Trigger window resize event to force map to recalculate size
-        window.dispatchEvent(new Event('resize'));
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [viewMode]);
 
   useEffect(() => {
     performSearch();
@@ -185,6 +173,39 @@ function SearchPageContent() {
     return Math.round(R * c * 10) / 10;
   };
 
+  // Normalize API result shape (must be before hooks)
+  let drivewayList: Driveway[] = [];
+  if (Array.isArray(driveways)) {
+    drivewayList = (driveways as unknown as Driveway[]);
+  } else if (driveways && Array.isArray((driveways as any).driveways)) {
+    drivewayList = (driveways as any).driveways as Driveway[];
+  }
+
+  // Calculate map center (memoized) - MUST be before early returns
+  const mapCenter: [number, number] = useMemo(() => {
+    return filters.latitude && filters.longitude
+      ? [Number(filters.latitude), Number(filters.longitude)]
+      : drivewayList.length > 0
+      ? [drivewayList[0].latitude, drivewayList[0].longitude]
+      : [37.7749, -122.4194]; // Default: San Francisco
+  }, [filters.latitude, filters.longitude, drivewayList]);
+
+  // Map markers (memoized) - MUST be before early returns
+  const mapMarkers = useMemo(() => {
+    return drivewayList.map(d => ({
+      id: d.id,
+      position: [d.latitude, d.longitude] as [number, number],
+      title: d.title,
+      price: d.pricePerHour,
+      address: d.address,
+      rating: d.averageRating,
+      image: d.images && d.images.length > 0 ? d.images[0] : undefined,
+    }));
+  }, [drivewayList]);
+
+  const emptyResults = Array.isArray(drivewayList) && drivewayList.length === 0 && !loading;
+
+  // Early returns AFTER all hooks
   if (loading && (!driveways || driveways.length === 0)) {
     return (
       <AppLayout>
@@ -206,34 +227,6 @@ function SearchPageContent() {
       </div>
     );
   }
-
-  // Normalize API result shape
-  let drivewayList: Driveway[] = [];
-  if (Array.isArray(driveways)) {
-    drivewayList = (driveways as unknown as Driveway[]);
-  } else if (driveways && Array.isArray((driveways as any).driveways)) {
-    drivewayList = (driveways as any).driveways as Driveway[];
-  }
-
-  // Calculate map center
-  const mapCenter: [number, number] = filters.latitude && filters.longitude
-    ? [Number(filters.latitude), Number(filters.longitude)]
-    : drivewayList.length > 0
-    ? [drivewayList[0].latitude, drivewayList[0].longitude]
-    : [37.7749, -122.4194];
-
-  // Map markers with enhanced data
-  const mapMarkers = drivewayList.map(d => ({
-    id: d.id,
-    position: [d.latitude, d.longitude] as [number, number],
-    title: d.title,
-    price: d.pricePerHour,
-    address: d.address,
-    rating: d.averageRating,
-    image: d.images && d.images.length > 0 ? d.images[0] : undefined,
-  }));
-
-  const emptyResults = Array.isArray(drivewayList) && drivewayList.length === 0 && !loading;
 
   return (
     <AppLayout showFooter={false}>
@@ -427,7 +420,7 @@ function SearchPageContent() {
         {(viewMode === 'map' || viewMode === 'split') && (
           <div 
             ref={mapContainerRef}
-            key={viewMode} // Force re-render when view mode changes
+            key={`map-container-${viewMode}`}
             className={`${
               viewMode === 'split' 
                 ? 'w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200' 

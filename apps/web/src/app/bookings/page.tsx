@@ -60,6 +60,23 @@ export default function BookingsPage() {
     fetchBookings();
   }, [router, statusFilter]);
 
+  // Auto-refresh bookings if there are any PENDING bookings with COMPLETED payment
+  // This handles the case where payment is completed but webhook hasn't processed yet
+  useEffect(() => {
+    const hasPendingWithCompletedPayment = bookings.some(
+      b => b.status === 'PENDING' && b.paymentStatus === 'COMPLETED'
+    );
+    
+    if (hasPendingWithCompletedPayment) {
+      // Poll every 3 seconds until booking is confirmed
+      const interval = setInterval(() => {
+        fetchBookings(pagination.page);
+      }, 3000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [bookings, pagination.page]);
+
   // Fetch existing reviews for completed bookings
   useEffect(() => {
     if (bookings.length > 0 && user) {
@@ -304,8 +321,8 @@ export default function BookingsPage() {
                     </div>
                   </div>
 
-                  {/* Booking Expiry Warning for PENDING bookings */}
-                  {booking.status === 'PENDING' && (
+                  {/* Booking Expiry Warning for PENDING bookings - Only show if payment is actually pending */}
+                  {booking.status === 'PENDING' && booking.paymentStatus === 'PENDING' && (
                     <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <div className="flex items-center">
                         <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,14 +335,31 @@ export default function BookingsPage() {
                           <p className="text-sm text-yellow-700">
                             This booking will expire in 15 minutes if payment is not completed. Please complete payment to confirm your booking.
                           </p>
-                          {booking.paymentStatus === 'PENDING' && (
-                            <Link
-                              href={`/checkout?bookingId=${booking.id}`}
-                              className="mt-2 inline-block text-sm font-medium text-yellow-800 hover:text-yellow-900 underline"
-                            >
-                              Complete Payment Now →
-                            </Link>
-                          )}
+                          <Link
+                            href={`/checkout?bookingId=${booking.id}`}
+                            className="mt-2 inline-block text-sm font-medium text-yellow-800 hover:text-yellow-900 underline"
+                          >
+                            Complete Payment Now →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Payment Processing Message - Show if payment completed but webhook hasn't processed yet */}
+                  {booking.status === 'PENDING' && booking.paymentStatus === 'COMPLETED' && (
+                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-blue-600 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">
+                            Payment Received - Confirming Booking
+                          </p>
+                          <p className="text-sm text-blue-700">
+                            Your payment has been processed. We're confirming your booking. This page will update automatically.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -443,21 +477,14 @@ export default function BookingsPage() {
                     )}
                     {/* Owner controls */}
                     {user && booking.driveway.owner.id === user.id && booking.status === 'PENDING' && (
-                      <>
-                        <button
-                          onClick={() => handleStatusChange(booking.id, 'CONFIRMED')}
-                          className="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-green-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        >
-                          Cancel
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      >
+                        Cancel
+                      </button>
                     )}
+                    {/* Note: Bookings are automatically confirmed after payment is completed via Stripe webhook */}
                   </div>
                   
                   <div className="text-sm text-gray-500">

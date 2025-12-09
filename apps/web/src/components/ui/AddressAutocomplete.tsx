@@ -37,7 +37,6 @@ import {
   MapPinIcon, 
   ClockIcon, 
   StarIcon, 
-  MapIcon,
   InformationCircleIcon,
   XMarkIcon,
   BuildingOfficeIcon,
@@ -45,7 +44,6 @@ import {
   BriefcaseIcon,
   MicrophoneIcon
 } from '@heroicons/react/24/outline';
-import MapPickerModal from './MapPickerModal';
 
 interface AddressSuggestion {
   display_name: string;
@@ -490,7 +488,6 @@ export default function AddressAutocomplete({
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [nearbyPlaces, setNearbyPlaces] = useState<AddressSuggestion[]>([]);
   const [favorites, setFavorites] = useState<FavoriteLocation[]>([]);
-  const [showMapPicker, setShowMapPicker] = useState(false);
   const [showTips, setShowTips] = useState(false);
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -1044,13 +1041,6 @@ export default function AddressAutocomplete({
     }
   };
   
-  const handleMapPickerSelect = (lat: number, lon: number, address: string) => {
-    onChange(address);
-    if (onLocationSelect) {
-      onLocationSelect(lat, lon);
-    }
-  };
-  
   const handleFavoriteClick = (favorite: FavoriteLocation) => {
     onChange(favorite.address);
     if (onLocationSelect) {
@@ -1237,14 +1227,6 @@ export default function AddressAutocomplete({
           </button>
           <button
             type="button"
-            onClick={() => setShowMapPicker(true)}
-            className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
-            title="Pick on map"
-          >
-            <MapIcon className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
             onClick={() => setShowTips(!showTips)}
             className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
             title="Search tips"
@@ -1427,15 +1409,6 @@ export default function AddressAutocomplete({
         </div>
       )}
       
-      {/* Map Picker Modal */}
-      {showMapPicker && (
-        <MapPickerModal
-          isOpen={showMapPicker}
-          onClose={() => setShowMapPicker(false)}
-          onLocationSelect={handleMapPickerSelect}
-          initialCenter={userLocation ? [userLocation.lat, userLocation.lon] : undefined}
-        />
-      )}
     </div>
   );
 }

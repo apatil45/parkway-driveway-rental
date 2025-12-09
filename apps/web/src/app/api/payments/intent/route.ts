@@ -134,16 +134,10 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        // Stripe is required for payment processing
+        // Stripe is REQUIRED for booking payments
         if (!secret) {
-          const isDev = process.env.NODE_ENV === 'development';
-          if (isDev) {
-            console.error('[PAYMENT] STRIPE_SECRET_KEY is not configured. Payment processing requires Stripe.');
-            console.error('[PAYMENT] Please set STRIPE_SECRET_KEY in your environment variables.');
-            throw new Error('STRIPE_NOT_CONFIGURED');
-          }
-          // In production, fail loudly
-          console.error('[PAYMENT] CRITICAL: STRIPE_SECRET_KEY is missing in production!');
+          console.error('[PAYMENT] CRITICAL: STRIPE_SECRET_KEY is required for booking payments.');
+          console.error('[PAYMENT] Please set STRIPE_SECRET_KEY in your environment variables.');
           throw new Error('STRIPE_NOT_CONFIGURED');
         }
         
@@ -197,20 +191,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Stripe is required for payment processing
-    const isDev = process.env.NODE_ENV === 'development';
-    if (isDev) {
-      console.error('[PAYMENT] STRIPE_SECRET_KEY is not configured. Payment processing requires Stripe.');
-      console.error('[PAYMENT] Please set STRIPE_SECRET_KEY in your environment variables.');
-      return NextResponse.json(
-        createApiError('Payment processing is not configured. Please contact support.', 503, 'SERVICE_UNAVAILABLE'),
-        { status: 503 }
-      );
-    }
-    // In production, fail loudly
-    console.error('[PAYMENT] CRITICAL: STRIPE_SECRET_KEY is missing in production!');
+    // Stripe is REQUIRED for booking payments
+    console.error('[PAYMENT] CRITICAL: STRIPE_SECRET_KEY is required for booking payments.');
+    console.error('[PAYMENT] Please set STRIPE_SECRET_KEY in your environment variables.');
     return NextResponse.json(
-      createApiError('Payment processing is temporarily unavailable. Please try again later.', 503, 'SERVICE_UNAVAILABLE'),
+      createApiError('Payment processing is not configured. Please contact support.', 503, 'SERVICE_UNAVAILABLE'),
       { status: 503 }
     );
   } catch (e: any) {
