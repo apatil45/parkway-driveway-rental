@@ -10,6 +10,10 @@ export const runtime = 'nodejs';
  * This provides immediate feedback while webhook processes in background
  */
 export async function POST(request: NextRequest) {
+  // Declare variables outside try block so they're accessible in catch block
+  let bookingId: string | undefined;
+  let paymentIntentId: string | undefined;
+  
   try {
     const authResult = await requireAuth(request);
     if (!authResult.success) {
@@ -18,7 +22,8 @@ export async function POST(request: NextRequest) {
     const userId = authResult.userId!;
 
     const body = await request.json();
-    const { paymentIntentId, bookingId } = body;
+    bookingId = body.bookingId;
+    paymentIntentId = body.paymentIntentId;
 
     if (!paymentIntentId || !bookingId) {
       return NextResponse.json(
@@ -149,7 +154,7 @@ export async function POST(request: NextRequest) {
     // This prevents blocking the payment flow
     return NextResponse.json(
       createApiResponse(
-        { bookingId, status: 'PENDING', message: 'Webhook will process payment confirmation' },
+        { bookingId: bookingId || 'unknown', status: 'PENDING', message: 'Webhook will process payment confirmation' },
         'Payment received, webhook will confirm booking'
       )
     );
