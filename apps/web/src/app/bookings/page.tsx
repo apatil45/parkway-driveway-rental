@@ -110,10 +110,11 @@ export default function BookingsPage() {
         
         // Update state with successful results
         results.forEach((result) => {
-          if (result.status === 'fulfilled' && result.value) {
+          if (result.status === 'fulfilled' && result.value !== null) {
+            const value = result.value;
             setExistingReviews(prev => ({
               ...prev,
-              [result.value.drivewayId]: result.value.review
+              [value.drivewayId]: value.review
             }));
           }
         });
