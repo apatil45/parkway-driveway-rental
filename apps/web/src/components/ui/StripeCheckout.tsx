@@ -36,6 +36,7 @@ function CheckoutInner({
         redirect: 'if_required'
       });
       
+      // Type guard: check if result has error
       if (result.error) {
         // Check if payment actually succeeded despite the error
         // This can happen if payment intent is already confirmed (race condition)
@@ -88,8 +89,10 @@ function CheckoutInner({
         return;
       }
       
-      // Payment succeeded
-      if (!result.paymentIntent) {
+      // Payment succeeded - result.paymentIntent should exist when there's no error
+      // Use type assertion to help TypeScript understand the discriminated union
+      const successResult = result as { paymentIntent: { id: string } | string };
+      if (!successResult.paymentIntent) {
         setError('Payment completed but no payment intent returned');
         showToast('Payment completed but verification failed. Please check your bookings.', 'warning');
         setLoading(false);
@@ -100,9 +103,9 @@ function CheckoutInner({
       }
       
       // Get payment intent ID
-      const paymentIntentId = typeof result.paymentIntent === 'string' 
-        ? result.paymentIntent 
-        : result.paymentIntent.id;
+      const paymentIntentId = typeof successResult.paymentIntent === 'string' 
+        ? successResult.paymentIntent 
+        : successResult.paymentIntent.id;
       
       if (!paymentIntentId) {
         setError('Payment completed but no payment intent ID found');
@@ -195,14 +198,35 @@ export default function StripeCheckout({
         // Otherwise create a new payment intent
         const res = await api.post('/payments/intent', bookingId ? { bookingId } : { amount });
         setClientSecret(res.data?.data?.clientSecret || '');
-      } catch (err) {
+      } catch (err: any) {
+        // Handle authentication errors gracefully
+        if (err.response?.status === 401) {
+          // User is not authenticated - redirect to login
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+          }
+          return;
+        }
         console.error('Failed to create payment intent:', err);
       }
     })();
   }, [amount, bookingId]);
 
   if (!publishableKey) {
-    return <div className="text-sm text-gray-600">Stripe not configured. Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to enable checkout.</div>;
+    const isDev = process.env.NODE_ENV === 'development';
+    return (
+      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <h4 className="font-semibold text-yellow-800 mb-2">Payment Processing Not Available</h4>
+        <p className="text-sm text-yellow-700 mb-2">
+          Stripe payment gateway is not configured. Please contact support to complete your booking.
+        </p>
+        {isDev && (
+          <p className="text-xs text-yellow-600 mt-2">
+            Development: Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your .env.local file.
+          </p>
+        )}
+      </div>
+    );
   }
 
   if (!clientSecret || !stripePromise) {

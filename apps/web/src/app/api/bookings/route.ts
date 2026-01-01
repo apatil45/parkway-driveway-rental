@@ -100,6 +100,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check Stripe configuration before allowing booking creation
+    const stripeSecret = process.env.STRIPE_SECRET_KEY;
+    const stripePublishable = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    
+    if (!stripeSecret || !stripePublishable) {
+      return NextResponse.json(
+        createApiError(
+          'Payment processing is not configured. Please contact support.',
+          503,
+          'PAYMENT_NOT_CONFIGURED'
+        ),
+        { status: 503 }
+      );
+    }
+    
     // Use centralized auth middleware
     const authResult = await requireAuth(request);
     if (!authResult.success) {

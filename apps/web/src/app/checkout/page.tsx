@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui';
 import StripeCheckout from '@/components/ui/StripeCheckout';
 import { AppLayout } from '@/components/layout';
+import { useAuth } from '@/hooks';
 import api from '@/lib/api';
 import Link from 'next/link';
 
@@ -24,18 +25,27 @@ function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    if (bookingId) {
+    if (!authLoading && !isAuthenticated) {
+      const currentPath = window.location.pathname + window.location.search;
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  useEffect(() => {
+    if (bookingId && isAuthenticated) {
       fetchBooking();
-    } else {
+    } else if (!bookingId) {
       setError('No booking ID provided');
       setLoading(false);
     }
-  }, [bookingId]);
+  }, [bookingId, isAuthenticated]);
 
   const fetchBooking = async () => {
     if (!bookingId) {
@@ -49,17 +59,50 @@ function CheckoutContent() {
       const response = await api.get(`/bookings/${bookingId}`);
       setBooking(response.data.data);
     } catch (err: any) {
-      if (err.response?.status === 404) {
+      // Handle network errors (no response)
+      if (!err.response) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          setError('Request timed out. Please check your connection and try again.');
+        } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+          setError('Network error. Please check your internet connection and try again.');
+        } else {
+          setError('Unable to connect to the server. Please try again.');
+        }
+        return;
+      }
+
+      // Handle HTTP status codes
+      if (err.response?.status === 401) {
+        // Not authenticated - redirect to login
+        const currentPath = window.location.pathname + window.location.search;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        return;
+      } else if (err.response?.status === 404) {
         setError('Booking not found');
       } else if (err.response?.status === 403) {
         setError('You are not authorized to view this booking');
+      } else if (err.response?.status >= 500) {
+        setError('Server error. Please try again in a moment.');
       } else {
-        setError(err.response?.data?.message || 'Failed to load booking');
+        setError(err.response?.data?.message || err.message || 'Failed to load booking');
       }
     } finally {
       setLoading(false);
     }
   };
+
+  // Don't render checkout if not authenticated
+  if (authLoading || !isAuthenticated) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (loading) {
     return (

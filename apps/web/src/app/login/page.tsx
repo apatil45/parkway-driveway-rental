@@ -1,15 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input, Card, ErrorMessage } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { loginSchema, type LoginInput } from '@/lib/validations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-export default function LoginPage() {
+function LoginForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
   const { login } = useAuth();
 
   const {
@@ -34,7 +36,9 @@ export default function LoginPage() {
     const result = await login(data.email, data.password);
     
     if (result.success) {
-      router.push('/dashboard');
+      // Redirect to the original page if provided, otherwise go to dashboard
+      const redirectPath = redirect ? decodeURIComponent(redirect) : '/dashboard';
+      router.push(redirectPath);
     } else {
       setError(result.error);
     }
@@ -42,6 +46,44 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  return (
+    <Card>
+      <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        {error && (
+          <ErrorMessage message={error} />
+        )}
+        
+        <div className="space-y-4">
+          <Input
+            label="Email address"
+            type="email"
+            placeholder="Enter your email"
+            error={errors.email?.message}
+            {...register('email')}
+          />
+          
+          <Input
+            label="Password"
+            type="password"
+            placeholder="Enter your password"
+            error={errors.password?.message}
+            {...register('password')}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          loading={loading}
+          fullWidth
+        >
+          Sign in
+        </Button>
+      </form>
+    </Card>
+  );
+}
+
+export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -57,39 +99,16 @@ export default function LoginPage() {
           </p>
         </div>
         
-        <Card>
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {error && (
-              <ErrorMessage message={error} />
-            )}
-            
-            <div className="space-y-4">
-              <Input
-                label="Email address"
-                type="email"
-                placeholder="Enter your email"
-                error={errors.email?.message}
-                {...register('email')}
-              />
-              
-              <Input
-                label="Password"
-                type="password"
-                placeholder="Enter your password"
-                error={errors.password?.message}
-                {...register('password')}
-              />
+        <Suspense fallback={
+          <Card>
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+              <p className="mt-4 text-gray-600">Loading...</p>
             </div>
-
-            <Button
-              type="submit"
-              loading={loading}
-              fullWidth
-            >
-              Sign in
-            </Button>
-          </form>
-        </Card>
+          </Card>
+        }>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

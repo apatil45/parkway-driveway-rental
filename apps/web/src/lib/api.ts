@@ -13,6 +13,8 @@ const api = axios.create({
 
 // Track if we're currently refreshing to avoid multiple refresh calls
 let isRefreshing = false;
+let refreshAttempts = 0;
+const MAX_REFRESH_ATTEMPTS = 1; // Only try once to prevent infinite loops
 let failedQueue: Array<{
   resolve: (value?: any) => void;
   reject: (error?: any) => void;
@@ -48,12 +50,27 @@ api.interceptors.response.use(
     
     // Handle 401 errors with automatic token refresh
     // Skip token refresh for public endpoints that don't require auth
-    const publicEndpoints = ['/stats/public', '/health', '/test'];
+    const publicEndpoints = ['/stats/public', '/health', '/test', '/auth/me'];
     const isPublicEndpoint = publicEndpoints.some(endpoint => 
       originalRequest?.url?.includes(endpoint)
     );
     
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isPublicEndpoint) {
+      // Prevent infinite refresh loops
+      if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+        refreshAttempts = 0; // Reset for next session
+        const appError = createAppError(error);
+        // Redirect to login if in browser
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return Promise.reject({
+          ...appError,
+          originalError: error,
+          axiosError: error,
+        });
+      }
+
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -69,10 +86,14 @@ api.interceptors.response.use(
 
       originalRequest._retry = true;
       isRefreshing = true;
+      refreshAttempts++;
 
       try {
         // Try to refresh the token
         await api.post('/auth/refresh');
+        
+        // Reset refresh attempts on success
+        refreshAttempts = 0;
         
         // Process queued requests
         processQueue();
