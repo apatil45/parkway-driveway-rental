@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
@@ -75,6 +75,7 @@ export default function DrivewayDetailsPage() {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [calculatedHours, setCalculatedHours] = useState<number | null>(null);
+  const isSubmittingRef = useRef(false);
 
   const router = useRouter();
   const { showToast } = useToast();
@@ -104,6 +105,47 @@ export default function DrivewayDetailsPage() {
     fetchDriveway();
   }, [drivewayId]);
 
+  // Restore form data after login return
+  useEffect(() => {
+    if (isAuthenticated && drivewayId && showBookingForm) {
+      try {
+        const savedFormData = sessionStorage.getItem('bookingFormData');
+        if (savedFormData) {
+          const formData = JSON.parse(savedFormData);
+          // Only restore if it's for the same driveway
+          if (formData.drivewayId === drivewayId) {
+            setBookingForm({
+              startTime: formData.startTime || '',
+              endTime: formData.endTime || '',
+              specialRequests: formData.specialRequests || '',
+              vehicleInfo: formData.vehicleInfo || {
+                make: '',
+                model: '',
+                color: '',
+                licensePlate: ''
+              }
+            });
+            if (formData.calculatedPrice !== undefined) {
+              setCalculatedPrice(formData.calculatedPrice);
+            }
+            if (formData.calculatedHours !== undefined) {
+              setCalculatedHours(formData.calculatedHours);
+            }
+            // Clear saved data after restoring
+            sessionStorage.removeItem('bookingFormData');
+            showToast('Welcome back! Your booking details have been restored.', 'success');
+          } else {
+            // Clear data for different driveway
+            sessionStorage.removeItem('bookingFormData');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to restore form data:', err);
+        sessionStorage.removeItem('bookingFormData');
+      }
+    }
+  }, [isAuthenticated, drivewayId, showBookingForm]);
+
   // Calculate price when times change
   useEffect(() => {
     if (bookingForm.startTime && bookingForm.endTime && driveway) {
@@ -128,13 +170,33 @@ export default function DrivewayDetailsPage() {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check authentication first
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current) {
+      showToast('Please wait, your booking is being processed...', 'info');
+      return;
+    }
+    
+    // Check authentication with friendly message and form data persistence
     if (!isAuthenticated) {
+      // Save form data to sessionStorage before redirect
+      try {
+        sessionStorage.setItem('bookingFormData', JSON.stringify({
+          ...bookingForm,
+          drivewayId,
+          calculatedPrice,
+          calculatedHours
+        }));
+      } catch (err) {
+        console.error('Failed to save form data:', err);
+      }
+      
+      showToast('Please log in to complete your booking', 'info');
       const currentPath = window.location.pathname + window.location.search;
       router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
     
+    isSubmittingRef.current = true;
     setBookingLoading(true);
 
     try {
@@ -216,11 +278,53 @@ export default function DrivewayDetailsPage() {
     } catch (err: any) {
       console.error('Booking error:', err);
       
+      // Handle network errors (no response)
+      if (!err.response) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          showToast('Request timed out. Please check your connection and try again.', 'error');
+          isSubmittingRef.current = false;
+          setBookingLoading(false);
+          return;
+        } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+          showToast('Network error. Please check your internet connection and try again.', 'error');
+          isSubmittingRef.current = false;
+          setBookingLoading(false);
+          return;
+        }
+      }
+      
       // Handle 401 (authentication) errors explicitly
       if (err.response?.status === 401) {
-        // Not authenticated - redirect to login with return path
+        // Save form data before redirect
+        try {
+          sessionStorage.setItem('bookingFormData', JSON.stringify({
+            ...bookingForm,
+            drivewayId,
+            calculatedPrice,
+            calculatedHours
+          }));
+        } catch (storageErr) {
+          console.error('Failed to save form data:', storageErr);
+        }
+        
+        showToast('Your session expired. Please log in again.', 'warning');
         const currentPath = window.location.pathname + window.location.search;
         router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        isSubmittingRef.current = false;
+        setBookingLoading(false);
+        return;
+      }
+      
+      // Handle specific error types
+      if (err.response?.status === 409) {
+        // Capacity exceeded
+        showToast('This time slot is no longer available. Please select a different time.', 'error');
+        isSubmittingRef.current = false;
+        setBookingLoading(false);
+        return;
+      } else if (err.response?.status >= 500) {
+        showToast('Server error. Please try again in a moment.', 'error');
+        isSubmittingRef.current = false;
         setBookingLoading(false);
         return;
       }
@@ -249,6 +353,7 @@ export default function DrivewayDetailsPage() {
       
       showToast(errorMessage, 'error');
     } finally {
+      isSubmittingRef.current = false;
       setBookingLoading(false);
     }
   };
@@ -438,6 +543,21 @@ export default function DrivewayDetailsPage() {
                 </div>
               ) : (
                 <form onSubmit={handleBookingSubmit} className="space-y-4">
+                  {/* Login reminder for unauthenticated users */}
+                  {!isAuthenticated && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                      <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-800">Log in to complete your booking</p>
+                          <p className="text-sm text-blue-700 mt-1">You can fill out the form now and log in when you're ready to confirm.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Start Time
@@ -564,7 +684,7 @@ export default function DrivewayDetailsPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={bookingLoading || authLoading || !isAuthenticated}
+                      disabled={bookingLoading || authLoading}
                       className="btn btn-primary flex-1 min-h-[48px] text-base"
                     >
                       {bookingLoading ? 'Booking...' : 'Confirm Booking'}

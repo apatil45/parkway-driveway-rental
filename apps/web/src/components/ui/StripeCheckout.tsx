@@ -213,7 +213,20 @@ export default function StripeCheckout({
   }, [amount, bookingId]);
 
   if (!publishableKey) {
-    return <div className="text-sm text-gray-600">Stripe not configured. Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to enable checkout.</div>;
+    const isDev = process.env.NODE_ENV === 'development';
+    return (
+      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <h4 className="font-semibold text-yellow-800 mb-2">Payment Processing Not Available</h4>
+        <p className="text-sm text-yellow-700 mb-2">
+          Stripe payment gateway is not configured. Please contact support to complete your booking.
+        </p>
+        {isDev && (
+          <p className="text-xs text-yellow-600 mt-2">
+            Development: Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your .env.local file.
+          </p>
+        )}
+      </div>
+    );
   }
 
   if (!clientSecret || !stripePromise) {
