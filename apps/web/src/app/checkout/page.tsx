@@ -59,6 +59,19 @@ function CheckoutContent() {
       const response = await api.get(`/bookings/${bookingId}`);
       setBooking(response.data.data);
     } catch (err: any) {
+      // Handle network errors (no response)
+      if (!err.response) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          setError('Request timed out. Please check your connection and try again.');
+        } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+          setError('Network error. Please check your internet connection and try again.');
+        } else {
+          setError('Unable to connect to the server. Please try again.');
+        }
+        return;
+      }
+
+      // Handle HTTP status codes
       if (err.response?.status === 401) {
         // Not authenticated - redirect to login
         const currentPath = window.location.pathname + window.location.search;
@@ -68,8 +81,10 @@ function CheckoutContent() {
         setError('Booking not found');
       } else if (err.response?.status === 403) {
         setError('You are not authorized to view this booking');
+      } else if (err.response?.status >= 500) {
+        setError('Server error. Please try again in a moment.');
       } else {
-        setError(err.response?.data?.message || 'Failed to load booking');
+        setError(err.response?.data?.message || err.message || 'Failed to load booking');
       }
     } finally {
       setLoading(false);

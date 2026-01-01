@@ -81,24 +81,47 @@ export default function BookingsPage() {
   useEffect(() => {
     if (bookings.length > 0 && user) {
       const completedBookings = bookings.filter(b => b.status === 'COMPLETED');
-      completedBookings.forEach(async (booking) => {
-        try {
-          const response = await api.get(`/reviews?drivewayId=${booking.driveway.id}&userId=${user.id}`);
-          const reviews = response.data.data?.reviews || [];
-          if (reviews.length > 0) {
-            const review = reviews[0];
+      
+      // Use Promise.allSettled to handle all requests safely
+      const fetchReviews = async () => {
+        const reviewPromises = completedBookings.map(async (booking) => {
+          try {
+            const response = await api.get(`/reviews?drivewayId=${booking.driveway.id}&userId=${user.id}`);
+            const reviews = response.data.data?.reviews || [];
+            if (reviews.length > 0) {
+              const review = reviews[0];
+              return {
+                drivewayId: booking.driveway.id,
+                review: {
+                  id: review.id,
+                  rating: review.rating,
+                  comment: review.comment
+                }
+              };
+            }
+          } catch (err) {
+            // No review exists yet, that's fine - don't log or throw
+            return null;
+          }
+          return null;
+        });
+
+        const results = await Promise.allSettled(reviewPromises);
+        
+        // Update state with successful results
+        results.forEach((result) => {
+          if (result.status === 'fulfilled' && result.value) {
             setExistingReviews(prev => ({
               ...prev,
-              [booking.driveway.id]: {
-                id: review.id,
-                rating: review.rating,
-                comment: review.comment
-              }
+              [result.value.drivewayId]: result.value.review
             }));
           }
-        } catch (err) {
-          // No review exists yet, that's fine
-        }
+        });
+      };
+
+      fetchReviews().catch((err) => {
+        // Silently handle - reviews are optional
+        console.error('Error fetching reviews:', err);
       });
     }
   }, [bookings, user]);

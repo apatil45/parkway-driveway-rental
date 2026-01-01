@@ -65,7 +65,19 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!authLoading && isAuthenticated && user && !fetchedRef.current) {
       fetchedRef.current = true;
-      fetchStats();
+      
+      // Wrap fetchStats in try-catch to prevent unhandled promise rejections
+      const loadStats = async () => {
+        try {
+          await fetchStats();
+        } catch (error: any) {
+          // Error is already handled by useDashboardStats hook
+          // This catch prevents unhandled promise rejection
+          console.error('Failed to fetch dashboard stats:', error);
+        }
+      };
+      
+      loadStats();
       
       // Fetch recent notifications for activity feed
       const fetchNotifications = async () => {
