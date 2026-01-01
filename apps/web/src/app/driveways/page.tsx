@@ -86,7 +86,7 @@ export default function OwnerDrivewaysPage() {
             </Card>
           ))}
         </div>
-      )}
+      ) : null}
       </div>
     </AppLayout>
   );
