@@ -439,12 +439,16 @@ const LeafletMap = dynamic(async () => {
                   }
                   
                   // Check if map's container is already associated with another map
-                  if (map._container && (map._container as any)._leaflet_id) {
-                    const existingMapId = (map._container as any)._leaflet_id;
+                  const mapAny = map as any;
+                  if (mapAny._container && mapAny._container._leaflet_id) {
+                    const existingMapId = mapAny._container._leaflet_id;
                     // If this container is already used by a different map instance, cleanup
-                    if (mapInstanceRef.current && mapInstanceRef.current._leaflet_id !== existingMapId) {
-                      cleanupMap(true);
-                      return;
+                    if (mapInstanceRef.current) {
+                      const currentMapAny = mapInstanceRef.current as any;
+                      if (currentMapAny._leaflet_id !== existingMapId) {
+                        cleanupMap(true);
+                        return;
+                      }
                     }
                   }
                 }
