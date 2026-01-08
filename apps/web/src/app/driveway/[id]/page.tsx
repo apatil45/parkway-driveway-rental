@@ -76,6 +76,7 @@ export default function DrivewayDetailsPage() {
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [calculatedHours, setCalculatedHours] = useState<number | null>(null);
   const isSubmittingRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   const router = useRouter();
   const { showToast } = useToast();
@@ -84,21 +85,46 @@ export default function DrivewayDetailsPage() {
   const drivewayId = params?.id as string;
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Clean up sessionStorage if component unmounts without booking
+      try {
+        const savedData = sessionStorage.getItem('bookingFormData');
+        if (savedData) {
+          const formData = JSON.parse(savedData);
+          // Only clear if it's for this driveway and user navigated away
+          if (formData.drivewayId === drivewayId) {
+            sessionStorage.removeItem('bookingFormData');
+          }
+        }
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+    };
+  }, [drivewayId]);
+
+  useEffect(() => {
     if (!drivewayId) return;
     
     const fetchDriveway = async () => {
       try {
         setLoading(true);
         const response = await api.get(`/driveways/${drivewayId}`);
-        setDriveway(response.data.data);
+        if (isMountedRef.current) {
+          setDriveway(response.data.data);
+        }
       } catch (err: any) {
+        if (!isMountedRef.current) return;
         if (err.response?.status === 404) {
           setError('Driveway not found');
         } else {
           setError('Failed to load driveway details');
         }
       } finally {
-        setLoading(false);
+        if (isMountedRef.current) {
+          setLoading(false);
+        }
       }
     };
 
@@ -270,6 +296,16 @@ export default function DrivewayDetailsPage() {
         router.push('/bookings');
         return;
       }
+      
+      // Clear sessionStorage on successful booking
+      try {
+        sessionStorage.removeItem('bookingFormData');
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+      
+      // Reset ref before redirect
+      isSubmittingRef.current = false;
       
       // Redirect to checkout page with booking ID
       showToast('Booking created successfully! Redirecting to checkout...', 'success');

@@ -51,18 +51,29 @@ export default function BookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const [existingReviews, setExistingReviews] = useState<Record<string, { id: string; rating: number; comment?: string }>>({});
+  const isMountedRef = useRef(true);
 
   const router = useRouter();
   const { user } = useAuth();
   const { showToast } = useToast();
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     fetchBookings();
-  }, [router, statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]); // Only depend on statusFilter, not router
 
   // Auto-refresh bookings if there are any PENDING bookings with COMPLETED payment
   // This handles the case where payment is completed but webhook hasn't processed yet
   useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const hasPendingWithCompletedPayment = bookings.some(
       b => b.status === 'PENDING' && b.paymentStatus === 'COMPLETED'
     );
@@ -70,12 +81,15 @@ export default function BookingsPage() {
     if (hasPendingWithCompletedPayment) {
       // Poll every 3 seconds until booking is confirmed
       const interval = setInterval(() => {
-        fetchBookings(pagination.page);
+        if (isMountedRef.current) {
+          fetchBookings(pagination.page);
+        }
       }, 3000);
       
       return () => clearInterval(interval);
     }
-  }, [bookings, pagination.page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookings]); // Removed pagination.page to avoid unnecessary restarts
 
   // Fetch existing reviews for completed bookings
   useEffect(() => {
@@ -128,6 +142,8 @@ export default function BookingsPage() {
   }, [bookings, user]);
 
   const fetchBookings = async (page = 1) => {
+    if (!isMountedRef.current) return; // Don't update if unmounted
+    
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -140,11 +156,16 @@ export default function BookingsPage() {
       }
 
       const response = await api.get(`/bookings?${params}`);
+      
+      if (!isMountedRef.current) return; // Check again after async operation
+      
       const { bookings: data, pagination: paginationData } = response.data.data;
       
       setBookings(data);
       setPagination(paginationData);
     } catch (err: any) {
+      if (!isMountedRef.current) return; // Don't update if unmounted
+      
       if (err.response?.status === 401) {
         // Auth is handled by cookies and useAuth hook
         // The API interceptor will handle token refresh or redirect
@@ -153,7 +174,9 @@ export default function BookingsPage() {
         setError('Failed to load bookings');
       }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 

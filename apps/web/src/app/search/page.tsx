@@ -69,6 +69,7 @@ function SearchPageContent() {
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [canRenderMap, setCanRenderMap] = useState(true);
+  const isMountedRef = useRef(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -102,21 +103,20 @@ function SearchPageContent() {
   }, []); // Only run once on mount
 
 
+  // Initial search on mount
   useEffect(() => {
     performSearch();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
-  // Cleanup Leaflet instances when viewMode changes
+  // Cleanup on unmount
   useEffect(() => {
-    // Prevent rendering MapView during cleanup
-    setCanRenderMap(false);
-    
-    // Cleanup function
-    const cleanup = () => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Cleanup map on unmount
       if (mapContainerRef.current) {
         const container = mapContainerRef.current;
-        
-        // Remove any Leaflet containers
         const leafletContainers = container.querySelectorAll('.leaflet-container');
         leafletContainers.forEach((el) => {
           const leafletEl = el as HTMLElement;
@@ -138,28 +138,15 @@ function SearchPageContent() {
             // Ignore if already removed
           }
         });
-        
-        // Clear container tracking
         delete (container as any)._leaflet_id;
         delete (container as any)._leaflet;
       }
     };
-    
-    // Run cleanup immediately
-    cleanup();
-    
-    // Small delay to ensure cleanup completes before allowing render
-    const timer = setTimeout(() => {
-      setCanRenderMap(true);
-    }, 100);
-    
-    return () => {
-      clearTimeout(timer);
-      cleanup();
-    };
-  }, [viewMode]);
+  }, []);
 
   const performSearch = async (page = 1) => {
+    if (!isMountedRef.current) return; // Don't update if unmounted
+    
     const params = {
       page: page.toString(),
       limit: '10',
@@ -175,7 +162,7 @@ function SearchPageContent() {
     };
 
     const result = await fetchDriveways(params);
-    if (result.success && result.data) {
+    if (result.success && result.data && isMountedRef.current) {
       setPagination(result.data.pagination);
     }
   };
