@@ -70,10 +70,32 @@ function SearchPageContent() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [canRenderMap, setCanRenderMap] = useState(true);
   const isMountedRef = useRef(true);
-
+  
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  
+  // OUT-OF-THE-BOX SOLUTION: Generate a completely fresh container ID on every render cycle
+  // This ensures Leaflet NEVER sees a reused container - each map gets its own unique DOM element
+  // We use a counter that increments to force React to create a new div element
+  const [containerKey, setContainerKey] = useState(0);
+  
+  // Regenerate container when navigating away (pathname changes)
+  useEffect(() => {
+    // When pathname changes, we're either navigating away or coming back
+    // Force a new container to be created
+    setContainerKey(prev => prev + 1);
+    setCanRenderMap(false);
+    
+    // Small delay to ensure cleanup completes, then allow map to render again
+    const timer = setTimeout(() => {
+      if (pathname === '/search') {
+        setCanRenderMap(true);
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [pathname]);
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
 
@@ -514,9 +536,13 @@ function SearchPageContent() {
       {/* Main Content Area - Split Layout */}
       <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
         {/* Map Section */}
+        {/* OUT-OF-THE-BOX SOLUTION: 
+            - Use a key that changes to force React to DESTROY and RECREATE the entire div
+            - This ensures Leaflet NEVER sees a reused DOM element
+            - Each navigation gets a completely fresh container with no Leaflet tracking */}
         <div 
           ref={mapContainerRef}
-          key={`map-container-${viewMode}`}
+          key={`map-wrapper-${containerKey}`}
           className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200 relative bg-gray-100"
         >
             {!emptyResults && canRenderMap && (
@@ -578,6 +604,11 @@ function SearchPageContent() {
                         }`}
                         onClick={async () => {
                           setSelectedDriveway(driveway.id);
+                          
+                          // OUT-OF-THE-BOX: Force React to destroy and recreate the container div
+                          // By changing the key, React will completely remove the old div from DOM
+                          // This ensures Leaflet NEVER sees a reused container
+                          setContainerKey(prev => prev + 1);
                           
                           // Step 1: Unmount MapView component first to trigger React cleanup lifecycle
                           setCanRenderMap(false);
