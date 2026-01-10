@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     if (!paymentIntentId || !bookingId) {
       return NextResponse.json(
-        createApiError('Payment intent ID and booking ID are required', 400, 'VALIDATION_ERROR'),
+        createApiError('Payment information is missing. Please try completing payment again.', 400, 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     if (!stripeSecret) {
       return NextResponse.json(
-        createApiError('Stripe not configured', 503, 'SERVICE_UNAVAILABLE'),
+        createApiError('Payment processing is temporarily unavailable. Please try again later.', 503, 'SERVICE_UNAVAILABLE'),
         { status: 503 }
       );
     }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     
     if (paymentIntent.status !== 'succeeded') {
       return NextResponse.json(
-        createApiError(`Payment status is ${paymentIntent.status}, not succeeded yet`, 400, 'PAYMENT_PENDING'),
+        createApiError('Your payment is still being processed. Please wait a moment and check your bookings page.', 400, 'PAYMENT_PENDING'),
         { status: 400 }
       );
     }
@@ -90,14 +90,14 @@ export async function POST(request: NextRequest) {
 
     if (!booking) {
       return NextResponse.json(
-        createApiError('Booking not found', 404, 'BOOKING_NOT_FOUND'),
+        createApiError('This booking is no longer available.', 404, 'BOOKING_NOT_FOUND'),
         { status: 404 }
       );
     }
 
     if (booking.userId !== userId) {
       return NextResponse.json(
-        createApiError('Not authorized', 403, 'FORBIDDEN'),
+        createApiError('You do not have permission to verify this payment.', 403, 'FORBIDDEN'),
         { status: 403 }
       );
     }
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     // Verify payment intent matches (allow if booking doesn't have paymentIntentId yet)
     if (booking.paymentIntentId && booking.paymentIntentId !== paymentIntentId) {
       return NextResponse.json(
-        createApiError('Payment intent mismatch', 400, 'VALIDATION_ERROR'),
+        createApiError('Payment information does not match this booking. Please contact support if you believe this is an error.', 400, 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }

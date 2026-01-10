@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     // Create new payment intent without booking (requires authentication)
     const amountNum = Number(amount ?? 1000);
     if (!Number.isFinite(amountNum) || amountNum <= 0) {
-      return NextResponse.json(createApiError('Invalid amount', 400, 'VALIDATION_ERROR'), { status: 400 });
+      return NextResponse.json(createApiError('Please enter a valid payment amount.', 400, 'VALIDATION_ERROR'), { status: 400 });
     }
 
     const secret = process.env.STRIPE_SECRET_KEY;
@@ -182,12 +182,12 @@ export async function POST(request: NextRequest) {
         });
         
         if (error.type === 'StripeCardError') {
-          return NextResponse.json(createApiError('Card error: ' + error.message, 400, 'CARD_ERROR'), { status: 400 });
+          return NextResponse.json(createApiError(error.message || 'Your card was declined. Please check your card details and try again.', 400, 'CARD_ERROR'), { status: 400 });
         }
         if (error.type === 'StripeInvalidRequestError') {
-          return NextResponse.json(createApiError('Invalid payment request: ' + error.message, 400, 'INVALID_REQUEST'), { status: 400 });
+          return NextResponse.json(createApiError('Please check your payment information and try again.', 400, 'INVALID_REQUEST'), { status: 400 });
         }
-        return NextResponse.json(createApiError('Payment processing failed', 500, 'PAYMENT_ERROR'), { status: 500 });
+        return NextResponse.json(createApiError('Unable to process payment. Please try again in a moment.', 500, 'PAYMENT_ERROR'), { status: 500 });
       }
     }
 
@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
     }
     
     console.error('[PAYMENT] Payment intent error:', e);
-    return NextResponse.json(createApiError('Failed to create payment intent', 500, 'INTERNAL_ERROR'), { status: 500 });
+    return NextResponse.json(createApiError('Unable to set up payment. Please try again in a moment.', 500, 'INTERNAL_ERROR'), { status: 500 });
   }
 }
 

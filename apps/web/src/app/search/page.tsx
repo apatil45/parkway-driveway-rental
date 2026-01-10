@@ -376,7 +376,7 @@ function SearchPageContent() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <ErrorMessage
           title="Search Error"
-          message={error}
+          message={error.includes('Failed') || error.includes('Error') ? 'Unable to search for parking spaces. Please try again.' : error}
           onRetry={() => performSearch()}
         />
       </div>

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     if (!queryValidation.success) {
       return NextResponse.json(
         createApiError(
-          'Invalid query parameters: ' + queryValidation.error.errors.map(e => e.message).join(', '),
+          'Please check your search filters and try again.',
           400,
           'VALIDATION_ERROR'
         ),
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get bookings error:', error);
     return NextResponse.json(
-      createApiError('Failed to retrieve bookings', 500, 'INTERNAL_ERROR'),
+      createApiError('Unable to load your bookings. Please try again in a moment.', 500, 'INTERNAL_ERROR'),
       { status: 500 }
     );
   }
@@ -112,12 +112,26 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = createBookingSchema.safeParse(body);
     if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      let userMessage = 'Please check your booking details and try again.';
+      
+      // Provide specific user-friendly messages for common validation errors
+      if (firstError.path.includes('startTime') || firstError.path.includes('endTime')) {
+        userMessage = 'Please select valid start and end times for your booking.';
+      } else if (firstError.path.includes('drivewayId')) {
+        userMessage = 'Please select a valid parking space.';
+      } else if (firstError.message) {
+        // Use a sanitized version of the error message if it's user-friendly
+        const message = firstError.message.toLowerCase();
+        if (message.includes('required')) {
+          userMessage = 'Please fill in all required fields.';
+        } else if (message.includes('invalid')) {
+          userMessage = 'Some of your booking details are invalid. Please check and try again.';
+        }
+      }
+      
       return NextResponse.json(
-        createApiError(
-          'Validation failed: ' + validationResult.error.errors.map(e => e.message).join(', '),
-          400,
-          'VALIDATION_ERROR'
-        ),
+        createApiError(userMessage, 400, 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }
@@ -131,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     if (!driveway) {
       return NextResponse.json(
-        createApiError('Driveway not found', 404, 'DRIVEWAY_NOT_FOUND'),
+        createApiError('This parking space is no longer available.', 404, 'DRIVEWAY_NOT_FOUND'),
         { status: 404 }
       );
     }
@@ -139,7 +153,7 @@ export async function POST(request: NextRequest) {
     // Check if driveway is available and active
     if (!driveway.isActive || !driveway.isAvailable) {
       return NextResponse.json(
-        createApiError('Driveway is not available for booking', 400, 'DRIVEWAY_UNAVAILABLE'),
+        createApiError('This parking space is currently not accepting bookings.', 400, 'DRIVEWAY_UNAVAILABLE'),
         { status: 400 }
       );
     }
@@ -147,7 +161,7 @@ export async function POST(request: NextRequest) {
     // Check if user is trying to book their own driveway
     if (driveway.ownerId === userId) {
       return NextResponse.json(
-        createApiError('You cannot book your own driveway', 400, 'INVALID_BOOKING'),
+        createApiError('You cannot book your own parking space.', 400, 'INVALID_BOOKING'),
         { status: 400 }
       );
     }
@@ -157,7 +171,7 @@ export async function POST(request: NextRequest) {
     const end = new Date(endTime);
     if (!(start instanceof Date) || isNaN(start.getTime()) || !(end instanceof Date) || isNaN(end.getTime())) {
       return NextResponse.json(
-        createApiError('Invalid start or end time', 400, 'VALIDATION_ERROR'),
+        createApiError('Please select valid start and end times for your booking.', 400, 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }
@@ -166,14 +180,14 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     if (start.getTime() < now.getTime()) {
       return NextResponse.json(
-        createApiError('Start time must be in the future', 400, 'INVALID_TIME'),
+        createApiError('Booking start time must be in the future. Please select a later time.', 400, 'INVALID_TIME'),
         { status: 400 }
       );
     }
 
     if (end.getTime() <= start.getTime()) {
       return NextResponse.json(
-        createApiError('End time must be after start time', 400, 'INVALID_TIME_RANGE'),
+        createApiError('End time must be after the start time. Please adjust your booking times.', 400, 'INVALID_TIME_RANGE'),
         { status: 400 }
       );
     }
@@ -182,7 +196,7 @@ export async function POST(request: NextRequest) {
     const maxDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
     if (end.getTime() - start.getTime() > maxDurationMs) {
       return NextResponse.json(
-        createApiError('Booking duration cannot exceed 7 days', 400, 'INVALID_DURATION'),
+        createApiError('Bookings cannot exceed 7 days. Please select a shorter time period.', 400, 'INVALID_DURATION'),
         { status: 400 }
       );
     }
@@ -296,13 +310,13 @@ export async function POST(request: NextRequest) {
     // Handle capacity exceeded error from transaction
     if (error.message === 'CAPACITY_EXCEEDED') {
       return NextResponse.json(
-        createApiError('Driveway is fully booked for the selected time range', 409, 'CAPACITY_EXCEEDED'),
+        createApiError('This parking space is fully booked for the selected time. Please choose a different time or location.', 409, 'CAPACITY_EXCEEDED'),
         { status: 409 }
       );
     }
     
     return NextResponse.json(
-      createApiError('Failed to create booking', 500, 'INTERNAL_ERROR'),
+      createApiError('Unable to create your booking. Please try again in a moment.', 500, 'INTERNAL_ERROR'),
       { status: 500 }
     );
   }

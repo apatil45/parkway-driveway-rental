@@ -42,14 +42,14 @@ function CheckoutContent() {
     if (bookingId && isAuthenticated) {
       fetchBooking();
     } else if (!bookingId) {
-      setError('No booking ID provided');
+      setError('Booking information is missing. Please try creating a new booking.');
       setLoading(false);
     }
   }, [bookingId, isAuthenticated]);
 
   const fetchBooking = async () => {
     if (!bookingId) {
-      setError('No booking ID provided');
+      setError('Booking information is missing. Please try creating a new booking.');
       setLoading(false);
       return;
     }
@@ -78,13 +78,13 @@ function CheckoutContent() {
         router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
         return;
       } else if (err.response?.status === 404) {
-        setError('Booking not found');
+        setError('This booking is no longer available. Please create a new booking.');
       } else if (err.response?.status === 403) {
         setError('You are not authorized to view this booking');
       } else if (err.response?.status >= 500) {
-        setError('Server error. Please try again in a moment.');
+        setError('Unable to load booking details. Please try again in a moment.');
       } else {
-        setError(err.response?.data?.message || err.message || 'Failed to load booking');
+        setError(err.response?.data?.message || 'Unable to load booking details. Please try again.');
       }
     } finally {
       setLoading(false);

@@ -127,7 +127,7 @@ export default function Home() {
               <div className="max-w-5xl mx-auto">
                 <div className="text-center mb-10">
                   <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                    Welcome back, {user.name?.split(' ')[0]}! 👋
+                    Welcome back, {user.name?.split(' ')[0]}!
                   </h1>
                   <p className="text-xl md:text-2xl mb-8 text-primary-100">
                     {isOwner && isDriver

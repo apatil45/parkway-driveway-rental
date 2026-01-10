@@ -76,12 +76,10 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = loginSchema.safeParse(body);
     if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      const userMessage = firstError.message || 'Please check your login information and try again.';
       return NextResponse.json(
-        createApiError(
-          'Validation failed: ' + validationResult.error.errors.map(e => e.message).join(', '),
-          400,
-          'VALIDATION_ERROR'
-        ),
+        createApiError(userMessage, 400, 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }
@@ -113,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
     if (!isPasswordValid) {
       return NextResponse.json(
-        createApiError('Invalid credentials', 401, 'INVALID_CREDENTIALS'),
+        createApiError('Invalid email or password. Please check your credentials and try again.', 401, 'INVALID_CREDENTIALS'),
         { status: 401 }
       );
     }
@@ -161,7 +159,7 @@ export async function POST(request: NextRequest) {
     const isDev = process.env.NODE_ENV === 'development';
     const message = isDev
       ? `Internal server error: ${errorMessage}`
-      : 'Internal server error. Please check server logs.';
+      : 'Unable to process your login request. Please try again in a moment.';
     
     // Create error response
     const errorResponse = createApiError(message, 500, 'INTERNAL_ERROR');

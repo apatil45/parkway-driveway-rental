@@ -79,9 +79,23 @@ function CheckoutInner({
           code: result.error.code
         });
         
-        const errorMsg = result.error.message 
-          || result.error.code
-          || 'A processing error occurred. Please try again.';
+        // Provide user-friendly error messages
+        let errorMsg = 'Payment could not be processed. Please try again.';
+        if (result.error.message) {
+          // Use Stripe's error message if it's user-friendly
+          const stripeMsg = result.error.message.toLowerCase();
+          if (stripeMsg.includes('card') || stripeMsg.includes('declined')) {
+            errorMsg = 'Your card was declined. Please check your card details and try again.';
+          } else if (stripeMsg.includes('insufficient')) {
+            errorMsg = 'Insufficient funds. Please use a different payment method.';
+          } else if (stripeMsg.includes('expired')) {
+            errorMsg = 'Your card has expired. Please use a different payment method.';
+          } else if (stripeMsg.includes('invalid')) {
+            errorMsg = 'Please check your card information and try again.';
+          } else {
+            errorMsg = result.error.message;
+          }
+        }
         
         setError(errorMsg);
         showToast(errorMsg, 'error');
@@ -93,8 +107,8 @@ function CheckoutInner({
       // Use type assertion to help TypeScript understand the discriminated union
       const successResult = result as { paymentIntent: { id: string } | string };
       if (!successResult.paymentIntent) {
-        setError('Payment completed but no payment intent returned');
-        showToast('Payment completed but verification failed. Please check your bookings.', 'warning');
+        setError('Payment completed but verification is pending');
+        showToast('Your payment was received. Please check your bookings page to confirm your booking status.', 'warning');
         setLoading(false);
         if (onSuccess) {
           onSuccess();
@@ -154,9 +168,19 @@ function CheckoutInner({
         toString: err?.toString()
       });
       
-      const errorMsg = err?.message 
-        || err?.toString() 
-        || (typeof err === 'string' ? err : 'Payment failed. Please try again.');
+      // Provide user-friendly error message
+      let errorMsg = 'Payment could not be processed. Please try again.';
+      if (err?.message) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('network') || msg.includes('connection')) {
+          errorMsg = 'Connection error. Please check your internet connection and try again.';
+        } else if (msg.includes('timeout')) {
+          errorMsg = 'Request timed out. Please try again.';
+        } else if (!msg.includes('error') && !msg.includes('failed')) {
+          // Use the message if it seems user-friendly
+          errorMsg = err.message;
+        }
+      }
       
       setError(errorMsg);
       showToast(errorMsg, 'error');

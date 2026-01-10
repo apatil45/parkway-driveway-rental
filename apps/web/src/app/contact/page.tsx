@@ -61,7 +61,7 @@ export default function ContactPage() {
       setSubmitStatus('error');
       setSubmitMessage(
         error.response?.data?.message || 
-        'Failed to send message. Please try again or email us directly at support@parkway.com'
+        'Unable to send your message. Please try again or email us directly at support@parkway.com'
       );
     } finally {
       setIsSubmitting(false);

@@ -117,9 +117,9 @@ export default function DrivewayDetailsPage() {
       } catch (err: any) {
         if (!isMountedRef.current) return;
         if (err.response?.status === 404) {
-          setError('Driveway not found');
+          setError('This parking space is no longer available.');
         } else {
-          setError('Failed to load driveway details');
+          setError('Unable to load parking space details. Please try again.');
         }
       } finally {
         if (isMountedRef.current) {
@@ -234,7 +234,7 @@ export default function DrivewayDetailsPage() {
       }
 
       if (!drivewayId) {
-        showToast('Invalid driveway ID', 'error');
+        showToast('Invalid parking space. Please try selecting a different one.', 'error');
         setBookingLoading(false);
         return;
       }
@@ -246,7 +246,7 @@ export default function DrivewayDetailsPage() {
       
       // Validate dates
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        showToast('Invalid date format', 'error');
+        showToast('Please select valid dates for your booking.', 'error');
         setBookingLoading(false);
         return;
       }
@@ -365,23 +365,19 @@ export default function DrivewayDetailsPage() {
         return;
       }
       
-      // Extract detailed error message
-      let errorMessage = 'Failed to create booking';
+      // Extract detailed error message - use user-friendly message from API
+      let errorMessage = 'Unable to create your booking. Please try again.';
       
       if (err.response?.data) {
         const errorData = err.response.data;
         if (errorData.message) {
+          // Use the API's user-friendly message
           errorMessage = errorData.message;
         } else if (errorData.error) {
-          errorMessage = typeof errorData.error === 'string' 
-            ? errorData.error 
-            : JSON.stringify(errorData.error);
-        } else if (errorData.errors) {
-          // Handle validation errors array
-          const validationErrors = Array.isArray(errorData.errors)
-            ? errorData.errors.map((e: any) => e.message || e).join(', ')
-            : JSON.stringify(errorData.errors);
-          errorMessage = `Validation failed: ${validationErrors}`;
+          // Only use error if it's a user-friendly string
+          if (typeof errorData.error === 'string' && !errorData.error.includes('Error') && !errorData.error.includes('error')) {
+            errorMessage = errorData.error;
+          }
         }
       } else if (err.message) {
         errorMessage = err.message;

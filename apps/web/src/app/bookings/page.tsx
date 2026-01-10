@@ -171,7 +171,7 @@ export default function BookingsPage() {
         // The API interceptor will handle token refresh or redirect
         router.push('/login');
       } else {
-        setError('Failed to load bookings');
+        setError('Unable to load your bookings. Please try again.');
       }
     } finally {
       if (isMountedRef.current) {
@@ -198,7 +198,7 @@ export default function BookingsPage() {
       await fetchBookings(pagination.page);
       showToast(`Booking ${newStatus.toLowerCase()} successfully`, 'success');
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to update booking';
+      const msg = err.response?.data?.message || 'Unable to update booking. Please try again.';
       setError(msg);
       showToast(msg, 'error');
     } finally {

@@ -218,7 +218,7 @@ export function logError(error: any, context?: string) {
 
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.group('🚨 Error Logged');
+    console.group('Error Logged');
     console.error('Context:', errorLog.context);
     console.error('Type:', errorLog.type);
     console.error('User Message:', errorLog.userMessage);
