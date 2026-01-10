@@ -36,6 +36,7 @@ function CheckoutInner({
         redirect: 'if_required'
       });
       
+      // Type guard: check if result has error
       if (result.error) {
         // Check if payment actually succeeded despite the error
         // This can happen if payment intent is already confirmed (race condition)
@@ -78,9 +79,23 @@ function CheckoutInner({
           code: result.error.code
         });
         
-        const errorMsg = result.error.message 
-          || result.error.code
-          || 'A processing error occurred. Please try again.';
+        // Provide user-friendly error messages
+        let errorMsg = 'Payment could not be processed. Please try again.';
+        if (result.error.message) {
+          // Use Stripe's error message if it's user-friendly
+          const stripeMsg = result.error.message.toLowerCase();
+          if (stripeMsg.includes('card') || stripeMsg.includes('declined')) {
+            errorMsg = 'Your card was declined. Please check your card details and try again.';
+          } else if (stripeMsg.includes('insufficient')) {
+            errorMsg = 'Insufficient funds. Please use a different payment method.';
+          } else if (stripeMsg.includes('expired')) {
+            errorMsg = 'Your card has expired. Please use a different payment method.';
+          } else if (stripeMsg.includes('invalid')) {
+            errorMsg = 'Please check your card information and try again.';
+          } else {
+            errorMsg = result.error.message;
+          }
+        }
         
         setError(errorMsg);
         showToast(errorMsg, 'error');
@@ -88,10 +103,12 @@ function CheckoutInner({
         return;
       }
       
-      // Payment succeeded
-      if (!result.paymentIntent) {
-        setError('Payment completed but no payment intent returned');
-        showToast('Payment completed but verification failed. Please check your bookings.', 'warning');
+      // Payment succeeded - result.paymentIntent should exist when there's no error
+      // Use type assertion to help TypeScript understand the discriminated union
+      const successResult = result as { paymentIntent: { id: string } | string };
+      if (!successResult.paymentIntent) {
+        setError('Payment completed but verification is pending');
+        showToast('Your payment was received. Please check your bookings page to confirm your booking status.', 'warning');
         setLoading(false);
         if (onSuccess) {
           onSuccess();
@@ -100,9 +117,9 @@ function CheckoutInner({
       }
       
       // Get payment intent ID
-      const paymentIntentId = typeof result.paymentIntent === 'string' 
-        ? result.paymentIntent 
-        : result.paymentIntent.id;
+      const paymentIntentId = typeof successResult.paymentIntent === 'string' 
+        ? successResult.paymentIntent 
+        : successResult.paymentIntent.id;
       
       if (!paymentIntentId) {
         setError('Payment completed but no payment intent ID found');
@@ -151,9 +168,19 @@ function CheckoutInner({
         toString: err?.toString()
       });
       
-      const errorMsg = err?.message 
-        || err?.toString() 
-        || (typeof err === 'string' ? err : 'Payment failed. Please try again.');
+      // Provide user-friendly error message
+      let errorMsg = 'Payment could not be processed. Please try again.';
+      if (err?.message) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('network') || msg.includes('connection')) {
+          errorMsg = 'Connection error. Please check your internet connection and try again.';
+        } else if (msg.includes('timeout')) {
+          errorMsg = 'Request timed out. Please try again.';
+        } else if (!msg.includes('error') && !msg.includes('failed')) {
+          // Use the message if it seems user-friendly
+          errorMsg = err.message;
+        }
+      }
       
       setError(errorMsg);
       showToast(errorMsg, 'error');
@@ -195,14 +222,35 @@ export default function StripeCheckout({
         // Otherwise create a new payment intent
         const res = await api.post('/payments/intent', bookingId ? { bookingId } : { amount });
         setClientSecret(res.data?.data?.clientSecret || '');
-      } catch (err) {
+      } catch (err: any) {
+        // Handle authentication errors gracefully
+        if (err.response?.status === 401) {
+          // User is not authenticated - redirect to login
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+          }
+          return;
+        }
         console.error('Failed to create payment intent:', err);
       }
     })();
   }, [amount, bookingId]);
 
   if (!publishableKey) {
-    return <div className="text-sm text-gray-600">Stripe not configured. Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to enable checkout.</div>;
+    const isDev = process.env.NODE_ENV === 'development';
+    return (
+      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <h4 className="font-semibold text-yellow-800 mb-2">Payment Processing Not Available</h4>
+        <p className="text-sm text-yellow-700 mb-2">
+          Stripe payment gateway is not configured. Please contact support to complete your booking.
+        </p>
+        {isDev && (
+          <p className="text-xs text-yellow-600 mt-2">
+            Development: Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your .env.local file.
+          </p>
+        )}
+      </div>
+    );
   }
 
   if (!clientSecret || !stripePromise) {

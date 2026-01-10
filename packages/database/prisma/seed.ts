@@ -9,7 +9,7 @@ async function main() {
   const isVercelProd = process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production';
   
   if (isProduction || isVercelProd) {
-    console.error('❌ Database seeding is not allowed in production environment!');
+    console.error('Database seeding is not allowed in production environment!');
     console.error('   This script should only be run in development.');
     process.exit(1);
   }
@@ -17,13 +17,13 @@ async function main() {
   // Allow override with environment variable for testing
   const allowSeed = process.env.ALLOW_SEED === 'true';
   if (!allowSeed && process.env.NODE_ENV !== 'development') {
-    console.warn('⚠️  Seeding is only allowed in development or when ALLOW_SEED=true');
+    console.warn('Seeding is only allowed in development or when ALLOW_SEED=true');
     console.warn('   Set ALLOW_SEED=true if you really want to seed in this environment.');
     process.exit(1);
   }
 
-  console.log('🌱 Starting database seeding...');
-  console.log('⚠️  WARNING: This will create test users with weak passwords!');
+  console.log('Starting database seeding...');
+  console.log('WARNING: This will create test users with weak passwords!');
   console.log('   Test credentials:');
   console.log('   - owner@parkway.com / password123');
   console.log('   - driver@parkway.com / password123');
@@ -120,16 +120,16 @@ async function main() {
     },
   });
 
-  console.log('✅ Database seeded successfully!');
-  console.log(`👤 Created owner: ${owner.email}`);
-  console.log(`👤 Created driver: ${driver.email}`);
-  console.log(`🏠 Created driveway: ${driveway.title}`);
-  console.log(`📅 Created booking: ${booking.id}`);
+  console.log('Database seeded successfully!');
+  console.log(`Created owner: ${owner.email}`);
+  console.log(`Created driver: ${driver.email}`);
+  console.log(`Created driveway: ${driveway.title}`);
+  console.log(`Created booking: ${booking.id}`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    console.error('Seeding failed:', e);
     process.exit(1);
   })
   .finally(async () => {

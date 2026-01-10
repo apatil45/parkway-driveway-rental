@@ -2,33 +2,33 @@ import { z } from 'zod';
 
 // Auth validation schemas
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters')
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters long')
 });
 
 export const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email format'),
+  name: z.string().min(2, 'Please enter your full name (at least 2 characters)'),
+  email: z.string().email('Please enter a valid email address'),
   password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/\d/, 'Password must contain at least one number'),
-  roles: z.array(z.enum(['DRIVER', 'OWNER', 'ADMIN'])).min(1, 'At least one role is required'),
+    .min(8, 'Password must be at least 8 characters long')
+    .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must include at least one lowercase letter')
+    .regex(/\d/, 'Password must include at least one number'),
+  roles: z.array(z.enum(['DRIVER', 'OWNER', 'ADMIN'])).min(1, 'Please select at least one role'),
   phone: z.string().optional(),
   address: z.string().optional()
 });
 
 // Driveway validation schemas
 export const createDrivewaySchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters'),
+  title: z.string().min(3, 'Please enter a title (at least 3 characters)'),
   description: z.string().optional(),
-  address: z.string().min(5, 'Address must be at least 5 characters'),
-  latitude: z.number().min(-90).max(90, 'Invalid latitude'),
-  longitude: z.number().min(-180).max(180, 'Invalid longitude'),
-  pricePerHour: z.number().min(0.01, 'Price must be greater than 0'),
-  capacity: z.number().int().min(1, 'Capacity must be at least 1').default(1),
-  carSize: z.array(z.enum(['small', 'medium', 'large', 'extra-large'])).min(1, 'At least one car size is required'),
+  address: z.string().min(5, 'Please enter a complete address (at least 5 characters)'),
+  latitude: z.number().min(-90).max(90, 'Invalid location. Please select a valid address.'),
+  longitude: z.number().min(-180).max(180, 'Invalid location. Please select a valid address.'),
+  pricePerHour: z.number().min(0.01, 'Price must be greater than $0.01 per hour'),
+  capacity: z.number().int().min(1, 'Capacity must be at least 1 vehicle').default(1),
+  carSize: z.array(z.enum(['small', 'medium', 'large', 'extra-large'])).min(1, 'Please select at least one vehicle size'),
   amenities: z.array(z.enum(['covered', 'security', 'ev_charging', 'easy_access'])).default([]),
   images: z.array(z.string().url()).default([])
 });
@@ -59,9 +59,9 @@ export const updateBookingSchema = z.object({
 
 // Review validation schemas
 export const createReviewSchema = z.object({
-  drivewayId: z.string().cuid('Invalid driveway ID'),
-  rating: z.number().int().min(1, 'Rating must be at least 1').max(5, 'Rating must be at most 5'),
-  comment: z.string().max(500, 'Comment must be less than 500 characters').optional().or(z.literal(''))
+  drivewayId: z.string().cuid('Please select a valid parking space'),
+  rating: z.number().int().min(1, 'Please select a rating').max(5, 'Rating cannot exceed 5 stars'),
+  comment: z.string().max(500, 'Comment cannot exceed 500 characters').optional().or(z.literal(''))
 });
 
 // Query parameter validation schemas

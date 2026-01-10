@@ -22,14 +22,14 @@ export async function GET(request: NextRequest) {
     const token = request.cookies.get('access_token')?.value;
     
     if (!token) {
-      // Don't log as error - this is expected for unauthenticated users
-      // Only log in development for debugging
+      // Return success with null user for unauthenticated users
+      // This allows the endpoint to be called without auth and gracefully handle no token
       if (process.env.NODE_ENV === 'development') {
         console.log('[AUTH] Me: No access token cookie found (expected for unauthenticated users)');
       }
       return NextResponse.json(
-        createApiError('Access denied. No token provided.', 401, 'NO_TOKEN'),
-        { status: 401 }
+        createApiResponse(null, 'No authenticated user'),
+        { status: 200 }
       );
     }
 

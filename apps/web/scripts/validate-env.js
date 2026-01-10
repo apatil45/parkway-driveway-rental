@@ -27,7 +27,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const requiredVars = {
-  // Backend (Server-side only)
+  // Backend (Server-side only) - REQUIRED
   DATABASE_URL: 'PostgreSQL database connection string',
   JWT_SECRET: 'JWT signing secret key',
   
@@ -39,6 +39,11 @@ const requiredVars = {
   CLOUDINARY_API_KEY: 'Cloudinary API key (optional)',
   CLOUDINARY_API_SECRET: 'Cloudinary API secret (optional)',
   OPENCAGE_API_KEY: 'OpenCage geocoding API key (optional, for address geocoding)',
+  RESEND_API_KEY: 'Resend API key for email notifications (optional)',
+  RESEND_FROM_EMAIL: 'Resend sender email address (optional, defaults to noreply@parkway.app)',
+  UPSTASH_REDIS_REST_URL: 'Upstash Redis REST URL (optional, for rate limiting)',
+  UPSTASH_REDIS_REST_TOKEN: 'Upstash Redis REST token (optional, for rate limiting)',
+  CRON_SECRET: 'Cron job authentication secret (optional)',
   
   // Frontend (Public)
   NEXT_PUBLIC_API_URL: 'API base URL (optional, defaults to /api)',
@@ -55,7 +60,7 @@ const requiredVars = {
 const criticalVars = ['DATABASE_URL', 'JWT_SECRET'];
 
 function validateEnv() {
-  console.log('🔍 Validating environment variables...\n');
+  console.log('Validating environment variables...\n');
   
   const missing = [];
   const present = [];
@@ -80,7 +85,7 @@ function validateEnv() {
   
   // Display results
   if (present.length > 0) {
-    console.log('✅ Present Variables:');
+    console.log('Present Variables:');
     present.forEach(({ key, description, critical }) => {
       const value = process.env[key];
       const displayValue = critical 
@@ -94,7 +99,7 @@ function validateEnv() {
   }
   
   if (missing.length > 0) {
-    console.log('❌ Missing Critical Variables:');
+    console.log('Missing Critical Variables:');
     missing.forEach(({ key, description }) => {
       console.log(`   ✗ ${key}: ${description}`);
     });
@@ -103,25 +108,25 @@ function validateEnv() {
   }
   
   if (warnings.length > 0) {
-    console.log('⚠️  Optional Variables (Not Set):');
+    console.log('Optional Variables (Not Set):');
     warnings.forEach(({ key, description }) => {
       console.log(`   ○ ${key}: ${description}`);
     });
     console.log('');
   }
   
-  console.log('✅ Environment validation complete!');
+  console.log('Environment validation complete!');
   console.log(`   ${present.length} variables set, ${warnings.length} optional variables not set\n`);
   
   // Additional checks
   const dbUrl = process.env.DATABASE_URL;
   if (dbUrl && !dbUrl.startsWith('postgresql://')) {
-    console.log('⚠️  Warning: DATABASE_URL should start with "postgresql://"');
+    console.log('Warning: DATABASE_URL should start with "postgresql://"');
   }
   
   const jwtSecret = process.env.JWT_SECRET;
   if (jwtSecret && jwtSecret.length < 32) {
-    console.log('⚠️  Warning: JWT_SECRET should be at least 32 characters long');
+    console.log('Warning: JWT_SECRET should be at least 32 characters long');
   }
   
   return true;

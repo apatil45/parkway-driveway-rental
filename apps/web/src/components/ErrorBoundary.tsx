@@ -38,12 +38,26 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      // Check if error is related to map container reuse
+      const isMapError = this.state.error?.message?.includes('Map container is being reused') ||
+                        this.state.error?.message?.includes('_leaflet_pos');
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
           <ErrorMessage
             title="Something went wrong"
-            message={this.state.error?.message || 'An unexpected error occurred'}
-            onRetry={() => this.setState({ hasError: false, error: null })}
+            message={isMapError 
+              ? "Map initialization error. Please refresh the page or navigate away and come back."
+              : this.state.error?.message || 'An unexpected error occurred'}
+            onRetry={() => {
+              // For map errors, reload the page to fully reset the map state
+              if (isMapError && typeof window !== 'undefined') {
+                window.location.reload();
+              } else {
+                // For other errors, just reset state and let component remount
+                this.setState({ hasError: false, error: null });
+              }
+            }}
           />
         </div>
       );

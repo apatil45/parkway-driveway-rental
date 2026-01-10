@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
@@ -64,13 +64,42 @@ function SearchPageContent() {
     total: 0,
     totalPages: 0
   });
-  const [viewMode, setViewMode] = useState<'map' | 'list' | 'split'>('list');
+  const [viewMode] = useState<'map' | 'list' | 'split'>('split');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
+  const [canRenderMap, setCanRenderMap] = useState(true);
+  const isMountedRef = useRef(true);
+  
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  
+  // CRITICAL FIX: Generate a fresh container key ONLY when returning to search page
+  // NOT when leaving - this prevents React from destroying the div while we're still cleaning up
+  const [containerKey, setContainerKey] = useState(0);
+  const previousPathnameRef = useRef<string | null>(pathname);
+  
+  // Regenerate container ONLY when returning to search page (not when leaving)
+  useEffect(() => {
+    const wasOnSearch = previousPathnameRef.current === '/search';
+    const isOnSearch = pathname === '/search';
+    
+    // Only regenerate if we're coming BACK to search page
+    if (!wasOnSearch && isOnSearch) {
+      // Coming to search page - create fresh container
+      setContainerKey(prev => prev + 1);
+      setCanRenderMap(true);
+    } else if (wasOnSearch && !isOnSearch) {
+      // Leaving search page - just unmount, don't change key yet
+      setCanRenderMap(false);
+    } else if (isOnSearch) {
+      // Already on search page - ensure map can render
+      setCanRenderMap(true);
+    }
+    
+    previousPathnameRef.current = pathname;
+  }, [pathname]);
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
 
@@ -101,11 +130,137 @@ function SearchPageContent() {
   }, []); // Only run once on mount
 
 
+  // Initial search on mount
   useEffect(() => {
     performSearch();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Cleanup function for map - memoized since it only uses refs
+  const cleanupMap = useCallback(() => {
+    if (mapContainerRef.current) {
+      const container = mapContainerRef.current;
+      
+      // First, find and remove all Leaflet map instances
+      const leafletContainers = container.querySelectorAll('.leaflet-container');
+      
+      // Synchronously clean up all Leaflet instances
+      leafletContainers.forEach((el) => {
+        const leafletEl = el as HTMLElement;
+        if ((leafletEl as any)._leaflet_id) {
+          try {
+            const map = (leafletEl as any)._leaflet;
+            if (map && typeof map.remove === 'function') {
+              try {
+                // Properly remove the map instance
+                map.remove();
+              } catch (e) {
+                // If remove fails, try to clear the container and remove from Leaflet registry
+                if (map._container) {
+                  try {
+                    // Clear container content
+                    map._container.innerHTML = '';
+                    // Remove from Leaflet's internal registry if accessible
+                    const leafletId = (map._container as any)._leaflet_id;
+                    if (leafletId && (window as any).L && (window as any).L.Map) {
+                      try {
+                        // Try to remove from Leaflet's internal map registry
+                        const mapRegistry = (window as any).L.Map._leaflet_id || {};
+                        if (mapRegistry[leafletId]) {
+                          delete mapRegistry[leafletId];
+                        }
+                      } catch (regErr) {
+                        // Ignore registry cleanup errors
+                      }
+                    }
+                  } catch (e2) {
+                    // Ignore
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+          // Always clear Leaflet tracking properties
+          delete (leafletEl as any)._leaflet_id;
+          delete (leafletEl as any)._leaflet;
+        }
+        // Remove the element from DOM
+        try {
+          if (el.parentNode) {
+            el.remove();
+          }
+        } catch (e) {
+          // Ignore if already removed
+        }
+      });
+      
+      // Also check for any Leaflet instances globally that might be using this container
+      try {
+        const allLeafletContainers = document.querySelectorAll('.leaflet-container');
+        allLeafletContainers.forEach((leafletContainer) => {
+          const leafletEl = leafletContainer as HTMLElement;
+          if ((leafletEl as any)._leaflet_id && container.contains(leafletContainer)) {
+            try {
+              const map = (leafletEl as any)._leaflet;
+              if (map && typeof map.remove === 'function') {
+                map.remove();
+              }
+            } catch (e) {
+              // Ignore
+            }
+            delete (leafletEl as any)._leaflet_id;
+            delete (leafletEl as any)._leaflet;
+          }
+        });
+      } catch (e) {
+        // Ignore
+      }
+      
+      // Clear all Leaflet tracking from the container itself
+      delete (container as any)._leaflet_id;
+      delete (container as any)._leaflet;
+      
+      // Clear the container's innerHTML to ensure no leftover elements
+      // This is a last resort to ensure clean state
+      try {
+        if (container && container.parentNode) {
+          // Only clear if container is still in DOM
+          const hasLeafletElements = container.querySelector('.leaflet-container');
+          if (hasLeafletElements) {
+            // If there are still Leaflet elements, clear them
+            container.innerHTML = '';
+          }
+        }
+      } catch (e) {
+        // Ignore clear errors - container might be removed
+      }
+    }
+  }, []); // Empty deps since it only uses refs
+
+  // Cleanup map when pathname changes (navigating away from search page)
+  // This handles cases where navigation happens via browser back/forward or other means
+  useEffect(() => {
+    if (pathname && pathname !== '/search') {
+      // We're navigating away from the search page - cleanup map
+      cleanupMap();
+    }
+  }, [pathname, cleanupMap]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Cleanup map on unmount
+      cleanupMap();
+    };
+  }, [cleanupMap]); // cleanupMap is stable (memoized), so this won't cause re-runs
 
   const performSearch = async (page = 1) => {
+    if (!isMountedRef.current) return; // Don't update if unmounted
+    
     const params = {
       page: page.toString(),
       limit: '10',
@@ -121,7 +276,7 @@ function SearchPageContent() {
     };
 
     const result = await fetchDriveways(params);
-    if (result.success && result.data) {
+    if (result.success && result.data && isMountedRef.current) {
       setPagination(result.data.pagination);
     }
   };
@@ -221,7 +376,7 @@ function SearchPageContent() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <ErrorMessage
           title="Search Error"
-          message={error}
+          message={error.includes('Failed') || error.includes('Error') ? 'Unable to search for parking spaces. Please try again.' : error}
           onRetry={() => performSearch()}
         />
       </div>
@@ -231,42 +386,10 @@ function SearchPageContent() {
   return (
     <AppLayout showFooter={false}>
       <div className="min-h-screen bg-gray-50">
-      {/* View Mode Toggle */}
+      {/* Filters Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                onClick={() => setViewMode('map')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'map'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Map
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('split')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'split'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Both
-              </button>
-            </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
@@ -415,20 +538,21 @@ function SearchPageContent() {
       )}
 
       {/* Main Content Area - Split Layout */}
-      <div className={`flex ${viewMode === 'split' ? 'flex-col lg:flex-row' : 'flex-col'} h-[calc(100vh-4rem)]`}>
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
         {/* Map Section */}
-        {(viewMode === 'map' || viewMode === 'split') && (
-          <div 
-            ref={mapContainerRef}
-            key={`map-container-${viewMode}`}
-            className={`${
-              viewMode === 'split' 
-                ? 'w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200' 
-                : 'w-full h-full'
-            } relative bg-gray-100`}
-          >
-            {!emptyResults && (
+        {/* OUT-OF-THE-BOX SOLUTION: 
+            - Use a key that changes to force React to DESTROY and RECREATE the entire div
+            - This ensures Leaflet NEVER sees a reused DOM element
+            - Each navigation gets a completely fresh container with no Leaflet tracking */}
+        <div 
+          ref={mapContainerRef}
+          key={`map-wrapper-${containerKey}`}
+          className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200 relative bg-gray-100"
+        >
+            {!emptyResults && canRenderMap && (
               <MapView
+                key={`mapview-${viewMode}-${containerKey}`}
+                viewMode={viewMode}
                 center={mapCenter}
                 markers={mapMarkers}
                 height="100%"
@@ -454,15 +578,9 @@ function SearchPageContent() {
               </div>
             )}
           </div>
-        )}
 
         {/* Listings Section */}
-        {(viewMode === 'list' || viewMode === 'split') && (
-          <div className={`${
-            viewMode === 'split' 
-              ? 'w-full lg:w-1/2 h-1/2 lg:h-full overflow-y-auto' 
-              : 'w-full h-full overflow-y-auto'
-          } bg-white`}>
+        <div className="w-full lg:w-1/2 h-1/2 lg:h-full overflow-y-auto bg-white">
             <div className="p-4 sm:p-6">
               {emptyResults ? (
                 <div className="text-center py-12">
@@ -488,8 +606,32 @@ function SearchPageContent() {
                         className={`bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
                           selectedDriveway === driveway.id ? 'ring-2 ring-primary-500' : ''
                         }`}
-                        onClick={() => {
+                        onClick={async () => {
                           setSelectedDriveway(driveway.id);
+                          
+                          // CRITICAL FIX: Proper sequence to prevent race conditions
+                          // Step 1: Unmount MapView FIRST (before any DOM manipulation)
+                          setCanRenderMap(false);
+                          
+                          // Step 2: Wait for React to process the unmount
+                          // Use multiple requestAnimationFrame to ensure React's commit phase completes
+                          await new Promise(resolve => requestAnimationFrame(resolve));
+                          await new Promise(resolve => requestAnimationFrame(resolve));
+                          await new Promise(resolve => requestAnimationFrame(resolve)); // Extra frame for safety
+                          
+                          // Step 3: Now that React has unmounted, clean up Leaflet instances
+                          cleanupMap();
+                          
+                          // Step 4: Wait a bit more to ensure cleanup is complete
+                          await new Promise(resolve => setTimeout(resolve, 100));
+                          
+                          // Step 5: Final cleanup pass
+                          cleanupMap();
+                          
+                          // Step 6: Additional wait to ensure everything is settled
+                          await new Promise(resolve => setTimeout(resolve, 50));
+                          
+                          // Step 7: Navigate (containerKey will be regenerated when we return to search page)
                           router.push(`/driveway/${driveway.id}`);
                         }}
                       >
@@ -607,7 +749,6 @@ function SearchPageContent() {
               )}
             </div>
           </div>
-        )}
       </div>
       </div>
     </AppLayout>
