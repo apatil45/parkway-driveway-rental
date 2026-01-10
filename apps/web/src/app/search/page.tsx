@@ -114,6 +114,8 @@ function SearchPageContent() {
   const cleanupMap = useCallback(() => {
     if (mapContainerRef.current) {
       const container = mapContainerRef.current;
+      
+      // First, find and remove all Leaflet map instances
       const leafletContainers = container.querySelectorAll('.leaflet-container');
       
       // Synchronously clean up all Leaflet instances
@@ -124,12 +126,27 @@ function SearchPageContent() {
             const map = (leafletEl as any)._leaflet;
             if (map && typeof map.remove === 'function') {
               try {
+                // Properly remove the map instance
                 map.remove();
               } catch (e) {
-                // If remove fails, try to clear the container
+                // If remove fails, try to clear the container and remove from Leaflet registry
                 if (map._container) {
                   try {
+                    // Clear container content
                     map._container.innerHTML = '';
+                    // Remove from Leaflet's internal registry if accessible
+                    const leafletId = (map._container as any)._leaflet_id;
+                    if (leafletId && (window as any).L && (window as any).L.Map) {
+                      try {
+                        // Try to remove from Leaflet's internal map registry
+                        const mapRegistry = (window as any).L.Map._leaflet_id || {};
+                        if (mapRegistry[leafletId]) {
+                          delete mapRegistry[leafletId];
+                        }
+                      } catch (regErr) {
+                        // Ignore registry cleanup errors
+                      }
+                    }
                   } catch (e2) {
                     // Ignore
                   }
@@ -139,11 +156,11 @@ function SearchPageContent() {
           } catch (e) {
             // Ignore cleanup errors
           }
-          // Clear Leaflet tracking
+          // Always clear Leaflet tracking properties
           delete (leafletEl as any)._leaflet_id;
           delete (leafletEl as any)._leaflet;
         }
-        // Remove the element
+        // Remove the element from DOM
         try {
           if (el.parentNode) {
             el.remove();
@@ -175,9 +192,24 @@ function SearchPageContent() {
         // Ignore
       }
       
-      // Clear container tracking
+      // Clear all Leaflet tracking from the container itself
       delete (container as any)._leaflet_id;
       delete (container as any)._leaflet;
+      
+      // Clear the container's innerHTML to ensure no leftover elements
+      // This is a last resort to ensure clean state
+      try {
+        if (container && container.parentNode) {
+          // Only clear if container is still in DOM
+          const hasLeafletElements = container.querySelector('.leaflet-container');
+          if (hasLeafletElements) {
+            // If there are still Leaflet elements, clear them
+            container.innerHTML = '';
+          }
+        }
+      } catch (e) {
+        // Ignore clear errors - container might be removed
+      }
     }
   }, []); // Empty deps since it only uses refs
 
@@ -489,7 +521,7 @@ function SearchPageContent() {
         >
             {!emptyResults && canRenderMap && (
               <MapView
-                key={`mapview-${viewMode}-${mapCenter[0]}-${mapCenter[1]}`}
+                key={`mapview-${viewMode}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`}
                 viewMode={viewMode}
                 center={mapCenter}
                 markers={mapMarkers}
@@ -547,12 +579,24 @@ function SearchPageContent() {
                         onClick={async () => {
                           setSelectedDriveway(driveway.id);
                           
-                          // Clean up map before navigation to prevent container reuse error
+                          // Step 1: Unmount MapView component first to trigger React cleanup lifecycle
+                          setCanRenderMap(false);
+                          
+                          // Step 2: Force React to process the state change and unmount
+                          await new Promise(resolve => requestAnimationFrame(resolve));
+                          await new Promise(resolve => requestAnimationFrame(resolve));
+                          
+                          // Step 3: Clean up map DOM elements and Leaflet instances synchronously
                           cleanupMap();
                           
-                          // Small delay to ensure cleanup completes before navigation
+                          // Step 4: Additional cleanup pass to ensure everything is removed
+                          await new Promise(resolve => setTimeout(resolve, 50));
+                          cleanupMap(); // Second pass to catch anything missed
+                          
+                          // Step 5: Wait for React to fully unmount the component
                           await new Promise(resolve => setTimeout(resolve, 50));
                           
+                          // Step 6: Navigate
                           router.push(`/driveway/${driveway.id}`);
                         }}
                       >
