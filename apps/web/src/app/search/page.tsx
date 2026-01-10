@@ -75,26 +75,30 @@ function SearchPageContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   
-  // OUT-OF-THE-BOX SOLUTION: Generate a completely fresh container ID on every render cycle
-  // This ensures Leaflet NEVER sees a reused container - each map gets its own unique DOM element
-  // We use a counter that increments to force React to create a new div element
+  // CRITICAL FIX: Generate a fresh container key ONLY when returning to search page
+  // NOT when leaving - this prevents React from destroying the div while we're still cleaning up
   const [containerKey, setContainerKey] = useState(0);
+  const previousPathnameRef = useRef<string | null>(pathname);
   
-  // Regenerate container when navigating away (pathname changes)
+  // Regenerate container ONLY when returning to search page (not when leaving)
   useEffect(() => {
-    // When pathname changes, we're either navigating away or coming back
-    // Force a new container to be created
-    setContainerKey(prev => prev + 1);
-    setCanRenderMap(false);
+    const wasOnSearch = previousPathnameRef.current === '/search';
+    const isOnSearch = pathname === '/search';
     
-    // Small delay to ensure cleanup completes, then allow map to render again
-    const timer = setTimeout(() => {
-      if (pathname === '/search') {
-        setCanRenderMap(true);
-      }
-    }, 100);
+    // Only regenerate if we're coming BACK to search page
+    if (!wasOnSearch && isOnSearch) {
+      // Coming to search page - create fresh container
+      setContainerKey(prev => prev + 1);
+      setCanRenderMap(true);
+    } else if (wasOnSearch && !isOnSearch) {
+      // Leaving search page - just unmount, don't change key yet
+      setCanRenderMap(false);
+    } else if (isOnSearch) {
+      // Already on search page - ensure map can render
+      setCanRenderMap(true);
+    }
     
-    return () => clearTimeout(timer);
+    previousPathnameRef.current = pathname;
   }, [pathname]);
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
@@ -547,7 +551,7 @@ function SearchPageContent() {
         >
             {!emptyResults && canRenderMap && (
               <MapView
-                key={`mapview-${viewMode}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`}
+                key={`mapview-${viewMode}-${containerKey}`}
                 viewMode={viewMode}
                 center={mapCenter}
                 markers={mapMarkers}
@@ -605,29 +609,29 @@ function SearchPageContent() {
                         onClick={async () => {
                           setSelectedDriveway(driveway.id);
                           
-                          // OUT-OF-THE-BOX: Force React to destroy and recreate the container div
-                          // By changing the key, React will completely remove the old div from DOM
-                          // This ensures Leaflet NEVER sees a reused container
-                          setContainerKey(prev => prev + 1);
-                          
-                          // Step 1: Unmount MapView component first to trigger React cleanup lifecycle
+                          // CRITICAL FIX: Proper sequence to prevent race conditions
+                          // Step 1: Unmount MapView FIRST (before any DOM manipulation)
                           setCanRenderMap(false);
                           
-                          // Step 2: Force React to process the state change and unmount
+                          // Step 2: Wait for React to process the unmount
+                          // Use multiple requestAnimationFrame to ensure React's commit phase completes
                           await new Promise(resolve => requestAnimationFrame(resolve));
                           await new Promise(resolve => requestAnimationFrame(resolve));
+                          await new Promise(resolve => requestAnimationFrame(resolve)); // Extra frame for safety
                           
-                          // Step 3: Clean up map DOM elements and Leaflet instances synchronously
+                          // Step 3: Now that React has unmounted, clean up Leaflet instances
                           cleanupMap();
                           
-                          // Step 4: Additional cleanup pass to ensure everything is removed
-                          await new Promise(resolve => setTimeout(resolve, 50));
-                          cleanupMap(); // Second pass to catch anything missed
+                          // Step 4: Wait a bit more to ensure cleanup is complete
+                          await new Promise(resolve => setTimeout(resolve, 100));
                           
-                          // Step 5: Wait for React to fully unmount the component
+                          // Step 5: Final cleanup pass
+                          cleanupMap();
+                          
+                          // Step 6: Additional wait to ensure everything is settled
                           await new Promise(resolve => setTimeout(resolve, 50));
                           
-                          // Step 6: Navigate
+                          // Step 7: Navigate (containerKey will be regenerated when we return to search page)
                           router.push(`/driveway/${driveway.id}`);
                         }}
                       >

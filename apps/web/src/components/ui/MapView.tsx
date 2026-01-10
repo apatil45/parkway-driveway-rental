@@ -484,11 +484,41 @@ const LeafletMap = dynamic(async () => {
         // Reset destroyed flag for new instance
         isDestroyedRef.current = false;
         
-        // Set canRender immediately after synchronous cleanup
-        // No delay - we've already cleaned up synchronously
-        if (mountCountRef.current === currentMount && !isDestroyedRef.current && !isNavigatingRef.current) {
-          setCanRender(true);
-        }
+        // CRITICAL FIX: Add a small delay before allowing render
+        // This ensures Leaflet's internal cleanup is complete
+        // Even though we cleaned up synchronously, Leaflet might have async cleanup
+        const renderTimer = setTimeout(() => {
+          if (mountCountRef.current === currentMount && !isDestroyedRef.current && !isNavigatingRef.current) {
+            // Double-check container is clean before allowing render
+            if (containerRef.current) {
+              const container = containerRef.current;
+              const hasLeafletId = (container as any)._leaflet_id;
+              const hasLeafletElements = container.querySelector('.leaflet-container');
+              
+              if (!hasLeafletId && !hasLeafletElements) {
+                setCanRender(true);
+              } else {
+                // Container still has Leaflet tracking - clean it again
+                console.warn('Container still has Leaflet tracking after cleanup, cleaning again');
+                cleanupMap(true);
+                // Try again after another delay
+                setTimeout(() => {
+                  if (mountCountRef.current === currentMount && !isDestroyedRef.current && !isNavigatingRef.current) {
+                    setCanRender(true);
+                  }
+                }, 50);
+              }
+            } else {
+              setCanRender(true);
+            }
+          }
+        }, 50); // Small delay to ensure cleanup is complete
+        
+        return () => {
+          clearTimeout(renderTimer);
+          cleanupMap(true);
+          setCanRender(false);
+        };
 
         return () => {
           cleanupMap(true);
@@ -550,7 +580,9 @@ const LeafletMap = dynamic(async () => {
           <div className="bg-gray-100 rounded-lg flex items-center justify-center h-full">
             <div className="text-gray-500 text-sm">Loading map...</div>
           </div>
-        ) : (
+        ) : containerRef.current && 
+          !(containerRef.current as any)._leaflet_id && 
+          !containerRef.current.querySelector('.leaflet-container') ? (
           // Use a unique key that changes on every mount to force React to create a new MapContainer
           // This prevents React from reusing the component and causing container reuse errors
           <MapContainer
@@ -776,6 +808,10 @@ const LeafletMap = dynamic(async () => {
             ))}
           </MarkerClusterGroup>
         </MapContainer>
+        ) : (
+          <div className="bg-gray-100 rounded-lg flex items-center justify-center h-full">
+            <div className="text-gray-500 text-sm">Preparing map...</div>
+          </div>
         )}
       </div>
     );
