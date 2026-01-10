@@ -28,6 +28,8 @@ export default function Navbar() {
     : [
         { href: '/search', label: 'Search' },
         { href: '/about', label: 'About' },
+        { href: '/pricing', label: 'Pricing' },
+        { href: '/contact', label: 'Contact' },
       ];
 
   return (

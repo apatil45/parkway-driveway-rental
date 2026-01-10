@@ -114,29 +114,41 @@ export default function Home() {
     return (
       <AppLayout showFooter={false}>
         <main className="min-h-screen">
-          {/* Personalized Hero Section */}
-          <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
-            <div className="container py-16">
-              <div className="max-w-4xl mx-auto text-center">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  Welcome back, {user.name?.split(' ')[0]}!
-                </h1>
-                <p className="text-xl md:text-2xl mb-8 text-primary-100">
-                  {isOwner && isDriver
-                    ? 'Find parking or manage your driveways'
-                    : isOwner
-                    ? 'Manage your driveways and earnings'
-                    : 'Find the perfect parking spot near you'}
-                </p>
+          {/* Personalized Hero Section - Enhanced */}
+          <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              }}></div>
+            </div>
+            
+            <div className="container relative py-20 md:py-24">
+              <div className="max-w-5xl mx-auto">
+                <div className="text-center mb-10">
+                  <h1 className="text-4xl md:text-6xl font-bold mb-4">
+                    Welcome back, {user.name?.split(' ')[0]}! 👋
+                  </h1>
+                  <p className="text-xl md:text-2xl mb-8 text-primary-100">
+                    {isOwner && isDriver
+                      ? 'Find parking or manage your driveways'
+                      : isOwner
+                      ? 'Manage your driveways and earnings'
+                      : 'Find the perfect parking spot near you'}
+                  </p>
+                </div>
                 
-                {/* Quick Search */}
-                <div className="max-w-2xl mx-auto mt-8">
-                  <div className="bg-white rounded-lg p-4 shadow-lg">
+                {/* Prominent Search */}
+                <div className="max-w-3xl mx-auto">
+                  <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+                      Where do you need parking?
+                    </h2>
                     <AddressAutocomplete
                       value={searchLocation}
                       onChange={handleLocationInputChange}
                       onLocationSelect={handleSearch}
-                      placeholder="Search for parking near..."
+                      placeholder="Enter address, city, or landmark..."
                       className="w-full"
                     />
                   </div>
@@ -290,23 +302,49 @@ export default function Home() {
   return (
     <AppLayout showFooter={false}>
       <main className="min-h-screen">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
-          <div className="container py-24">
-            <div className="text-center max-w-4xl mx-auto">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                Park Smarter, Earn Easier
-              </h1>
-              <p className="text-xl md:text-2xl mb-8 text-primary-100">
-                The leading platform connecting drivers with available parking spaces. 
-                Find convenient parking or turn your driveway into passive income.
-              </p>
+        {/* Hero Section - Enhanced with Search */}
+        <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}></div>
+          </div>
+          
+          <div className="container relative py-20 md:py-32">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                  Park Smarter,<br />Earn Easier
+                </h1>
+                <p className="text-xl md:text-2xl mb-8 text-primary-100 max-w-3xl mx-auto">
+                  The leading platform connecting drivers with available parking spaces. 
+                  Find convenient parking or turn your driveway into passive income.
+                </p>
+              </div>
+              
+              {/* Prominent Search Bar */}
+              <div className="max-w-3xl mx-auto mb-8">
+                <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4 text-center">
+                    Find parking near your destination
+                  </h2>
+                  <AddressAutocomplete
+                    value={searchLocation}
+                    onChange={handleLocationInputChange}
+                    onLocationSelect={handleSearch}
+                    placeholder="Enter address, city, or landmark..."
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/register" className="inline-flex items-center justify-center rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-primary-600 hover:bg-gray-100 px-6 py-3 shadow-sm">
+                <Link href="/register" className="inline-flex items-center justify-center rounded-lg text-base font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-primary-600 hover:bg-gray-50 px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                   Get Started Free
                 </Link>
-                <Link href="/search" className="inline-flex items-center justify-center rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 border border-white text-white hover:bg-white hover:text-primary-600 px-6 py-3 shadow-sm">
-                  Browse Driveways
+                <Link href="/pricing" className="inline-flex items-center justify-center rounded-lg text-base font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4">
+                  View Pricing
                 </Link>
               </div>
             </div>
@@ -347,11 +385,11 @@ export default function Home() {
           </section>
         )}
 
-        {/* Features Section */}
-        <section className="py-24 bg-gray-50">
+        {/* How It Works Section - Enhanced with Steps */}
+        <section className="py-24 bg-white">
           <div className="container">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
                 How Parkway Works
               </h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -359,39 +397,112 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="text-center">
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MagnifyingGlassIcon className="w-8 h-8 text-primary-700" />
+            {/* For Drivers */}
+            <div className="mb-20">
+              <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">For Drivers</h3>
+              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div className="relative">
+                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-lg z-10">
+                    1
+                  </div>
+                  <Card className="text-center p-8 h-full hover:shadow-xl transition-shadow">
+                    <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <MagnifyingGlassIcon className="w-10 h-10 text-primary-700" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">Search & Find</h3>
+                    <p className="text-gray-600">
+                      Search for available driveways near your destination with real-time availability. 
+                      Filter by price, distance, and amenities to find the perfect spot.
+                    </p>
+                  </Card>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Find Parking</h3>
-                <p className="text-gray-600">
-                  Search for available driveways near your destination with real-time availability. 
-                  Filter by price, distance, and amenities.
-                </p>
-              </Card>
-              
-              <Card className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CurrencyDollarIcon className="w-8 h-8 text-green-700" />
+                
+                <div className="relative">
+                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-lg z-10">
+                    2
+                  </div>
+                  <Card className="text-center p-8 h-full hover:shadow-xl transition-shadow">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <ClockIcon className="w-10 h-10 text-green-700" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">Book Instantly</h3>
+                    <p className="text-gray-600">
+                      Reserve your spot with a few clicks. Get instant confirmation and directions 
+                      to your parking space. Cancel anytime with a full refund.
+                    </p>
+                  </Card>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Earn Money</h3>
-                <p className="text-gray-600">
-                  List your unused driveway and earn passive income. Set your own rates, 
-                  availability, and watch the bookings roll in.
-                </p>
-              </Card>
-              
-              <Card className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <LockClosedIcon className="w-8 h-8 text-blue-700" />
+                
+                <div className="relative">
+                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-lg z-10">
+                    3
+                  </div>
+                  <Card className="text-center p-8 h-full hover:shadow-xl transition-shadow">
+                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <CheckCircleIcon className="w-10 h-10 text-blue-700" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">Park & Go</h3>
+                    <p className="text-gray-600">
+                      Arrive at your reserved spot, park safely, and go about your day. 
+                      Secure payments are handled automatically.
+                    </p>
+                  </Card>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Secure Payments</h3>
-                <p className="text-gray-600">
-                  All transactions are secure with instant payments and automatic refunds. 
-                  We handle everything so you don't have to.
-                </p>
-              </Card>
+              </div>
+            </div>
+
+            {/* For Owners */}
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">For Property Owners</h3>
+              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div className="relative">
+                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg z-10">
+                    1
+                  </div>
+                  <Card className="text-center p-8 h-full hover:shadow-xl transition-shadow">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <HomeIcon className="w-10 h-10 text-green-700" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">List Your Space</h3>
+                    <p className="text-gray-600">
+                      Create a free listing in minutes. Add photos, set your rates, 
+                      and define availability. No upfront costs or commitments.
+                    </p>
+                  </Card>
+                </div>
+                
+                <div className="relative">
+                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg z-10">
+                    2
+                  </div>
+                  <Card className="text-center p-8 h-full hover:shadow-xl transition-shadow">
+                    <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <CurrencyDollarIcon className="w-10 h-10 text-primary-700" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">Get Bookings</h3>
+                    <p className="text-gray-600">
+                      Receive booking requests from verified drivers. 
+                      Accept or decline based on your availability.
+                    </p>
+                  </Card>
+                </div>
+                
+                <div className="relative">
+                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg z-10">
+                    3
+                  </div>
+                  <Card className="text-center p-8 h-full hover:shadow-xl transition-shadow">
+                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <ChartBarIcon className="w-10 h-10 text-blue-700" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">Earn Money</h3>
+                    <p className="text-gray-600">
+                      Get paid instantly after each booking. Keep 85-90% of earnings 
+                      with transparent pricing and automatic payouts.
+                    </p>
+                  </Card>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -544,14 +655,14 @@ export default function Home() {
               Join thousands of users who are already using Parkway to find parking or earn money. 
               It's free to sign up and takes less than 2 minutes.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register" className="inline-flex items-center justify-center rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-primary-600 hover:bg-gray-100 px-6 py-3 shadow-sm">
-                Create Free Account
-              </Link>
-              <Link href="/about" className="inline-flex items-center justify-center rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 border border-white text-white hover:bg-white hover:text-primary-600 px-6 py-3 shadow-sm">
-                Learn More
-              </Link>
-            </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/register" className="inline-flex items-center justify-center rounded-lg text-base font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-primary-600 hover:bg-gray-50 px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                  Create Free Account
+                </Link>
+                <Link href="/pricing" className="inline-flex items-center justify-center rounded-lg text-base font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4">
+                  View Pricing
+                </Link>
+              </div>
           </div>
         </section>
 
@@ -585,8 +696,8 @@ export default function Home() {
                 <h4 className="font-semibold mb-4">Support</h4>
                 <ul className="space-y-2 text-gray-400">
                   <li><Link href="/about" className="hover:text-white transition-colors">Help Center</Link></li>
-                  <li><Link href="/about" className="hover:text-white transition-colors">Contact Us</Link></li>
-                  <li><Link href="/about" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                  <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                  <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                 </ul>
               </div>
             </div>
