@@ -156,18 +156,44 @@ const LeafletMap = dynamic(async () => {
           // Check if map is still valid before removing
           if (map._container && map._container.parentNode) {
             try {
-              map.remove();
-            } catch (e) {
-              // If remove fails, try to clear the container directly
-              try {
-                if (map._container) {
-                  map._container.innerHTML = '';
-                  // Remove Leaflet tracking
-                  delete (map._container as any)._leaflet_id;
-                  delete (map._container as any)._leaflet;
+              // Check if this map instance is actually the one associated with the container
+              const containerId = (map._container as any)._leaflet_id;
+              const containerMap = (map._container as any)._leaflet;
+              
+              // Only remove if this is the correct map instance
+              if (containerMap === map || !containerMap) {
+                map.remove();
+              } else {
+                // Container is associated with a different map - just clear it
+                console.warn('Map instance mismatch during cleanup, clearing container directly');
+                map._container.innerHTML = '';
+                delete (map._container as any)._leaflet_id;
+                delete (map._container as any)._leaflet;
+              }
+            } catch (e: any) {
+              // Catch "Map container is being reused" error specifically
+              if (e?.message?.includes('Map container is being reused')) {
+                console.warn('Container reuse detected during cleanup, clearing directly');
+                try {
+                  if (map._container) {
+                    map._container.innerHTML = '';
+                    delete (map._container as any)._leaflet_id;
+                    delete (map._container as any)._leaflet;
+                  }
+                } catch (e2) {
+                  // Ignore
                 }
-              } catch (e2) {
-                // Ignore
+              } else {
+                // Other errors - try to clear the container directly
+                try {
+                  if (map._container) {
+                    map._container.innerHTML = '';
+                    delete (map._container as any)._leaflet_id;
+                    delete (map._container as any)._leaflet;
+                  }
+                } catch (e2) {
+                  // Ignore
+                }
               }
             }
           }
@@ -192,16 +218,41 @@ const LeafletMap = dynamic(async () => {
                   try {
                     // Check if map container still exists before removing
                     if (map._container && map._container.parentNode) {
-                      map.remove();
-                    }
-                  } catch (e) {
-                    // If remove fails, clear the container
-                    try {
-                      if (map._container) {
+                      // Verify this is the correct map instance
+                      const containerId = (map._container as any)._leaflet_id;
+                      const containerMap = (map._container as any)._leaflet;
+                      
+                      if (containerMap === map || !containerMap) {
+                        map.remove();
+                      } else {
+                        // Different map instance - clear directly
                         map._container.innerHTML = '';
+                        delete (map._container as any)._leaflet_id;
+                        delete (map._container as any)._leaflet;
                       }
-                    } catch (e2) {
-                      // Ignore
+                    }
+                  } catch (e: any) {
+                    // Catch "Map container is being reused" error
+                    if (e?.message?.includes('Map container is being reused')) {
+                      // Just clear the container - don't try to remove
+                      try {
+                        if (map._container) {
+                          map._container.innerHTML = '';
+                          delete (map._container as any)._leaflet_id;
+                          delete (map._container as any)._leaflet;
+                        }
+                      } catch (e2) {
+                        // Ignore
+                      }
+                    } else {
+                      // Other errors - clear the container
+                      try {
+                        if (map._container) {
+                          map._container.innerHTML = '';
+                        }
+                      } catch (e2) {
+                        // Ignore
+                      }
                     }
                   }
                 }
@@ -317,7 +368,34 @@ const LeafletMap = dynamic(async () => {
             try {
               const map = (leafletEl as any)._leaflet;
               if (map && typeof map.remove === 'function') {
-                map.remove();
+                try {
+                  // Verify this is the correct map instance before removing
+                  if (map._container) {
+                    const containerMap = (map._container as any)._leaflet;
+                    if (containerMap === map || !containerMap) {
+                      map.remove();
+                    } else {
+                      // Different instance - clear directly
+                      map._container.innerHTML = '';
+                      delete (map._container as any)._leaflet_id;
+                      delete (map._container as any)._leaflet;
+                    }
+                  }
+                } catch (e: any) {
+                  // Catch "Map container is being reused" error
+                  if (e?.message?.includes('Map container is being reused')) {
+                    // Just clear - don't try to remove
+                    try {
+                      if (map._container) {
+                        map._container.innerHTML = '';
+                        delete (map._container as any)._leaflet_id;
+                        delete (map._container as any)._leaflet;
+                      }
+                    } catch (e2) {
+                      // Ignore
+                    }
+                  }
+                }
               }
             } catch (e) {
               // Ignore cleanup errors
@@ -344,7 +422,34 @@ const LeafletMap = dynamic(async () => {
               try {
                 const map = (leafletEl as any)._leaflet;
                 if (map && typeof map.remove === 'function') {
-                  map.remove();
+                  try {
+                    // Verify this is the correct map instance before removing
+                    if (map._container) {
+                      const containerMap = (map._container as any)._leaflet;
+                      if (containerMap === map || !containerMap) {
+                        map.remove();
+                      } else {
+                        // Different instance - clear directly
+                        map._container.innerHTML = '';
+                        delete (map._container as any)._leaflet_id;
+                        delete (map._container as any)._leaflet;
+                      }
+                    }
+                  } catch (e: any) {
+                    // Catch "Map container is being reused" error
+                    if (e?.message?.includes('Map container is being reused')) {
+                      // Just clear - don't try to remove
+                      try {
+                        if (map._container) {
+                          map._container.innerHTML = '';
+                          delete (map._container as any)._leaflet_id;
+                          delete (map._container as any)._leaflet;
+                        }
+                      } catch (e2) {
+                        // Ignore
+                      }
+                    }
+                  }
                 }
               } catch (e) {
                 // Ignore
