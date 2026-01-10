@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
@@ -73,6 +73,7 @@ function SearchPageContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
 
@@ -109,40 +110,95 @@ function SearchPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  // Cleanup on unmount
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      // Cleanup map on unmount
-      if (mapContainerRef.current) {
-        const container = mapContainerRef.current;
-        const leafletContainers = container.querySelectorAll('.leaflet-container');
-        leafletContainers.forEach((el) => {
-          const leafletEl = el as HTMLElement;
-          if ((leafletEl as any)._leaflet_id) {
+  // Cleanup function for map - memoized since it only uses refs
+  const cleanupMap = useCallback(() => {
+    if (mapContainerRef.current) {
+      const container = mapContainerRef.current;
+      const leafletContainers = container.querySelectorAll('.leaflet-container');
+      
+      // Synchronously clean up all Leaflet instances
+      leafletContainers.forEach((el) => {
+        const leafletEl = el as HTMLElement;
+        if ((leafletEl as any)._leaflet_id) {
+          try {
+            const map = (leafletEl as any)._leaflet;
+            if (map && typeof map.remove === 'function') {
+              try {
+                map.remove();
+              } catch (e) {
+                // If remove fails, try to clear the container
+                if (map._container) {
+                  try {
+                    map._container.innerHTML = '';
+                  } catch (e2) {
+                    // Ignore
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+          // Clear Leaflet tracking
+          delete (leafletEl as any)._leaflet_id;
+          delete (leafletEl as any)._leaflet;
+        }
+        // Remove the element
+        try {
+          if (el.parentNode) {
+            el.remove();
+          }
+        } catch (e) {
+          // Ignore if already removed
+        }
+      });
+      
+      // Also check for any Leaflet instances globally that might be using this container
+      try {
+        const allLeafletContainers = document.querySelectorAll('.leaflet-container');
+        allLeafletContainers.forEach((leafletContainer) => {
+          const leafletEl = leafletContainer as HTMLElement;
+          if ((leafletEl as any)._leaflet_id && container.contains(leafletContainer)) {
             try {
               const map = (leafletEl as any)._leaflet;
               if (map && typeof map.remove === 'function') {
                 map.remove();
               }
             } catch (e) {
-              // Ignore cleanup errors
+              // Ignore
             }
             delete (leafletEl as any)._leaflet_id;
             delete (leafletEl as any)._leaflet;
           }
-          try {
-            el.remove();
-          } catch (e) {
-            // Ignore if already removed
-          }
         });
-        delete (container as any)._leaflet_id;
-        delete (container as any)._leaflet;
+      } catch (e) {
+        // Ignore
       }
+      
+      // Clear container tracking
+      delete (container as any)._leaflet_id;
+      delete (container as any)._leaflet;
+    }
+  }, []); // Empty deps since it only uses refs
+
+  // Cleanup map when pathname changes (navigating away from search page)
+  // This handles cases where navigation happens via browser back/forward or other means
+  useEffect(() => {
+    if (pathname && pathname !== '/search') {
+      // We're navigating away from the search page - cleanup map
+      cleanupMap();
+    }
+  }, [pathname, cleanupMap]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Cleanup map on unmount
+      cleanupMap();
     };
-  }, []);
+  }, [cleanupMap]); // cleanupMap is stable (memoized), so this won't cause re-runs
 
   const performSearch = async (page = 1) => {
     if (!isMountedRef.current) return; // Don't update if unmounted
@@ -488,8 +544,15 @@ function SearchPageContent() {
                         className={`bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
                           selectedDriveway === driveway.id ? 'ring-2 ring-primary-500' : ''
                         }`}
-                        onClick={() => {
+                        onClick={async () => {
                           setSelectedDriveway(driveway.id);
+                          
+                          // Clean up map before navigation to prevent container reuse error
+                          cleanupMap();
+                          
+                          // Small delay to ensure cleanup completes before navigation
+                          await new Promise(resolve => setTimeout(resolve, 50));
+                          
                           router.push(`/driveway/${driveway.id}`);
                         }}
                       >
