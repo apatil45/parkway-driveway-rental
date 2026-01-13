@@ -67,37 +67,26 @@ function SearchPageContent() {
   const [viewMode] = useState<'map' | 'list' | 'split'>('split');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [canRenderMap, setCanRenderMap] = useState(true);
-  const isMountedRef = useRef(true);
-  
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   
-  // Container key management: Increment ONLY when navigating back to /search
-  // This forces React to destroy the old container div and create a fresh one
-  const [containerKey, setContainerKey] = useState(0);
-  const previousPathnameRef = useRef<string | null>(pathname);
+  // MapService handles lifecycle - no need for container keys or manual cleanup
+  const [canRenderMap, setCanRenderMap] = useState(true);
+  const isMountedRef = useRef(true);
   
+  // Simple: show map when on search page, hide when not
   useEffect(() => {
-    const wasOnSearch = previousPathnameRef.current === '/search';
-    const isOnSearch = pathname === '/search';
-    
-    if (!wasOnSearch && isOnSearch) {
-      // Navigating TO search page: Create fresh container
-      setContainerKey(prev => prev + 1);
-      setCanRenderMap(true);
-    } else if (wasOnSearch && !isOnSearch) {
-      // Navigating AWAY from search page: Unmount map
-      setCanRenderMap(false);
-    } else if (isOnSearch) {
-      // Already on search page: Ensure map can render
-      setCanRenderMap(true);
-    }
-    
-    previousPathnameRef.current = pathname;
+    setCanRenderMap(pathname === '/search');
   }, [pathname]);
+  
+  // Track mount state for async operations
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
 
@@ -134,127 +123,6 @@ function SearchPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  // Cleanup function for map - memoized since it only uses refs
-  const cleanupMap = useCallback(() => {
-    if (mapContainerRef.current) {
-      const container = mapContainerRef.current;
-      
-      // First, find and remove all Leaflet map instances
-      const leafletContainers = container.querySelectorAll('.leaflet-container');
-      
-      // Synchronously clean up all Leaflet instances
-      leafletContainers.forEach((el) => {
-        const leafletEl = el as HTMLElement;
-        if ((leafletEl as any)._leaflet_id) {
-          try {
-            const map = (leafletEl as any)._leaflet;
-            if (map && typeof map.remove === 'function') {
-              try {
-                // Properly remove the map instance
-                map.remove();
-              } catch (e) {
-                // If remove fails, try to clear the container and remove from Leaflet registry
-                if (map._container) {
-                  try {
-                    // Clear container content
-                    map._container.innerHTML = '';
-                    // Remove from Leaflet's internal registry if accessible
-                    const leafletId = (map._container as any)._leaflet_id;
-                    if (leafletId && (window as any).L && (window as any).L.Map) {
-                      try {
-                        // Try to remove from Leaflet's internal map registry
-                        const mapRegistry = (window as any).L.Map._leaflet_id || {};
-                        if (mapRegistry[leafletId]) {
-                          delete mapRegistry[leafletId];
-                        }
-                      } catch (regErr) {
-                        // Ignore registry cleanup errors
-                      }
-                    }
-                  } catch (e2) {
-                    // Ignore
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            // Ignore cleanup errors
-          }
-          // Always clear Leaflet tracking properties
-          delete (leafletEl as any)._leaflet_id;
-          delete (leafletEl as any)._leaflet;
-        }
-        // Remove the element from DOM
-        try {
-          if (el.parentNode) {
-            el.remove();
-          }
-        } catch (e) {
-          // Ignore if already removed
-        }
-      });
-      
-      // Also check for any Leaflet instances globally that might be using this container
-      try {
-        const allLeafletContainers = document.querySelectorAll('.leaflet-container');
-        allLeafletContainers.forEach((leafletContainer) => {
-          const leafletEl = leafletContainer as HTMLElement;
-          if ((leafletEl as any)._leaflet_id && container.contains(leafletContainer)) {
-            try {
-              const map = (leafletEl as any)._leaflet;
-              if (map && typeof map.remove === 'function') {
-                map.remove();
-              }
-            } catch (e) {
-              // Ignore
-            }
-            delete (leafletEl as any)._leaflet_id;
-            delete (leafletEl as any)._leaflet;
-          }
-        });
-      } catch (e) {
-        // Ignore
-      }
-      
-      // Clear all Leaflet tracking from the container itself
-      delete (container as any)._leaflet_id;
-      delete (container as any)._leaflet;
-      
-      // Clear the container's innerHTML to ensure no leftover elements
-      // This is a last resort to ensure clean state
-      try {
-        if (container && container.parentNode) {
-          // Only clear if container is still in DOM
-          const hasLeafletElements = container.querySelector('.leaflet-container');
-          if (hasLeafletElements) {
-            // If there are still Leaflet elements, clear them
-            container.innerHTML = '';
-          }
-        }
-      } catch (e) {
-        // Ignore clear errors - container might be removed
-      }
-    }
-  }, []); // Empty deps since it only uses refs
-
-  // Cleanup map when pathname changes (navigating away from search page)
-  // This handles cases where navigation happens via browser back/forward or other means
-  useEffect(() => {
-    if (pathname && pathname !== '/search') {
-      // We're navigating away from the search page - cleanup map
-      cleanupMap();
-    }
-  }, [pathname, cleanupMap]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      // Cleanup map on unmount
-      cleanupMap();
-    };
-  }, [cleanupMap]); // cleanupMap is stable (memoized), so this won't cause re-runs
 
   const performSearch = async (page = 1) => {
     if (!isMountedRef.current) return; // Don't update if unmounted
@@ -538,15 +406,12 @@ function SearchPageContent() {
       {/* Main Content Area - Split Layout */}
       <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
         {/* Map Section */}
-        {/* Container key forces React to destroy/recreate div on navigation */}
+        {/* MapService handles lifecycle - no container keys needed */}
         <div 
-          ref={mapContainerRef}
-          key={`map-wrapper-${containerKey}`}
           className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200 relative bg-gray-100"
         >
           {!emptyResults && canRenderMap && (
             <MapView
-              key={`mapview-${viewMode}-${containerKey}`}
               viewMode={viewMode}
               center={mapCenter}
               markers={mapMarkers}
@@ -605,7 +470,7 @@ function SearchPageContent() {
                           setSelectedDriveway(driveway.id);
                           // Unmount map before navigation
                           setCanRenderMap(false);
-                          // Navigate - containerKey will increment when returning to /search
+                          // Navigate - MapService handles cleanup automatically
                           router.push(`/driveway/${driveway.id}`);
                         }}
                       >
