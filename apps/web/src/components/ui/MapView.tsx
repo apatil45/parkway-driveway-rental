@@ -296,13 +296,14 @@ export default function MapView({
   onMarkerClick?: (id: string) => void;
 }) {
   // Generate stable container ID (never changes for this component instance)
-  const containerIdRef = useRef<string>(() => {
+  const getContainerId = (): string => {
     // Use crypto.randomUUID if available, otherwise generate a unique ID
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       return `map-${crypto.randomUUID()}`;
     }
     return `map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }());
+  };
+  const containerIdRef = useRef<string>(getContainerId());
   
   return (
     <LeafletMap
