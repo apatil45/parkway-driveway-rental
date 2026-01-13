@@ -174,11 +174,14 @@ const LeafletMap = dynamic(async () => {
             zoomControl={true}
             ref={(map) => {
               if (!map) {
-                // Unmounting - cleanup handled by hook
+                // Unmounting - React is removing the map
+                // Don't do anything - React handles DOM removal
+                // Cleanup will happen in useEffect cleanup
                 return;
               }
               
               // Initialize map through service
+              // This is called when MapContainer creates the map instance
               initialize(map);
             }}
           >

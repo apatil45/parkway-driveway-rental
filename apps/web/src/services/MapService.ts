@@ -3,6 +3,9 @@
  * 
  * This service manages all map lifecycle outside of React's component lifecycle,
  * preventing race conditions and ensuring reliable cleanup.
+ * 
+ * IMPORTANT: This service only manages properties and references.
+ * React handles DOM removal - we never call removeChild or manipulate DOM structure.
  */
 
 type LeafletMap = any; // Leaflet map instance type
@@ -32,55 +35,41 @@ class MapService {
   /**
    * Check if a container is safe to use (no Leaflet artifacts)
    */
-  isContainerSafe(container: HTMLElement): boolean {
+  isContainerSafe(container: HTMLElement | null): boolean {
     if (!container) return false;
+    
+    // Check if container is still in DOM
+    if (!container.parentNode && !container.isConnected) {
+      return false;
+    }
     
     // Check for Leaflet tracking properties
     if ((container as any)._leaflet_id) return false;
     if ((container as any)._leaflet) return false;
     
     // Check for Leaflet DOM elements
-    if (container.querySelector('.leaflet-container')) return false;
+    try {
+      if (container.querySelector('.leaflet-container')) return false;
+    } catch (e) {
+      // Container might be detached - not safe
+      return false;
+    }
     
     return true;
   }
 
   /**
    * Clean a container, removing all Leaflet artifacts
-   * Uses innerHTML clearing for safety - avoids removeChild errors
+   * PASSIVE CLEANUP: Only clears properties, never manipulates DOM structure
+   * React handles DOM removal - we just clear Leaflet tracking
    */
-  cleanContainer(container: HTMLElement): void {
+  cleanContainer(container: HTMLElement | null): void {
     if (!container) return;
 
-    // First, try to call map.remove() on any Leaflet maps to properly clean them up
-    // This is safer than trying to remove DOM nodes manually
-    try {
-      const leafletContainers = container.querySelectorAll('.leaflet-container');
-      leafletContainers.forEach((el) => {
-        try {
-          const leafletEl = el as HTMLElement;
-          if ((leafletEl as any)._leaflet_id) {
-            const map = (leafletEl as any)._leaflet;
-            if (map && typeof map.remove === 'function') {
-              try {
-                // Only remove if container is still in DOM
-                if (map._container && map._container.parentNode) {
-                  map.remove();
-                }
-              } catch (e) {
-                // Ignore - map might already be removed
-              }
-            }
-          }
-        } catch (e) {
-          // Ignore individual element errors
-        }
-      });
-    } catch (e) {
-      // Ignore querySelector errors
-    }
+    // Check if container is still in DOM - if not, just clear properties
+    const isInDOM = container.parentNode !== null || container.isConnected;
 
-    // Clear container properties first
+    // Step 1: Clear Leaflet tracking properties from container itself
     try {
       delete (container as any)._leaflet_id;
       delete (container as any)._leaflet;
@@ -88,18 +77,38 @@ class MapService {
       // Ignore
     }
 
-    // Safest approach: Clear innerHTML to remove all Leaflet elements
-    // This avoids removeChild errors entirely
+    // Step 2: If container is in DOM, try to clear innerHTML (safest way)
+    // This removes all Leaflet elements without calling removeChild
+    if (isInDOM) {
+      try {
+        // Only clear if there are Leaflet elements
+        const hasLeafletElements = container.querySelector('.leaflet-container');
+        if (hasLeafletElements) {
+          // Clear innerHTML - this removes all children without removeChild errors
+          container.innerHTML = '';
+        }
+      } catch (e) {
+        // Container might be removed during cleanup - ignore
+      }
+    }
+
+    // Step 3: Clear properties from any Leaflet containers (if they still exist)
+    // We do this AFTER clearing innerHTML to catch any that weren't removed
     try {
-      // Check if container still exists and has Leaflet elements
-      if (container.parentNode && container.querySelector('.leaflet-container')) {
-        container.innerHTML = '';
-      } else if (container.querySelector('.leaflet-container')) {
-        // Container might be detached, but still clear it
-        container.innerHTML = '';
+      const leafletContainers = container.querySelectorAll?.('.leaflet-container');
+      if (leafletContainers) {
+        leafletContainers.forEach((el) => {
+          try {
+            const leafletEl = el as HTMLElement;
+            delete (leafletEl as any)._leaflet_id;
+            delete (leafletEl as any)._leaflet;
+          } catch (e) {
+            // Ignore
+          }
+        });
       }
     } catch (e) {
-      // Ignore - container might be removed
+      // Container might be detached - ignore
     }
   }
 
@@ -115,7 +124,6 @@ class MapService {
       
       // Verify it's clean now
       if (!this.isContainerSafe(container)) {
-        console.warn(`Container ${containerId} is not safe after cleanup`);
         return null;
       }
     }
@@ -149,6 +157,7 @@ class MapService {
 
   /**
    * Destroy a map instance and clean up
+   * PASSIVE: Only clears properties and references, never manipulates DOM
    */
   destroyMap(containerId: string): void {
     const instance = this.mapInstances.get(containerId);
@@ -157,39 +166,39 @@ class MapService {
       try {
         const { map, container } = instance;
         
-        // Remove map instance
+        // Step 1: Try to call map.remove() ONLY if container is still in DOM
+        // This lets Leaflet clean up its own resources properly
         if (map && typeof map.remove === 'function') {
           try {
-            // Check if container exists and is still in DOM before removing
             if (map._container) {
               const containerParent = map._container.parentNode;
-              if (containerParent && containerParent.contains(map._container)) {
+              const isConnected = map._container.isConnected;
+              
+              // Only call remove if container is still in DOM
+              // If React is already removing it, skip this to avoid conflicts
+              if (containerParent && isConnected) {
                 map.remove();
               } else {
-                // Container already removed from DOM, just clean properties
+                // Container already removed - just clear properties
                 delete (map._container as any)._leaflet_id;
                 delete (map._container as any)._leaflet;
               }
             }
           } catch (e) {
-            // If remove fails, force cleanup
+            // map.remove() failed - container might be removed by React
+            // Just clear properties
             if (map._container) {
               try {
-                // Only clear if container still exists
-                const containerParent = map._container.parentNode;
-                if (containerParent && containerParent.contains(map._container)) {
-                  map._container.innerHTML = '';
-                }
                 delete (map._container as any)._leaflet_id;
                 delete (map._container as any)._leaflet;
               } catch (e2) {
-                // Ignore - container might be already removed
+                // Ignore
               }
             }
           }
         }
         
-        // Clean container (this method now has safe removal checks)
+        // Step 2: Clean container properties (passive - no DOM manipulation)
         if (container) {
           this.cleanContainer(container);
         }
@@ -197,7 +206,7 @@ class MapService {
         // Ignore errors during cleanup
       }
       
-      // Remove from registry
+      // Step 3: Remove from registry
       this.mapInstances.delete(containerId);
       this.containerRegistry.delete(containerId);
     }

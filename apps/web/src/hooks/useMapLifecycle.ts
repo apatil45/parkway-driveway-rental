@@ -42,25 +42,15 @@ export function useMapLifecycle({
     updateState('cleaning');
 
     const cleanupPromise = new Promise<void>((resolve) => {
-      // Try synchronous cleanup first
-      if (containerRef.current) {
-        mapService.cleanContainer(containerRef.current);
-        
-        // Verify cleanup
-        if (mapService.isContainerSafe(containerRef.current)) {
+      // Wait for React to finish any DOM operations
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (containerRef.current) {
+            mapService.cleanContainer(containerRef.current);
+          }
           updateState('clean');
           resolve();
-          return;
-        }
-      }
-
-      // If synchronous didn't work, use async
-      requestAnimationFrame(() => {
-        if (containerRef.current) {
-          mapService.cleanContainer(containerRef.current);
-        }
-        updateState('clean');
-        resolve();
+        });
       });
     });
 
