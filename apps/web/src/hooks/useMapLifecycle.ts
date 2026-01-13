@@ -78,11 +78,30 @@ export function useMapLifecycle({
     // Verify container is safe
     if (containerRef.current && mapService.isContainerSafe(containerRef.current)) {
       updateState('ready');
+      return;
+    }
+
+    // Not safe, clean it
+    await clean();
+    
+    // Wait a bit for DOM to settle after cleanup
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    
+    // Verify again after cleanup
+    if (containerRef.current && mapService.isContainerSafe(containerRef.current)) {
+      updateState('ready');
     } else {
-      // Not safe, clean it
-      await clean();
-      if (containerRef.current && mapService.isContainerSafe(containerRef.current)) {
-        updateState('ready');
+      // Still not safe - try one more aggressive cleanup
+      if (containerRef.current) {
+        mapService.cleanContainer(containerRef.current);
+        // Wait again
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        if (containerRef.current && mapService.isContainerSafe(containerRef.current)) {
+          updateState('ready');
+        } else {
+          // Last resort: mark as clean anyway and let initialization handle it
+          updateState('clean');
+        }
       }
     }
   }, [containerRef, clean, updateState]);

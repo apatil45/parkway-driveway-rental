@@ -47,71 +47,59 @@ class MapService {
 
   /**
    * Clean a container, removing all Leaflet artifacts
+   * Uses innerHTML clearing for safety - avoids removeChild errors
    */
   cleanContainer(container: HTMLElement): void {
     if (!container) return;
 
-    // Remove Leaflet containers
-    const leafletContainers = container.querySelectorAll('.leaflet-container');
-    leafletContainers.forEach((el) => {
-      try {
-        const leafletEl = el as HTMLElement;
-        if ((leafletEl as any)._leaflet_id) {
-          const map = (leafletEl as any)._leaflet;
-          if (map && typeof map.remove === 'function') {
-            try {
-              map.remove();
-            } catch (e) {
-              // Ignore cleanup errors - map.remove() might already have removed the element
-            }
-          }
-          delete (leafletEl as any)._leaflet_id;
-          delete (leafletEl as any)._leaflet;
-        }
-        
-        // Safely remove element - check if it's still in the DOM and is a child
-        const parent = el.parentNode;
-        if (parent && parent.contains(el)) {
-          try {
-            parent.removeChild(el);
-          } catch (e) {
-            // Element might have been removed by map.remove() - try alternative
-            try {
-              if (el.parentNode) {
-                el.remove();
+    // First, try to call map.remove() on any Leaflet maps to properly clean them up
+    // This is safer than trying to remove DOM nodes manually
+    try {
+      const leafletContainers = container.querySelectorAll('.leaflet-container');
+      leafletContainers.forEach((el) => {
+        try {
+          const leafletEl = el as HTMLElement;
+          if ((leafletEl as any)._leaflet_id) {
+            const map = (leafletEl as any)._leaflet;
+            if (map && typeof map.remove === 'function') {
+              try {
+                // Only remove if container is still in DOM
+                if (map._container && map._container.parentNode) {
+                  map.remove();
+                }
+              } catch (e) {
+                // Ignore - map might already be removed
               }
-            } catch (e2) {
-              // Ignore - element is already removed
             }
           }
-        } else if (el.parentNode) {
-          // Fallback: try remove() if parentNode exists but contains() check failed
-          try {
-            el.remove();
-          } catch (e) {
-            // Ignore - element is already removed or not a child
-          }
+        } catch (e) {
+          // Ignore individual element errors
         }
-      } catch (e) {
-        // Ignore all cleanup errors
-      }
-    });
+      });
+    } catch (e) {
+      // Ignore querySelector errors
+    }
 
-    // Clear container properties
-    delete (container as any)._leaflet_id;
-    delete (container as any)._leaflet;
+    // Clear container properties first
+    try {
+      delete (container as any)._leaflet_id;
+      delete (container as any)._leaflet;
+    } catch (e) {
+      // Ignore
+    }
 
-    // Clear innerHTML if Leaflet elements exist (safest way to ensure cleanup)
-    if (container.querySelector('.leaflet-container')) {
-      try {
-        // Store any non-Leaflet content if needed
-        const hasLeafletElements = container.querySelector('.leaflet-container');
-        if (hasLeafletElements) {
-          container.innerHTML = '';
-        }
-      } catch (e) {
-        // Ignore
+    // Safest approach: Clear innerHTML to remove all Leaflet elements
+    // This avoids removeChild errors entirely
+    try {
+      // Check if container still exists and has Leaflet elements
+      if (container.parentNode && container.querySelector('.leaflet-container')) {
+        container.innerHTML = '';
+      } else if (container.querySelector('.leaflet-container')) {
+        // Container might be detached, but still clear it
+        container.innerHTML = '';
       }
+    } catch (e) {
+      // Ignore - container might be removed
     }
   }
 
