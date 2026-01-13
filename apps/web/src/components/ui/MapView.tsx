@@ -224,7 +224,7 @@ const LeafletMap = dynamic(async () => {
     useEffect(() => {
       if (previousViewModeRef.current !== viewMode) {
         // View mode changed - reset everything
-        cleanupMap(true);
+        cleanupMap();
         setCanRender(false);
         isInitializedRef.current = false;
         mapInstanceRef.current = null;
