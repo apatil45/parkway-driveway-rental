@@ -43,7 +43,6 @@ const LeafletMap = dynamic(async () => {
     const [canRender, setCanRender] = useState(false);
     const mountCountRef = useRef(0);
     const previousViewModeRef = useRef<string | undefined>(viewMode);
-    const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isNavigatingRef = useRef(false);
 
     // Helper function to check if map is valid
@@ -132,151 +131,48 @@ const LeafletMap = dynamic(async () => {
       return null;
     };
 
-    // Cleanup function - made more aggressive and synchronous
-    const cleanupMap = (force = false) => {
-      // Prevent concurrent cleanups
-      if (isCleaningUpRef.current && !force) {
-        return;
-      }
-      
+    // Synchronous cleanup: Remove all Leaflet tracking from container
+    const cleanupMap = () => {
       isCleaningUpRef.current = true;
-      // Mark as destroyed first to prevent operations during cleanup
       isDestroyedRef.current = true;
       
-      // Clear any pending cleanup timeouts
-      if (cleanupTimeoutRef.current) {
-        clearTimeout(cleanupTimeoutRef.current);
-        cleanupTimeoutRef.current = null;
-      }
-      
-      // Synchronously remove map instance
+      // Remove map instance
       if (mapInstanceRef.current) {
         try {
           const map = mapInstanceRef.current;
-          // Check if map is still valid before removing
           if (map._container && map._container.parentNode) {
             try {
-              // Check if this map instance is actually the one associated with the container
-              const containerId = (map._container as any)._leaflet_id;
-              const containerMap = (map._container as any)._leaflet;
-              
-              // Only remove if this is the correct map instance
-              if (containerMap === map || !containerMap) {
-                map.remove();
-              } else {
-                // Container is associated with a different map - just clear it
-                console.warn('Map instance mismatch during cleanup, clearing container directly');
-                map._container.innerHTML = '';
-                delete (map._container as any)._leaflet_id;
-                delete (map._container as any)._leaflet;
-              }
-            } catch (e: any) {
-              // Catch "Map container is being reused" error specifically
-              if (e?.message?.includes('Map container is being reused')) {
-                console.warn('Container reuse detected during cleanup, clearing directly');
-                try {
-                  if (map._container) {
-                    map._container.innerHTML = '';
-                    delete (map._container as any)._leaflet_id;
-                    delete (map._container as any)._leaflet;
-                  }
-                } catch (e2) {
-                  // Ignore
+              map.remove();
+            } catch (e) {
+              // If remove fails, clear directly
+              try {
+                if (map._container) {
+                  map._container.innerHTML = '';
+                  delete (map._container as any)._leaflet_id;
+                  delete (map._container as any)._leaflet;
                 }
-              } else {
-                // Other errors - try to clear the container directly
-                try {
-                  if (map._container) {
-                    map._container.innerHTML = '';
-                    delete (map._container as any)._leaflet_id;
-                    delete (map._container as any)._leaflet;
-                  }
-                } catch (e2) {
-                  // Ignore
-                }
+              } catch (e2) {
+                // Ignore
               }
             }
           }
         } catch (e) {
-          // Ignore cleanup errors - map may already be removed
+          // Ignore
         }
         mapInstanceRef.current = null;
       }
       
-      // Synchronously clean up container
+      // Clean container: Remove all Leaflet artifacts
       if (containerRef.current) {
         const container = containerRef.current;
-        if (container) {
-          // Remove any Leaflet containers inside - do this synchronously
-          const leafletContainers = container.querySelectorAll('.leaflet-container');
-          leafletContainers.forEach((el) => {
+        
+        // Remove Leaflet containers
+        const leafletContainers = container.querySelectorAll('.leaflet-container');
+        leafletContainers.forEach((el) => {
+          try {
             const leafletEl = el as HTMLElement;
             if ((leafletEl as any)._leaflet_id) {
-              try {
-                const map = (leafletEl as any)._leaflet;
-                if (map && typeof map.remove === 'function') {
-                  try {
-                    // Check if map container still exists before removing
-                    if (map._container && map._container.parentNode) {
-                      // Verify this is the correct map instance
-                      const containerId = (map._container as any)._leaflet_id;
-                      const containerMap = (map._container as any)._leaflet;
-                      
-                      if (containerMap === map || !containerMap) {
-                        map.remove();
-                      } else {
-                        // Different map instance - clear directly
-                        map._container.innerHTML = '';
-                        delete (map._container as any)._leaflet_id;
-                        delete (map._container as any)._leaflet;
-                      }
-                    }
-                  } catch (e: any) {
-                    // Catch "Map container is being reused" error
-                    if (e?.message?.includes('Map container is being reused')) {
-                      // Just clear the container - don't try to remove
-                      try {
-                        if (map._container) {
-                          map._container.innerHTML = '';
-                          delete (map._container as any)._leaflet_id;
-                          delete (map._container as any)._leaflet;
-                        }
-                      } catch (e2) {
-                        // Ignore
-                      }
-                    } else {
-                      // Other errors - clear the container
-                      try {
-                        if (map._container) {
-                          map._container.innerHTML = '';
-                        }
-                      } catch (e2) {
-                        // Ignore
-                      }
-                    }
-                  }
-                }
-              } catch (e) {
-                // Ignore - map may already be removed
-              }
-              // Always clear Leaflet tracking
-              delete (leafletEl as any)._leaflet_id;
-              delete (leafletEl as any)._leaflet;
-            }
-            // Remove the element itself
-            try {
-              if (el.parentNode) {
-                el.remove();
-              }
-            } catch (e) {
-              // Ignore if already removed
-            }
-          });
-          
-          // Also check for any Leaflet instances that might be attached to the container itself
-          if ((container as any)._leaflet_id) {
-            try {
-              const map = (container as any)._leaflet;
+              const map = (leafletEl as any)._leaflet;
               if (map && typeof map.remove === 'function') {
                 try {
                   map.remove();
@@ -284,25 +180,44 @@ const LeafletMap = dynamic(async () => {
                   // Ignore
                 }
               }
-            } catch (e) {
-              // Ignore
+              delete (leafletEl as any)._leaflet_id;
+              delete (leafletEl as any)._leaflet;
             }
-            delete (container as any)._leaflet_id;
-            delete (container as any)._leaflet;
+            if (el.parentNode) {
+              el.remove();
+            }
+          } catch (e) {
+            // Ignore
           }
-          
-          // Clear container tracking
-          delete (container as any)._leaflet_id;
-          delete (container as any)._leaflet;
+        });
+        
+        // Clear container properties
+        delete (container as any)._leaflet_id;
+        delete (container as any)._leaflet;
+        
+        // Clear innerHTML if Leaflet elements exist
+        if (container.querySelector('.leaflet-container')) {
+          try {
+            container.innerHTML = '';
+          } catch (e) {
+            // Ignore
+          }
         }
       }
       
       isInitializedRef.current = false;
-      
-      // Reset cleanup flag after a delay to allow cleanup to complete
-      cleanupTimeoutRef.current = setTimeout(() => {
-        isCleaningUpRef.current = false;
-      }, 200);
+      isCleaningUpRef.current = false;
+    };
+    
+    // Check if container has any Leaflet artifacts
+    const isContainerClean = (container: HTMLDivElement): boolean => {
+      if (!container) return false;
+      // Check for Leaflet tracking properties
+      if ((container as any)._leaflet_id) return false;
+      if ((container as any)._leaflet) return false;
+      // Check for Leaflet DOM elements
+      if (container.querySelector('.leaflet-container')) return false;
+      return true;
     };
 
     // Reset refs and cleanup when viewMode changes
@@ -321,222 +236,64 @@ const LeafletMap = dynamic(async () => {
       }
     }, [viewMode]);
 
-    // Cleanup on unmount - make it synchronous and immediate
+    // Cleanup on unmount
     useEffect(() => {
       return () => {
-        // Immediately mark as destroyed to prevent any new operations
         isDestroyedRef.current = true;
         isCleaningUpRef.current = true;
-        
-        // Clear any pending timeouts
-        if (cleanupTimeoutRef.current) {
-          clearTimeout(cleanupTimeoutRef.current);
-          cleanupTimeoutRef.current = null;
-        }
-        
-        // Force immediate cleanup
-        cleanupMap(true);
-        
-        // Prevent any state updates on unmounted component
+        cleanupMap();
         setCanRender(false);
         isInitializedRef.current = false;
         mapInstanceRef.current = null;
       };
     }, []);
 
-    // Synchronous cleanup before render (useLayoutEffect runs before browser paints)
+    // Synchronous validation before render (useLayoutEffect runs before browser paints)
     useLayoutEffect(() => {
       mountCountRef.current += 1;
       const currentMount = mountCountRef.current;
       
-      // Reset navigation flag
       isNavigatingRef.current = false;
+      isDestroyedRef.current = false;
       
-      // Always start with cleanup to ensure clean state
-      cleanupMap(true); // Force cleanup
+      // Cleanup any existing map instances
+      cleanupMap();
       setCanRender(false);
       
+      // Synchronously validate container is clean before allowing render
       if (containerRef.current) {
         const container = containerRef.current;
         
-        // Aggressively clean up any existing map instances SYNCHRONOUSLY
-        // Remove all Leaflet containers and their content
-        const leafletContainers = container.querySelectorAll('.leaflet-container');
-        leafletContainers.forEach((el) => {
-          const leafletEl = el as HTMLElement;
-          if ((leafletEl as any)._leaflet_id) {
-            try {
-              const map = (leafletEl as any)._leaflet;
-              if (map && typeof map.remove === 'function') {
-                try {
-                  // Verify this is the correct map instance before removing
-                  if (map._container) {
-                    const containerMap = (map._container as any)._leaflet;
-                    if (containerMap === map || !containerMap) {
-                      map.remove();
-                    } else {
-                      // Different instance - clear directly
-                      map._container.innerHTML = '';
-                      delete (map._container as any)._leaflet_id;
-                      delete (map._container as any)._leaflet;
-                    }
-                  }
-                } catch (e: any) {
-                  // Catch "Map container is being reused" error
-                  if (e?.message?.includes('Map container is being reused')) {
-                    // Just clear - don't try to remove
-                    try {
-                      if (map._container) {
-                        map._container.innerHTML = '';
-                        delete (map._container as any)._leaflet_id;
-                        delete (map._container as any)._leaflet;
-                      }
-                    } catch (e2) {
-                      // Ignore
-                    }
-                  }
-                }
-              }
-            } catch (e) {
-              // Ignore cleanup errors
-            }
-            delete (leafletEl as any)._leaflet_id;
-            delete (leafletEl as any)._leaflet;
-          }
-          // Remove the element itself
-          try {
-            el.remove();
-          } catch (e) {
-            // Ignore if already removed
-          }
-        });
-        
-        // Also check for any Leaflet instances in the parent container
-        // This handles cases where the container is reused
-        const parent = container.parentElement;
-        if (parent) {
-          const parentLeafletContainers = parent.querySelectorAll('.leaflet-container');
-          parentLeafletContainers.forEach((el) => {
-            const leafletEl = el as HTMLElement;
-            if ((leafletEl as any)._leaflet_id) {
-              try {
-                const map = (leafletEl as any)._leaflet;
-                if (map && typeof map.remove === 'function') {
-                  try {
-                    // Verify this is the correct map instance before removing
-                    if (map._container) {
-                      const containerMap = (map._container as any)._leaflet;
-                      if (containerMap === map || !containerMap) {
-                        map.remove();
-                      } else {
-                        // Different instance - clear directly
-                        map._container.innerHTML = '';
-                        delete (map._container as any)._leaflet_id;
-                        delete (map._container as any)._leaflet;
-                      }
-                    }
-                  } catch (e: any) {
-                    // Catch "Map container is being reused" error
-                    if (e?.message?.includes('Map container is being reused')) {
-                      // Just clear - don't try to remove
-                      try {
-                        if (map._container) {
-                          map._container.innerHTML = '';
-                          delete (map._container as any)._leaflet_id;
-                          delete (map._container as any)._leaflet;
-                        }
-                      } catch (e2) {
-                        // Ignore
-                      }
-                    }
-                  }
-                }
-              } catch (e) {
-                // Ignore
-              }
-              delete (leafletEl as any)._leaflet_id;
-              delete (leafletEl as any)._leaflet;
-            }
-            try {
-              el.remove();
-            } catch (e) {
-              // Ignore if already removed
-            }
-          });
+        // If container has Leaflet artifacts, clean it
+        if (!isContainerClean(container)) {
+          cleanupMap();
         }
         
-        // Clear all Leaflet-related properties from the container SYNCHRONOUSLY
-        delete (container as any)._leaflet_id;
-        delete (container as any)._leaflet;
-        
-        // CRITICAL: Clear innerHTML immediately to remove any leftover Leaflet DOM
-        // This must be done synchronously before React tries to render MapContainer
-        try {
-          // Only clear if there are Leaflet elements
-          const hasLeafletElements = container.querySelector('.leaflet-container');
-          if (hasLeafletElements) {
-            container.innerHTML = '';
-          }
-        } catch (e) {
-          // Ignore - container might be removed
+        // Only allow render if container is clean
+        if (isContainerClean(container)) {
+          setCanRender(true);
+        } else {
+          // Container still dirty - don't render
+          console.warn('Container has Leaflet artifacts, preventing map initialization');
+          setCanRender(false);
         }
-        
-        // Reset destroyed flag for new instance
-        isDestroyedRef.current = false;
-        
-        // CRITICAL FIX: Add a small delay before allowing render
-        // This ensures Leaflet's internal cleanup is complete
-        // Even though we cleaned up synchronously, Leaflet might have async cleanup
-        const renderTimer = setTimeout(() => {
-          if (mountCountRef.current === currentMount && !isDestroyedRef.current && !isNavigatingRef.current) {
-            // Double-check container is clean before allowing render
-            if (containerRef.current) {
-              const container = containerRef.current;
-              const hasLeafletId = (container as any)._leaflet_id;
-              const hasLeafletElements = container.querySelector('.leaflet-container');
-              
-              if (!hasLeafletId && !hasLeafletElements) {
-                setCanRender(true);
-              } else {
-                // Container still has Leaflet tracking - clean it again
-                console.warn('Container still has Leaflet tracking after cleanup, cleaning again');
-                cleanupMap(true);
-                // Try again after another delay
-                setTimeout(() => {
-                  if (mountCountRef.current === currentMount && !isDestroyedRef.current && !isNavigatingRef.current) {
-                    setCanRender(true);
-                  }
-                }, 50);
-              }
-            } else {
-              setCanRender(true);
-            }
-          }
-        }, 50); // Small delay to ensure cleanup is complete
-        
-        return () => {
-          clearTimeout(renderTimer);
-          cleanupMap(true);
-          setCanRender(false);
-        };
-
-        return () => {
-          cleanupMap(true);
-          setCanRender(false);
-        };
+      } else {
+        // No container yet - allow render (container will be validated in ref callback)
+        setCanRender(true);
       }
-
+      
       return () => {
-        cleanupMap(true);
-        setCanRender(false);
+        if (mountCountRef.current === currentMount) {
+          cleanupMap();
+          setCanRender(false);
+        }
       };
-    }, [viewMode]); // Depend on viewMode to re-run when it changes
+    }, [viewMode]);
 
-    // Ref callback with cleanup
+    // Ref callback: Clean up previous container if it changes
     const containerRefCallback = (node: HTMLDivElement | null) => {
-      // Clean up previous container if it exists
       if (containerRef.current && containerRef.current !== node) {
-        cleanupMap(true);
+        cleanupMap();
       }
       containerRef.current = node;
     };
@@ -580,9 +337,7 @@ const LeafletMap = dynamic(async () => {
           <div className="bg-gray-100 rounded-lg flex items-center justify-center h-full">
             <div className="text-gray-500 text-sm">Loading map...</div>
           </div>
-        ) : containerRef.current && 
-          !(containerRef.current as any)._leaflet_id && 
-          !containerRef.current.querySelector('.leaflet-container') ? (
+        ) : containerRef.current && isContainerClean(containerRef.current) ? (
           // Use a unique key that changes on every mount to force React to create a new MapContainer
           // This prevents React from reusing the component and causing container reuse errors
           <MapContainer
@@ -595,7 +350,7 @@ const LeafletMap = dynamic(async () => {
             zoomControl={true}
             ref={(map) => {
               if (!map) {
-                // If map is null, it means it's being unmounted - cleanup immediately
+                // Unmounting: cleanup existing map instance
                 if (mapInstanceRef.current) {
                   try {
                     if (mapInstanceRef.current._container && mapInstanceRef.current._container.parentNode) {
@@ -609,121 +364,36 @@ const LeafletMap = dynamic(async () => {
                 return;
               }
               
-              // Don't initialize if we're cleaning up, destroyed, or navigating
+              // Prevent initialization if cleaning up, destroyed, or navigating
               if (isCleaningUpRef.current || isDestroyedRef.current || isNavigatingRef.current) {
                 return;
               }
               
-              // CRITICAL CHECK: If container has ANY Leaflet tracking, don't initialize
-              // This prevents the "Map container is being reused" error
-              if (containerRef.current) {
-                const container = containerRef.current;
-                
-                // Check if container itself has Leaflet tracking
-                if ((container as any)._leaflet_id) {
-                  console.warn('Container has _leaflet_id, cleaning up before initialization');
-                  cleanupMap(true);
-                  // Clear it again to be sure
-                  delete (container as any)._leaflet_id;
-                  delete (container as any)._leaflet;
-                  // Don't initialize - let React remount with clean state
-                  return;
-                }
-                
-                // Check if container has any Leaflet containers inside
-                const leafletContainers = container.querySelectorAll('.leaflet-container');
-                if (leafletContainers.length > 0) {
-                  console.warn('Container has Leaflet elements, cleaning up before initialization');
-                  cleanupMap(true);
-                  // Clear innerHTML to remove all Leaflet elements
-                  try {
-                    container.innerHTML = '';
-                  } catch (e) {
-                    // Ignore
-                  }
-                  // Don't initialize - let React remount with clean state
-                  return;
-                }
-                
-                // Check if the map's container already has a Leaflet ID
-                const mapAny = map as any;
-                if (mapAny._container && (mapAny._container as any)._leaflet_id) {
-                  console.warn('Map container already has _leaflet_id, cleaning up');
-                  cleanupMap(true);
-                  delete (mapAny._container as any)._leaflet_id;
-                  delete (mapAny._container as any)._leaflet;
-                  return;
-                }
+              // CRITICAL: Check container is clean before initializing
+              // This prevents "Map container is being reused" error
+              if (containerRef.current && !isContainerClean(containerRef.current)) {
+                console.warn('Container has Leaflet artifacts, preventing initialization');
+                cleanupMap();
+                isDestroyedRef.current = true;
+                return;
               }
               
+              // Initialize map instance
               try {
-                // Check if container already has a Leaflet instance
-                if (containerRef.current) {
-                  const existingContainers = containerRef.current.querySelectorAll('.leaflet-container');
-                  if (existingContainers.length > 1) {
-                    // Multiple containers detected - cleanup and skip
-                    cleanupMap(true);
-                    return;
-                  }
-                  
-                  // Check if this container already has a Leaflet ID
-                  if ((containerRef.current as any)._leaflet_id) {
-                    // Container is already in use - cleanup first synchronously
-                    cleanupMap(true);
-                    // Don't initialize if container is still marked as in use
-                    if ((containerRef.current as any)._leaflet_id) {
-                      return;
-                    }
-                  }
-                  
-                  // Check if map's container is already associated with another map
-                  const mapAny = map as any;
-                  if (mapAny._container) {
-                    // Check if container has a Leaflet ID that doesn't match this map
-                    if (mapAny._container._leaflet_id) {
-                      // If we have a different map instance, cleanup first
-                      if (mapInstanceRef.current) {
-                        const currentMapAny = mapInstanceRef.current as any;
-                        if (currentMapAny._leaflet_id && currentMapAny._leaflet_id !== mapAny._container._leaflet_id) {
-                          cleanupMap(true);
-                          return;
-                        }
-                      }
-                    }
-                  }
-                }
-                
-                // Only initialize if we're not already initialized and not cleaning up
-                if (!isInitializedRef.current && !isCleaningUpRef.current && !isDestroyedRef.current) {
+                if (!isInitializedRef.current) {
                   mapInstanceRef.current = map;
                   isInitializedRef.current = true;
-                  isDestroyedRef.current = false;
-                } else if (isInitializedRef.current && mapInstanceRef.current !== map && !isCleaningUpRef.current && !isDestroyedRef.current) {
-                  // Different map instance detected - cleanup old one first
-                  try {
-                    if (mapInstanceRef.current && typeof mapInstanceRef.current.remove === 'function') {
-                      // Check if old map is still valid before removing
-                      if (mapInstanceRef.current._container && mapInstanceRef.current._container.parentNode) {
-                        mapInstanceRef.current.remove();
-                      }
-                    }
-                  } catch (e) {
-                    // Ignore cleanup errors
-                  }
-                  mapInstanceRef.current = map;
                   isDestroyedRef.current = false;
                 }
               } catch (error: any) {
                 // Catch "Map container is being reused" error
                 if (error?.message?.includes('Map container is being reused')) {
                   console.warn('Map container reuse detected, cleaning up...');
-                  cleanupMap(true);
-                  // Don't retry here - let React handle remounting
+                  cleanupMap();
                   isDestroyedRef.current = true;
                 } else {
-                  isDestroyedRef.current = true;
-                  // Don't throw - let ErrorBoundary handle it
                   console.error('Map initialization error:', error);
+                  isDestroyedRef.current = true;
                 }
               }
             }}

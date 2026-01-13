@@ -75,26 +75,24 @@ function SearchPageContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   
-  // CRITICAL FIX: Generate a fresh container key ONLY when returning to search page
-  // NOT when leaving - this prevents React from destroying the div while we're still cleaning up
+  // Container key management: Increment ONLY when navigating back to /search
+  // This forces React to destroy the old container div and create a fresh one
   const [containerKey, setContainerKey] = useState(0);
   const previousPathnameRef = useRef<string | null>(pathname);
   
-  // Regenerate container ONLY when returning to search page (not when leaving)
   useEffect(() => {
     const wasOnSearch = previousPathnameRef.current === '/search';
     const isOnSearch = pathname === '/search';
     
-    // Only regenerate if we're coming BACK to search page
     if (!wasOnSearch && isOnSearch) {
-      // Coming to search page - create fresh container
+      // Navigating TO search page: Create fresh container
       setContainerKey(prev => prev + 1);
       setCanRenderMap(true);
     } else if (wasOnSearch && !isOnSearch) {
-      // Leaving search page - just unmount, don't change key yet
+      // Navigating AWAY from search page: Unmount map
       setCanRenderMap(false);
     } else if (isOnSearch) {
-      // Already on search page - ensure map can render
+      // Already on search page: Ensure map can render
       setCanRenderMap(true);
     }
     
@@ -540,35 +538,32 @@ function SearchPageContent() {
       {/* Main Content Area - Split Layout */}
       <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
         {/* Map Section */}
-        {/* OUT-OF-THE-BOX SOLUTION: 
-            - Use a key that changes to force React to DESTROY and RECREATE the entire div
-            - This ensures Leaflet NEVER sees a reused DOM element
-            - Each navigation gets a completely fresh container with no Leaflet tracking */}
+        {/* Container key forces React to destroy/recreate div on navigation */}
         <div 
           ref={mapContainerRef}
           key={`map-wrapper-${containerKey}`}
           className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200 relative bg-gray-100"
         >
-            {!emptyResults && canRenderMap && (
-              <MapView
-                key={`mapview-${viewMode}-${containerKey}`}
-                viewMode={viewMode}
-                center={mapCenter}
-                markers={mapMarkers}
-                height="100%"
-                onMarkerClick={(id) => {
-                  setSelectedDriveway(id);
-                  const element = document.getElementById(`driveway-${id}`);
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    element.classList.add('ring-2', 'ring-primary-500');
-                    setTimeout(() => {
-                      element.classList.remove('ring-2', 'ring-primary-500');
-                    }, 2000);
-                  }
-                }}
-              />
-            )}
+          {!emptyResults && canRenderMap && (
+            <MapView
+              key={`mapview-${viewMode}-${containerKey}`}
+              viewMode={viewMode}
+              center={mapCenter}
+              markers={mapMarkers}
+              height="100%"
+              onMarkerClick={(id) => {
+                setSelectedDriveway(id);
+                const element = document.getElementById(`driveway-${id}`);
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  element.classList.add('ring-2', 'ring-primary-500');
+                  setTimeout(() => {
+                    element.classList.remove('ring-2', 'ring-primary-500');
+                  }, 2000);
+                }
+              }}
+            />
+          )}
             {emptyResults && (
               <div className="flex items-center justify-center h-full text-gray-500">
                 <div className="text-center">
@@ -606,32 +601,11 @@ function SearchPageContent() {
                         className={`bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
                           selectedDriveway === driveway.id ? 'ring-2 ring-primary-500' : ''
                         }`}
-                        onClick={async () => {
+                        onClick={() => {
                           setSelectedDriveway(driveway.id);
-                          
-                          // CRITICAL FIX: Proper sequence to prevent race conditions
-                          // Step 1: Unmount MapView FIRST (before any DOM manipulation)
+                          // Unmount map before navigation
                           setCanRenderMap(false);
-                          
-                          // Step 2: Wait for React to process the unmount
-                          // Use multiple requestAnimationFrame to ensure React's commit phase completes
-                          await new Promise(resolve => requestAnimationFrame(resolve));
-                          await new Promise(resolve => requestAnimationFrame(resolve));
-                          await new Promise(resolve => requestAnimationFrame(resolve)); // Extra frame for safety
-                          
-                          // Step 3: Now that React has unmounted, clean up Leaflet instances
-                          cleanupMap();
-                          
-                          // Step 4: Wait a bit more to ensure cleanup is complete
-                          await new Promise(resolve => setTimeout(resolve, 100));
-                          
-                          // Step 5: Final cleanup pass
-                          cleanupMap();
-                          
-                          // Step 6: Additional wait to ensure everything is settled
-                          await new Promise(resolve => setTimeout(resolve, 50));
-                          
-                          // Step 7: Navigate (containerKey will be regenerated when we return to search page)
+                          // Navigate - containerKey will increment when returning to /search
                           router.push(`/driveway/${driveway.id}`);
                         }}
                       >
