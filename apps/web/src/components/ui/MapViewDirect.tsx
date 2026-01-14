@@ -149,12 +149,11 @@ export default function MapViewDirect({
             onMarkerClick?.(marker.id);
           });
 
-          markerClusterGroup.addLayer(leafletMarker);
+          leafletMarker.addTo(map);
           markerInstances.push(leafletMarker);
         });
 
         markersRef.current = markerInstances;
-        map.addLayer(markerClusterGroup);
 
         // Set view to center
         map.setView(center, map.getZoom());
