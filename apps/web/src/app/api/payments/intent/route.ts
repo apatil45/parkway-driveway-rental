@@ -185,7 +185,25 @@ export async function POST(request: NextRequest) {
           return NextResponse.json(createApiError(error.message || 'Your card was declined. Please check your card details and try again.', 400, 'CARD_ERROR'), { status: 400 });
         }
         if (error.type === 'StripeInvalidRequestError') {
-          return NextResponse.json(createApiError('Please check your payment information and try again.', 400, 'INVALID_REQUEST'), { status: 400 });
+          console.error('[PAYMENT] Stripe invalid request error:', {
+            message: error.message,
+            code: error.code,
+            param: error.param,
+            amount: amountNum,
+            bookingId
+          });
+          // Provide more specific error message based on Stripe's error
+          let userMessage = 'Please check your payment information and try again.';
+          if (error.message) {
+            if (error.message.includes('amount')) {
+              userMessage = 'Invalid payment amount. Please check the amount and try again.';
+            } else if (error.message.includes('currency')) {
+              userMessage = 'Invalid currency. Please contact support.';
+            } else if (error.message.includes('api_key')) {
+              userMessage = 'Payment processing configuration error. Please contact support.';
+            }
+          }
+          return NextResponse.json(createApiError(userMessage, 400, 'INVALID_REQUEST'), { status: 400 });
         }
         return NextResponse.json(createApiError('Unable to process payment. Please try again in a moment.', 500, 'PAYMENT_ERROR'), { status: 500 });
       }
