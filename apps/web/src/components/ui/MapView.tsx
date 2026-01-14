@@ -188,8 +188,10 @@ const LeafletMap = dynamic(async () => {
     }, [containerId, prepare]);
 
     // Log render cycle
-    const logPrefix = `[MapView.render] containerId: ${containerId}`;
-    console.log(`${logPrefix} Rendering - isReady: ${isReady}, containerRef.current: ${containerRef.current ? 'exists' : 'null'}, state: ${state}`);
+    useEffect(() => {
+      const logPrefix = `[MapView.render] containerId: ${containerId}`;
+      console.log(`${logPrefix} Render - isReady: ${isReady}, containerRef.current: ${containerRef.current ? 'exists' : 'null'}, state: ${state}`);
+    });
     
     return (
       <div
@@ -202,6 +204,7 @@ const LeafletMap = dynamic(async () => {
           </div>
         ) : containerRef.current ? (
           (() => {
+            const logPrefix = `[MapView.render] containerId: ${containerId}`;
             console.log(`${logPrefix} Rendering MapContainer - container exists, isReady: true`);
             return (
               <MapContainer
