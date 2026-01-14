@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef, useCallback, memo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
@@ -414,7 +414,8 @@ function SearchPageContent() {
             const shouldRender = !emptyResults && canRenderMap;
             console.log('[SearchPage] MapView render check - emptyResults:', emptyResults, 'canRenderMap:', canRenderMap, 'shouldRender:', shouldRender);
             return shouldRender ? (
-              <MapView
+              <MemoizedMapView
+              key="search-map" // Stable key to prevent unmount on re-renders
               viewMode={viewMode}
               center={mapCenter}
               markers={mapMarkers}

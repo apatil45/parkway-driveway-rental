@@ -364,7 +364,7 @@ interface MapMarker {
   image?: string;
 }
 
-export default function MapView({
+function MapView({
   center,
   markers,
   height = '100%',
@@ -398,3 +398,6 @@ export default function MapView({
     />
   );
 }
+
+// Memoize MapView to prevent unnecessary re-renders
+export default MapView;
