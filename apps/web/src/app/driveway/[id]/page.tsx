@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api';
 import { PricingService } from '@/services/PricingService';
+import { createAppError } from '@/lib/errors';
 
 interface Driveway {
   id: string;
@@ -394,25 +395,12 @@ export default function DrivewayDetailsPage() {
         return;
       }
       
-      // Extract detailed error message - use user-friendly message from API
-      let errorMessage = 'Unable to create your booking. Please try again.';
+      // Extract user-friendly error message
+      // Use the error handler to get proper user-friendly message
+      const appError = createAppError(err);
       
-      if (err.response?.data) {
-        const errorData = err.response.data;
-        if (errorData.message) {
-          // Use the API's user-friendly message
-          errorMessage = errorData.message;
-        } else if (errorData.error) {
-          // Only use error if it's a user-friendly string
-          if (typeof errorData.error === 'string' && !errorData.error.includes('Error') && !errorData.error.includes('error')) {
-            errorMessage = errorData.error;
-          }
-        }
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      showToast(errorMessage, 'error');
+      // Always use userMessage from AppError (it's guaranteed to be user-friendly)
+      showToast(appError.userMessage, 'error');
     } finally {
       isSubmittingRef.current = false;
       setBookingLoading(false);

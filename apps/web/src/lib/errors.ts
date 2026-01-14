@@ -38,26 +38,63 @@ export interface AppError {
  * Get user-friendly error message based on error type
  */
 export function getUserFriendlyMessage(error: any): string {
-  // If already a formatted AppError
-  if (error && typeof error === 'object' && error.userMessage) {
+  // If already a formatted AppError with userMessage
+  if (error && typeof error === 'object' && error.userMessage && typeof error.userMessage === 'string') {
     return error.userMessage;
   }
 
-  // Handle string errors
+  // Handle string errors (if they're already user-friendly)
   if (typeof error === 'string') {
+    const lowerMsg = error.toLowerCase();
+    // Filter out technical messages
+    if (lowerMsg.includes('request failed') || lowerMsg.includes('status code') || lowerMsg.includes('error:') || lowerMsg.includes('failed to execute')) {
+      // This is a technical message, parse it
+      return parseErrorMessage(error);
+    }
     return error;
   }
 
-  // Handle API response errors
-  if (error?.response?.data?.message) {
-    return error.response.data.message;
+  // PRIORITY 1: API response data (from createApiError)
+  if (error?.response?.data) {
+    const errorData = error.response.data;
+    
+    // Check for user-friendly message field first
+    if (errorData.message && typeof errorData.message === 'string') {
+      const msg = errorData.message.toLowerCase();
+      // Filter out technical messages
+      if (!msg.includes('request failed') && 
+          !msg.includes('status code') && 
+          !msg.includes('error:') && 
+          !msg.includes('failed to execute') &&
+          !msg.includes('failed with status')) {
+        return errorData.message;
+      }
+    }
+    
+    // Check error field (usually error code, but sometimes has message)
+    if (errorData.error && typeof errorData.error === 'string') {
+      const errMsg = errorData.error.toLowerCase();
+      // Only use if it's clearly user-friendly (not a code like "VALIDATION_ERROR")
+      if (!errMsg.includes('_error') && 
+          !errMsg.includes('error') && 
+          !errMsg.includes('failed') &&
+          errMsg.length > 10) { // User messages are usually longer
+        return errorData.error;
+      }
+    }
   }
 
-  // Handle axios errors
-  if (error?.message) {
+  // PRIORITY 2: Check if error object has a userMessage property
+  if (error?.userMessage && typeof error.userMessage === 'string') {
+    return error.userMessage;
+  }
+
+  // PRIORITY 3: Parse axios/technical error messages
+  if (error?.message && typeof error.message === 'string') {
     return parseErrorMessage(error.message);
   }
 
+  // Default fallback
   return 'An unexpected error occurred. Please try again.';
 }
 
@@ -67,13 +104,37 @@ export function getUserFriendlyMessage(error: any): string {
 function parseErrorMessage(message: string): string {
   const lowerMessage = message.toLowerCase();
 
-  // Network errors
-  if (lowerMessage.includes('network') || lowerMessage.includes('fetch')) {
-    return 'Unable to connect to the server. Please check your internet connection.';
+  // Filter out technical axios messages
+  if (lowerMessage.includes('request failed with status code')) {
+    // Extract status code and provide user-friendly message
+    const statusMatch = message.match(/status code (\d+)/);
+    if (statusMatch) {
+      const statusCode = parseInt(statusMatch[1]);
+      if (statusCode === 400) {
+        return 'Please check your input and try again.';
+      } else if (statusCode === 401) {
+        return 'Your session has expired. Please log in again.';
+      } else if (statusCode === 403) {
+        return 'You do not have permission to perform this action.';
+      } else if (statusCode === 404) {
+        return 'The requested resource was not found.';
+      } else if (statusCode === 409) {
+        return 'This action conflicts with the current state. Please refresh and try again.';
+      } else if (statusCode >= 500) {
+        return 'The server encountered an error. Please try again in a moment.';
+      }
+      return 'An error occurred. Please try again.';
+    }
+    return 'An error occurred. Please try again.';
   }
 
-  if (lowerMessage.includes('timeout')) {
-    return 'The request took too long. Please try again.';
+  // Network errors
+  if (lowerMessage.includes('network') || lowerMessage.includes('fetch') || lowerMessage.includes('network error')) {
+    return 'Unable to connect to the server. Please check your internet connection and try again.';
+  }
+
+  if (lowerMessage.includes('timeout') || lowerMessage.includes('timed out')) {
+    return 'The request took too long. Please check your connection and try again.';
   }
 
   // Auth errors
@@ -91,7 +152,7 @@ function parseErrorMessage(message: string): string {
   }
 
   // Server errors
-  if (lowerMessage.includes('500') || lowerMessage.includes('server error')) {
+  if (lowerMessage.includes('500') || lowerMessage.includes('server error') || lowerMessage.includes('internal server error')) {
     return 'The server encountered an error. Please try again in a moment.';
   }
 
@@ -100,6 +161,12 @@ function parseErrorMessage(message: string): string {
     return 'Please check your input and try again.';
   }
 
+  // If it's still a technical message, return generic user-friendly message
+  if (lowerMessage.includes('error') || lowerMessage.includes('failed') || lowerMessage.includes('exception')) {
+    return 'An error occurred. Please try again.';
+  }
+
+  // If message seems user-friendly, return as-is
   return message;
 }
 

@@ -198,9 +198,11 @@ export default function BookingsPage() {
       await fetchBookings(pagination.page);
       showToast(`Booking ${newStatus.toLowerCase()} successfully`, 'success');
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Unable to update booking. Please try again.';
-      setError(msg);
-      showToast(msg, 'error');
+      // Use error handler for user-friendly messages
+      const { createAppError } = await import('@/lib/errors');
+      const appError = createAppError(err);
+      setError(appError.userMessage);
+      showToast(appError.userMessage, 'error');
     } finally {
       setLoading(false);
     }

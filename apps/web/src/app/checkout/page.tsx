@@ -7,6 +7,7 @@ import StripeCheckout from '@/components/ui/StripeCheckout';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api';
+import { createAppError } from '@/lib/errors';
 import Link from 'next/link';
 
 interface Booking {

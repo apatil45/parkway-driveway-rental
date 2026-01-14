@@ -168,22 +168,12 @@ function CheckoutInner({
         toString: err?.toString()
       });
       
-      // Provide user-friendly error message
-      let errorMsg = 'Payment could not be processed. Please try again.';
-      if (err?.message) {
-        const msg = err.message.toLowerCase();
-        if (msg.includes('network') || msg.includes('connection')) {
-          errorMsg = 'Connection error. Please check your internet connection and try again.';
-        } else if (msg.includes('timeout')) {
-          errorMsg = 'Request timed out. Please try again.';
-        } else if (!msg.includes('error') && !msg.includes('failed')) {
-          // Use the message if it seems user-friendly
-          errorMsg = err.message;
-        }
-      }
+      // Use error handler for user-friendly messages
+      const { createAppError } = await import('@/lib/errors');
+      const appError = createAppError(err);
       
-      setError(errorMsg);
-      showToast(errorMsg, 'error');
+      setError(appError.userMessage);
+      showToast(appError.userMessage, 'error');
     } finally {
       setLoading(false);
     }
