@@ -37,12 +37,23 @@ const LeafletMap = dynamic(async () => {
   }) => {
     const { MapContainer, TileLayer, Marker, Popup, useMap } = L;
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const wasReadyRef = useRef<boolean>(false);
 
     // Use map lifecycle hook
     const { state, prepare, initialize, isReady, isInitialized } = useMapLifecycle({
       containerId,
       containerRef,
     });
+
+    // Track when we become ready to prevent immediate unmount
+    useEffect(() => {
+      if (isReady && !wasReadyRef.current) {
+        wasReadyRef.current = true;
+        console.log(`[MapView] containerId: ${containerId} - First time becoming ready, will render MapContainer on next render`);
+      } else if (!isReady) {
+        wasReadyRef.current = false;
+      }
+    }, [isReady, containerId]);
 
     // Component to handle map updates
     const MapUpdater = ({ center }: { center: [number, number] }) => {
@@ -203,7 +214,7 @@ const LeafletMap = dynamic(async () => {
         ref={containerRefCallback}
         style={{ height, width: '100%', position: 'relative' }}
       >
-        {!isReady ? (
+        {!isReady || !wasReadyRef.current ? (
           <div className="bg-gray-100 rounded-lg flex items-center justify-center h-full">
             <div className="text-gray-500 text-sm">Loading map...</div>
           </div>
