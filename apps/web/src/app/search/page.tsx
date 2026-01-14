@@ -7,6 +7,9 @@ import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import MapView from '@/components/ui/MapView';
+
+// Use MapView directly with stable key
+const MemoizedMapView = MapView;
 import { useDriveways } from '@/hooks';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 
@@ -420,7 +423,7 @@ function SearchPageContent() {
               center={mapCenter}
               markers={mapMarkers}
               height="100%"
-              onMarkerClick={(id) => {
+              onMarkerClick={(id: string) => {
                 setSelectedDriveway(id);
                 const element = document.getElementById(`driveway-${id}`);
                 if (element) {
