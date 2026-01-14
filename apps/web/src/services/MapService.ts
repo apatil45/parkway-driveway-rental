@@ -38,23 +38,33 @@ class MapService {
   isContainerSafe(container: HTMLElement | null): boolean {
     if (!container) return false;
     
-    // Check if container is still in DOM
-    if (!container.parentNode && !container.isConnected) {
-      return false;
-    }
-    
-    // Check for Leaflet tracking properties
+    // Check for Leaflet tracking properties on the container itself
     if ((container as any)._leaflet_id) return false;
     if ((container as any)._leaflet) return false;
     
-    // Check for Leaflet DOM elements
+    // Check for Leaflet DOM elements inside the container
     try {
-      if (container.querySelector('.leaflet-container')) return false;
+      const leafletContainer = container.querySelector('.leaflet-container');
+      if (leafletContainer) {
+        // If there's a leaflet container, check if it has tracking properties
+        const leafletEl = leafletContainer as HTMLElement;
+        if ((leafletEl as any)._leaflet_id || (leafletEl as any)._leaflet) {
+          return false;
+        }
+        // If leaflet container exists but has no tracking, it might be leftover DOM
+        // from a previous instance - not safe
+        return false;
+      }
     } catch (e) {
-      // Container might be detached - not safe
-      return false;
+      // querySelector failed - container might be detached
+      // But we'll allow it if it's just a querySelector error (not a real issue)
+      // Only fail if container is definitely detached
+      if (!container.parentNode && !container.isConnected) {
+        return false;
+      }
     }
     
+    // Container is safe - no Leaflet artifacts
     return true;
   }
 

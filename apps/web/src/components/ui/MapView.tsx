@@ -111,11 +111,6 @@ const LeafletMap = dynamic(async () => {
       return null;
     };
 
-    // Prepare container on mount
-    useEffect(() => {
-      prepare();
-    }, [prepare]);
-
     // Create custom parking icon
     const parkingIcon = useMemo(() => {
       return leaflet.default.divIcon({
@@ -145,13 +140,25 @@ const LeafletMap = dynamic(async () => {
       });
     }, []);
 
-    // Container ref callback
+    // Container ref callback - prepare when container is attached
     const containerRefCallback = useCallback((node: HTMLDivElement | null) => {
       if (containerRef.current && containerRef.current !== node) {
-        // Container changed - prepare new one
-        prepare();
+        // Container changed - old container is being replaced
+        // Don't prepare here, let the new node prepare
       }
+      
+      // Set ref first
       containerRef.current = node;
+      
+      // Then prepare if we have a node
+      if (node) {
+        // Wait for React to finish attaching to DOM
+        requestAnimationFrame(() => {
+          if (containerRef.current === node) {
+            prepare();
+          }
+        });
+      }
     }, [prepare]);
 
     return (
