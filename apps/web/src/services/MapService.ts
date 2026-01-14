@@ -192,7 +192,8 @@ class MapService {
 
   /**
    * Destroy a map instance and clean up
-   * PASSIVE: Only clears properties and references, never manipulates DOM
+   * PASSIVE: Only clears properties and references, NEVER calls map.remove()
+   * React handles DOM removal - we just clear Leaflet tracking properties
    */
   destroyMap(containerId: string): void {
     const instance = this.mapInstances.get(containerId);
@@ -201,39 +202,19 @@ class MapService {
       try {
         const { map, container } = instance;
         
-        // Step 1: Try to call map.remove() ONLY if container is still in DOM
-        // This lets Leaflet clean up its own resources properly
-        if (map && typeof map.remove === 'function') {
+        // NEVER call map.remove() - it causes removeChild errors when React is unmounting
+        // Instead, just clear Leaflet tracking properties
+        if (map && map._container) {
           try {
-            if (map._container) {
-              const containerParent = map._container.parentNode;
-              const isConnected = map._container.isConnected;
-              
-              // Only call remove if container is still in DOM
-              // If React is already removing it, skip this to avoid conflicts
-              if (containerParent && isConnected) {
-                map.remove();
-              } else {
-                // Container already removed - just clear properties
-                delete (map._container as any)._leaflet_id;
-                delete (map._container as any)._leaflet;
-              }
-            }
+            // Clear Leaflet tracking properties from the map's container
+            delete (map._container as any)._leaflet_id;
+            delete (map._container as any)._leaflet;
           } catch (e) {
-            // map.remove() failed - container might be removed by React
-            // Just clear properties
-            if (map._container) {
-              try {
-                delete (map._container as any)._leaflet_id;
-                delete (map._container as any)._leaflet;
-              } catch (e2) {
-                // Ignore
-              }
-            }
+            // Ignore - container might already be removed
           }
         }
         
-        // Step 2: Clean container properties (passive - no DOM manipulation)
+        // Clean container properties (passive - no DOM manipulation)
         if (container) {
           this.cleanContainer(container);
         }
@@ -241,7 +222,7 @@ class MapService {
         // Ignore errors during cleanup
       }
       
-      // Step 3: Remove from registry
+      // Remove from registry
       this.mapInstances.delete(containerId);
       this.containerRegistry.delete(containerId);
     }
