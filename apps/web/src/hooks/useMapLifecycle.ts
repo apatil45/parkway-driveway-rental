@@ -29,10 +29,13 @@ export function useMapLifecycle({
 
   // Update both state and ref
   const updateState = useCallback((newState: MapState) => {
+    const logPrefix = `[useMapLifecycle.updateState] containerId: ${containerId}`;
+    const oldState = stateRef.current;
+    console.log(`${logPrefix} State change: ${oldState} → ${newState}`);
     stateRef.current = newState;
     setState(newState);
     onStateChange?.(newState);
-  }, [onStateChange]);
+  }, [containerId, onStateChange]);
 
   // Clean container asynchronously
   const clean = useCallback(async (): Promise<void> => {

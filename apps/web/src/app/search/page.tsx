@@ -410,8 +410,11 @@ function SearchPageContent() {
         <div 
           className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200 relative bg-gray-100"
         >
-          {!emptyResults && canRenderMap && (
-            <MapView
+          {(() => {
+            const shouldRender = !emptyResults && canRenderMap;
+            console.log('[SearchPage] MapView render check - emptyResults:', emptyResults, 'canRenderMap:', canRenderMap, 'shouldRender:', shouldRender);
+            return shouldRender ? (
+              <MapView
               viewMode={viewMode}
               center={mapCenter}
               markers={mapMarkers}
@@ -428,7 +431,8 @@ function SearchPageContent() {
                 }
               }}
             />
-          )}
+            ) : null;
+          })()}
             {emptyResults && (
               <div className="flex items-center justify-center h-full text-gray-500">
                 <div className="text-center">

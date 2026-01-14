@@ -187,6 +187,10 @@ const LeafletMap = dynamic(async () => {
       });
     }, [containerId, prepare]);
 
+    // Log render cycle
+    const logPrefix = `[MapView.render] containerId: ${containerId}`;
+    console.log(`${logPrefix} Rendering - isReady: ${isReady}, containerRef.current: ${containerRef.current ? 'exists' : 'null'}, state: ${state}`);
+    
     return (
       <div
         ref={containerRefCallback}
@@ -197,7 +201,10 @@ const LeafletMap = dynamic(async () => {
             <div className="text-gray-500 text-sm">Loading map...</div>
           </div>
         ) : containerRef.current ? (
-          <MapContainer
+          (() => {
+            console.log(`${logPrefix} Rendering MapContainer - container exists, isReady: true`);
+            return (
+              <MapContainer
             key={containerId}
             center={center}
             zoom={13}
