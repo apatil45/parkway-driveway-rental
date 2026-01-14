@@ -203,11 +203,7 @@ const LeafletMap = dynamic(async () => {
             <div className="text-gray-500 text-sm">Loading map...</div>
           </div>
         ) : containerRef.current ? (
-          (() => {
-            const logPrefix = `[MapView.render] containerId: ${containerId}`;
-            console.log(`${logPrefix} Rendering MapContainer - container exists, isReady: true`);
-            return (
-              <MapContainer
+          <MapContainer
             key={containerId}
             center={center}
             zoom={13}
