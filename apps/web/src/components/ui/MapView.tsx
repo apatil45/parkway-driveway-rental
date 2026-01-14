@@ -141,34 +141,50 @@ const LeafletMap = dynamic(async () => {
     }, []);
 
     // Container ref callback - prepare when container is attached
+    // Use useRef to track if we've already prepared to avoid multiple calls
+    const hasPreparedRef = useRef(false);
+    
     const containerRefCallback = useCallback((node: HTMLDivElement | null) => {
       const logPrefix = `[MapView.containerRefCallback] containerId: ${containerId}`;
-      console.log(`${logPrefix} Ref callback called, node:`, node ? 'exists' : 'null');
+      console.log(`${logPrefix} Ref callback called, node:`, node ? 'exists' : 'null', 'hasPrepared:', hasPreparedRef.current);
       
-      if (containerRef.current && containerRef.current !== node) {
-        console.log(`${logPrefix} Container changed, old container being replaced`);
-        // Container changed - old container is being replaced
-        // Don't prepare here, let the new node prepare
+      if (!node) {
+        // Node is null - unmounting
+        console.log(`${logPrefix} Node is null (unmounting), resetting hasPrepared`);
+        hasPreparedRef.current = false;
+        containerRef.current = null;
+        return;
+      }
+      
+      // Only prepare once per container attachment
+      if (containerRef.current === node && hasPreparedRef.current) {
+        console.log(`${logPrefix} Same node, already prepared, skipping`);
+        return;
       }
       
       // Set ref first
       containerRef.current = node;
-      console.log(`${logPrefix} Ref set, preparing...`);
+      hasPreparedRef.current = false; // Reset flag
+      console.log(`${logPrefix} Ref set, will prepare...`);
       
-      // Then prepare if we have a node
-      if (node) {
-        // Wait for React to finish attaching to DOM
+      // Prepare only once when container is first attached
+      // Use double requestAnimationFrame to ensure DOM is fully settled
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (containerRef.current === node) {
+          // Check if container is still the same and we haven't prepared yet
+          if (containerRef.current === node && !hasPreparedRef.current) {
             console.log(`${logPrefix} Container still matches, calling prepare()`);
+            hasPreparedRef.current = true;
             prepare();
           } else {
-            console.warn(`${logPrefix} Container changed during requestAnimationFrame, skipping prepare`);
+            if (containerRef.current !== node) {
+              console.warn(`${logPrefix} Container changed during requestAnimationFrame, skipping prepare`);
+            } else if (hasPreparedRef.current) {
+              console.log(`${logPrefix} Already prepared, skipping`);
+            }
           }
         });
-      } else {
-        console.log(`${logPrefix} Node is null, not preparing`);
-      }
+      });
     }, [containerId, prepare]);
 
     return (
