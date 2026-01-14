@@ -70,14 +70,10 @@ class MapService {
 
   /**
    * Clean a container, removing all Leaflet artifacts
-   * PASSIVE CLEANUP: Only clears properties, never manipulates DOM structure
-   * React handles DOM removal - we just clear Leaflet tracking
+   * AGGRESSIVE CLEANUP: Ensures container is completely clean for reuse
    */
   cleanContainer(container: HTMLElement | null): void {
     if (!container) return;
-
-    // Check if container is still in DOM - if not, just clear properties
-    const isInDOM = container.parentNode !== null || container.isConnected;
 
     // Step 1: Clear Leaflet tracking properties from container itself
     try {
@@ -87,38 +83,55 @@ class MapService {
       // Ignore
     }
 
-    // Step 2: If container is in DOM, try to clear innerHTML (safest way)
-    // This removes all Leaflet elements without calling removeChild
-    if (isInDOM) {
-      try {
-        // Only clear if there are Leaflet elements
-        const hasLeafletElements = container.querySelector('.leaflet-container');
-        if (hasLeafletElements) {
-          // Clear innerHTML - this removes all children without removeChild errors
-          container.innerHTML = '';
-        }
-      } catch (e) {
-        // Container might be removed during cleanup - ignore
+    // Step 2: ALWAYS clear innerHTML to remove any leftover Leaflet elements
+    // This is the most reliable way to ensure a clean container
+    try {
+      // Check if container is still in DOM before clearing
+      if (container.parentNode || container.isConnected) {
+        // Clear all children - this removes any .leaflet-container divs
+        container.innerHTML = '';
       }
+    } catch (e) {
+      // Container might be removed during cleanup - ignore
     }
 
-    // Step 3: Clear properties from any Leaflet containers (if they still exist)
-    // We do this AFTER clearing innerHTML to catch any that weren't removed
+    // Step 3: Double-check and clear properties from any remaining Leaflet containers
+    // This handles edge cases where innerHTML clearing didn't work
     try {
       const leafletContainers = container.querySelectorAll?.('.leaflet-container');
-      if (leafletContainers) {
+      if (leafletContainers && leafletContainers.length > 0) {
+        // If there are still leaflet containers after innerHTML clear, force remove them
         leafletContainers.forEach((el) => {
           try {
             const leafletEl = el as HTMLElement;
+            // Clear properties
             delete (leafletEl as any)._leaflet_id;
             delete (leafletEl as any)._leaflet;
+            // Try to remove the element if it still exists
+            if (leafletEl.parentNode) {
+              leafletEl.parentNode.removeChild(leafletEl);
+            }
           } catch (e) {
-            // Ignore
+            // Ignore - element might already be removed
           }
         });
       }
     } catch (e) {
-      // Container might be detached - ignore
+      // querySelector failed - container might be detached, but that's okay
+    }
+
+    // Step 4: Final verification - clear innerHTML one more time if needed
+    // This ensures we have a completely clean container
+    try {
+      if (container.parentNode || container.isConnected) {
+        const stillHasLeaflet = container.querySelector('.leaflet-container');
+        if (stillHasLeaflet) {
+          // Force clear one more time
+          container.innerHTML = '';
+        }
+      }
+    } catch (e) {
+      // Ignore
     }
   }
 
@@ -161,6 +174,17 @@ class MapService {
    * Register a map instance (called after MapContainer creates it)
    */
   registerMap(containerId: string, map: LeafletMap, container: HTMLElement): void {
+    // Check if we already have a map for this containerId
+    if (this.mapInstances.has(containerId)) {
+      const existing = this.mapInstances.get(containerId)!;
+      // If it's the same map instance, don't register again
+      if (existing.map === map && existing.container === container) {
+        return;
+      }
+      // Different map/container - destroy old one first
+      this.destroyMap(containerId);
+    }
+    
     this.mapInstances.set(containerId, { map, container, containerId });
     this.containerRegistry.set(containerId, container);
   }

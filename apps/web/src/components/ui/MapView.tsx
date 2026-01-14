@@ -189,6 +189,12 @@ const LeafletMap = dynamic(async () => {
               
               // Initialize map through service
               // This is called when MapContainer creates the map instance
+              // The initialize function has guards to prevent multiple calls
+              if (isInitialized) {
+                // Already initialized, don't call again
+                return;
+              }
+              
               initialize(map);
             }}
           >

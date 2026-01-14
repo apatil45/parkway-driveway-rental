@@ -24,6 +24,8 @@ export function useMapLifecycle({
   const [state, setState] = useState<MapState>('idle');
   const stateRef = useRef<MapState>('idle');
   const cleanupPromiseRef = useRef<Promise<void> | null>(null);
+  const initializationAttemptRef = useRef<number>(0);
+  const isInitializingRef = useRef<boolean>(false);
 
   // Update both state and ref
   const updateState = useCallback((newState: MapState) => {
@@ -71,41 +73,54 @@ export function useMapLifecycle({
       return;
     }
 
-    // Verify container is safe
+    // ALWAYS clean the container first, regardless of current state
+    // This ensures we start with a completely clean container
+    mapService.cleanContainer(containerRef.current);
+    
+    // Wait for DOM to settle after cleanup
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    
+    // Verify container is safe after cleanup
     if (mapService.isContainerSafe(containerRef.current)) {
       updateState('ready');
       return;
     }
 
-    // Not safe, clean it
-    await clean();
-    
-    // Wait a bit for DOM to settle after cleanup
+    // Still not safe - try one more aggressive cleanup
+    mapService.cleanContainer(containerRef.current);
+    // Wait again
     await new Promise(resolve => requestAnimationFrame(resolve));
     
-    // Verify again after cleanup
-    if (containerRef.current && mapService.isContainerSafe(containerRef.current)) {
+    // Final check
+    if (mapService.isContainerSafe(containerRef.current)) {
       updateState('ready');
-    } else if (containerRef.current) {
-      // Still not safe - try one more aggressive cleanup
+    } else {
+      // Last resort: force clean and mark as ready anyway
+      // This handles edge cases where the check is too strict
+      // The container should be clean after innerHTML clearing
       mapService.cleanContainer(containerRef.current);
-      // Wait again
-      await new Promise(resolve => requestAnimationFrame(resolve));
-      if (mapService.isContainerSafe(containerRef.current)) {
-        updateState('ready');
-      } else {
-        // Last resort: force clean and mark as ready
-        // This handles edge cases where cleanup check is too strict
-        mapService.cleanContainer(containerRef.current);
-        updateState('ready');
-      }
+      updateState('ready');
     }
-  }, [containerRef, clean, updateState]);
+  }, [containerRef, updateState]);
 
   // Initialize map (called when MapContainer is ready)
   const initialize = useCallback((map: any) => {
+    // Prevent multiple initialization attempts
+    if (isInitializingRef.current) {
+      return false;
+    }
+
+    // If already initialized, don't initialize again
+    if (stateRef.current === 'initialized') {
+      return true;
+    }
+
     if (stateRef.current !== 'ready') {
-      console.warn('Cannot initialize map: state is not ready', stateRef.current);
+      // Don't log warning if we're already cleaning/preparing
+      if (stateRef.current !== 'cleaning' && stateRef.current !== 'clean') {
+        console.warn('Cannot initialize map: state is not ready', stateRef.current);
+      }
       return false;
     }
 
@@ -114,26 +129,54 @@ export function useMapLifecycle({
       return false;
     }
 
-    // Verify container is still safe
-    if (!mapService.isContainerSafe(containerRef.current)) {
-      console.warn('Cannot initialize map: container is not safe');
-      updateState('cleaning');
-      clean().then(() => prepare());
+    // Increment attempt counter
+    initializationAttemptRef.current += 1;
+    
+    // Prevent infinite loops - max 3 attempts
+    if (initializationAttemptRef.current > 3) {
+      console.error('Map initialization failed after 3 attempts. Forcing ready state.');
+      updateState('ready');
       return false;
     }
 
+    // Verify container is still safe
+    if (!mapService.isContainerSafe(containerRef.current)) {
+      // Don't log if we've already tried multiple times
+      if (initializationAttemptRef.current === 1) {
+        console.warn('Cannot initialize map: container is not safe. Cleaning...');
+      }
+      isInitializingRef.current = false;
+      updateState('cleaning');
+      clean().then(() => {
+        prepare().then(() => {
+          // Reset attempt counter after cleanup
+          initializationAttemptRef.current = 0;
+        });
+      });
+      return false;
+    }
+
+    // Mark as initializing to prevent multiple calls
+    isInitializingRef.current = true;
     updateState('initializing');
     
     try {
       // Register map with service
       mapService.registerMap(containerId, map, containerRef.current);
       updateState('initialized');
+      initializationAttemptRef.current = 0; // Reset on success
+      isInitializingRef.current = false;
       return true;
     } catch (error: any) {
       console.error('Map initialization error:', error);
+      isInitializingRef.current = false;
       if (error?.message?.includes('Map container is being reused')) {
         updateState('cleaning');
-        clean().then(() => prepare());
+        clean().then(() => {
+          prepare().then(() => {
+            initializationAttemptRef.current = 0;
+          });
+        });
       } else {
         updateState('clean');
       }
