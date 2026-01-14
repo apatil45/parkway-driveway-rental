@@ -180,7 +180,7 @@ const LeafletMap = dynamic(async () => {
           <div className="bg-gray-100 rounded-lg flex items-center justify-center h-full">
             <div className="text-gray-500 text-sm">Loading map...</div>
           </div>
-        ) : containerRef.current && mapService.isContainerSafe(containerRef.current) ? (
+        ) : containerRef.current ? (
           <MapContainer
             key={containerId}
             center={center}
