@@ -96,30 +96,6 @@ export default function MapViewDirect({
 
         mapRef.current = map;
 
-        // Create marker cluster group
-        const markerClusterGroup = new MarkerClusterGroup({
-          iconCreateFunction: (cluster: any) => {
-            const count = cluster.getChildCount();
-            return L.divIcon({
-              html: `<div style="
-                background: #2563eb;
-                color: white;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-              ">${count}</div>`,
-              className: 'custom-cluster',
-              iconSize: [40, 40],
-            });
-          },
-          chunkedLoading: true,
-        });
-
         // Create parking icon
         const parkingIcon = L.divIcon({
           className: 'custom-marker',
