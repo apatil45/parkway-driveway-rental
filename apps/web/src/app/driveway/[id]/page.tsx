@@ -76,6 +76,8 @@ export default function DrivewayDetailsPage() {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [calculatedHours, setCalculatedHours] = useState<number | null>(null);
+  const [pricingBreakdown, setPricingBreakdown] = useState<any>(null);
+  const [durationError, setDurationError] = useState<string | null>(null);
   const isSubmittingRef = useRef(false);
   const isMountedRef = useRef(true);
 
