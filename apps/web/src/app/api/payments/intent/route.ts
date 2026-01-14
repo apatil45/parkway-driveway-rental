@@ -157,9 +157,35 @@ export async function POST(request: NextRequest) {
     }
     
     // Create new payment intent without booking (requires authentication)
-    const amountNum = Number(amount ?? 1000);
-    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+    // Amount can come in as dollars (e.g., 15.00) or cents (e.g., 1500)
+    // We need to determine which format it is
+    let amountNum: number;
+    
+    if (!amount) {
+      console.error('[PAYMENT] Missing amount in request:', { body, bookingId });
+      return NextResponse.json(createApiError('Payment amount is required.', 400, 'VALIDATION_ERROR'), { status: 400 });
+    }
+    
+    const amountValue = Number(amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      console.error('[PAYMENT] Invalid amount value:', { amount, amountValue, bookingId });
       return NextResponse.json(createApiError('Please enter a valid payment amount.', 400, 'VALIDATION_ERROR'), { status: 400 });
+    }
+    
+    // If amount is less than 100, assume it's in dollars and convert to cents
+    // Otherwise assume it's already in cents
+    if (amountValue < 100) {
+      amountNum = Math.round(amountValue * 100);
+      console.log('[PAYMENT] Amount converted from dollars to cents:', { original: amountValue, converted: amountNum });
+    } else {
+      amountNum = Math.round(amountValue);
+      console.log('[PAYMENT] Amount already in cents:', { amount: amountNum });
+    }
+    
+    // Stripe minimum is 50 cents ($0.50)
+    if (amountNum < 50) {
+      console.error('[PAYMENT] Amount too small:', { amountNum, original: amount });
+      return NextResponse.json(createApiError('Payment amount must be at least $0.50.', 400, 'VALIDATION_ERROR'), { status: 400 });
     }
 
     const secret = process.env.STRIPE_SECRET_KEY;
