@@ -142,24 +142,34 @@ const LeafletMap = dynamic(async () => {
 
     // Container ref callback - prepare when container is attached
     const containerRefCallback = useCallback((node: HTMLDivElement | null) => {
+      const logPrefix = `[MapView.containerRefCallback] containerId: ${containerId}`;
+      console.log(`${logPrefix} Ref callback called, node:`, node ? 'exists' : 'null');
+      
       if (containerRef.current && containerRef.current !== node) {
+        console.log(`${logPrefix} Container changed, old container being replaced`);
         // Container changed - old container is being replaced
         // Don't prepare here, let the new node prepare
       }
       
       // Set ref first
       containerRef.current = node;
+      console.log(`${logPrefix} Ref set, preparing...`);
       
       // Then prepare if we have a node
       if (node) {
         // Wait for React to finish attaching to DOM
         requestAnimationFrame(() => {
           if (containerRef.current === node) {
+            console.log(`${logPrefix} Container still matches, calling prepare()`);
             prepare();
+          } else {
+            console.warn(`${logPrefix} Container changed during requestAnimationFrame, skipping prepare`);
           }
         });
+      } else {
+        console.log(`${logPrefix} Node is null, not preparing`);
       }
-    }, [prepare]);
+    }, [containerId, prepare]);
 
     return (
       <div
@@ -180,21 +190,28 @@ const LeafletMap = dynamic(async () => {
             className="rounded-lg overflow-hidden"
             zoomControl={true}
             ref={(map) => {
+              const logPrefix = `[MapView.MapContainer.ref] containerId: ${containerId}`;
+              
               if (!map) {
+                console.log(`${logPrefix} Map is null (unmounting)`);
                 // Unmounting - React is removing the map
                 // Don't do anything - React handles DOM removal
                 // Cleanup will happen in useEffect cleanup
                 return;
               }
               
+              console.log(`${logPrefix} Map instance received, isInitialized: ${isInitialized}`);
+              
               // Initialize map through service
               // This is called when MapContainer creates the map instance
               // The initialize function has guards to prevent multiple calls
               if (isInitialized) {
+                console.log(`${logPrefix} Already initialized, skipping`);
                 // Already initialized, don't call again
                 return;
               }
               
+              console.log(`${logPrefix} Calling initialize()`);
               initialize(map);
             }}
           >
