@@ -4,6 +4,7 @@ import { createApiResponse, createApiError } from '@parkway/shared';
 import { createBookingSchema, bookingQuerySchema, type CreateBookingInput, type BookingQueryParams } from '@/lib/validations';
 import { sendEmail, emailTemplates } from '@/lib/email';
 import { requireAuth } from '@/lib/auth-middleware';
+import { PricingService } from '@/services/PricingService';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -192,17 +193,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate maximum booking duration (7 days)
-    const maxDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
-    if (end.getTime() - start.getTime() > maxDurationMs) {
+    // Validate booking duration using PricingService
+    const durationValidation = PricingService.validateDuration(start, end);
+    
+    if (!durationValidation.valid) {
       return NextResponse.json(
-        createApiError('Bookings cannot exceed 7 days. Please select a shorter time period.', 400, 'INVALID_DURATION'),
+        createApiError(durationValidation.error || 'Invalid booking duration', 400, 'INVALID_DURATION'),
         { status: 400 }
       );
     }
 
-    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    const totalPrice = Math.round(hours * driveway.pricePerHour * 100) / 100;
+    // Calculate dynamic pricing
+    // First, get nearby bookings to calculate demand
+    const nearbyBookings = await prisma.booking.count({
+      where: {
+        drivewayId,
+        status: 'CONFIRMED',
+        paymentStatus: 'COMPLETED',
+        OR: [
+          // Overlapping bookings
+          {
+            AND: [
+              { startTime: { lt: end } },
+              { endTime: { gt: start } }
+            ]
+          },
+          // Bookings within 1 hour before/after
+          {
+            OR: [
+              { startTime: { gte: new Date(start.getTime() - 60 * 60 * 1000) } },
+              { endTime: { lte: new Date(end.getTime() + 60 * 60 * 1000) } }
+            ]
+          }
+        ]
+      }
+    });
+
+    // Calculate demand multiplier
+    const demandMultiplier = PricingService.calculateDemandMultiplier(
+      nearbyBookings,
+      driveway.capacity || 1
+    );
+
+    // Calculate dynamic price
+    const pricingBreakdown = PricingService.calculatePrice({
+      basePricePerHour: driveway.pricePerHour,
+      startTime: start,
+      endTime: end,
+      demandMultiplier,
+    });
+
+    // Validate final price meets minimum
+    const priceValidation = PricingService.validatePrice(pricingBreakdown.finalPrice);
+    if (!priceValidation.valid) {
+      return NextResponse.json(
+        createApiError(
+          priceValidation.error || `Minimum booking price is $${PricingService.MIN_PRICE_DOLLARS.toFixed(2)}. Please select a longer duration or choose a space with higher rates.`,
+          400,
+          'PRICE_TOO_LOW'
+        ),
+        { status: 400 }
+      );
+    }
+
+    const totalPrice = pricingBreakdown.finalPrice;
 
     // Use transaction to prevent race conditions
     const booking = await prisma.$transaction(async (tx) => {

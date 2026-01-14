@@ -7,6 +7,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api';
+import { PricingService } from '@/services/PricingService';
 
 interface Driveway {
   id: string;
@@ -172,24 +173,50 @@ export default function DrivewayDetailsPage() {
     }
   }, [isAuthenticated, drivewayId, showBookingForm]);
 
-  // Calculate price when times change
+  // Calculate price when times change with dynamic pricing
   useEffect(() => {
     if (bookingForm.startTime && bookingForm.endTime && driveway) {
       const start = new Date(bookingForm.startTime);
       const end = new Date(bookingForm.endTime);
       
+      // Validate duration first
+      const durationValidation = PricingService.validateDuration(start, end);
+      
+      if (!durationValidation.valid) {
+        setDurationError(durationValidation.error || null);
+        setCalculatedPrice(null);
+        setCalculatedHours(null);
+        setPricingBreakdown(null);
+        return;
+      }
+      
+      setDurationError(null);
+      
       if (start.getTime() < end.getTime() && start.getTime() > new Date().getTime()) {
-        const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-        const price = Math.round(hours * driveway.pricePerHour * 100) / 100;
-        setCalculatedHours(hours);
-        setCalculatedPrice(price);
+        // Calculate dynamic pricing
+        // For frontend, we'll use a simplified version (without demand multiplier)
+        // The backend will calculate the actual demand-based pricing
+        const breakdown = PricingService.calculatePrice({
+          basePricePerHour: driveway.pricePerHour,
+          startTime: start,
+          endTime: end,
+          demandMultiplier: 1.0, // Frontend doesn't know demand, backend will adjust
+        });
+        
+        setCalculatedHours(breakdown.hours);
+        setCalculatedPrice(breakdown.finalPrice);
+        setPricingBreakdown(breakdown);
       } else {
         setCalculatedPrice(null);
         setCalculatedHours(null);
+        setPricingBreakdown(null);
+        setDurationError(null);
       }
     } else {
       setCalculatedPrice(null);
       setCalculatedHours(null);
+      setPricingBreakdown(null);
+      setDurationError(null);
     }
   }, [bookingForm.startTime, bookingForm.endTime, driveway]);
 
@@ -618,14 +645,27 @@ export default function DrivewayDetailsPage() {
                     />
                   </div>
 
-                  {/* Price Preview */}
-                  {calculatedPrice !== null && calculatedHours !== null && (
-                    <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                  {/* Duration Error */}
+                  {durationError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-700 font-medium">{durationError}</p>
+                      <p className="text-xs text-red-600 mt-1">
+                        Minimum booking duration is 10 minutes. Please select a longer time period.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Price Preview with Dynamic Pricing Breakdown */}
+                  {calculatedPrice !== null && calculatedHours !== null && pricingBreakdown && !durationError && (
+                    <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg space-y-3">
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="text-sm text-gray-600">Duration</p>
                           <p className="text-lg font-semibold text-gray-900">
-                            {calculatedHours.toFixed(1)} {calculatedHours === 1 ? 'hour' : 'hours'}
+                            {calculatedHours < 1 
+                              ? `${Math.round(calculatedHours * 60)} minutes (minimum 10 minutes)`
+                              : `${calculatedHours.toFixed(2)} ${calculatedHours === 1 ? 'hour' : 'hours'}`
+                            }
                           </p>
                         </div>
                         <div className="text-right">
@@ -635,9 +675,48 @@ export default function DrivewayDetailsPage() {
                           </p>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        @ ${driveway.pricePerHour.toFixed(2)}/hour
-                      </p>
+                      
+                      {/* Pricing Breakdown */}
+                      <div className="pt-3 border-t border-primary-200 space-y-1.5">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Base rate:</span>
+                          <span className="text-gray-900">${pricingBreakdown.basePrice.toFixed(2)}/hr</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Base total:</span>
+                          <span className="text-gray-900">${pricingBreakdown.baseTotal.toFixed(2)}</span>
+                        </div>
+                        {pricingBreakdown.timeMultiplier !== 1.0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">
+                              {pricingBreakdown.timeMultiplier > 1 ? 'Peak hours' : 'Off-peak'}:
+                            </span>
+                            <span className={pricingBreakdown.timeMultiplier > 1 ? 'text-orange-600 font-medium' : 'text-green-600 font-medium'}>
+                              {pricingBreakdown.timeMultiplier > 1 ? '+' : ''}{((pricingBreakdown.timeMultiplier - 1) * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        )}
+                        {pricingBreakdown.dayMultiplier !== 1.0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Weekend:</span>
+                            <span className="text-orange-600 font-medium">+{((pricingBreakdown.dayMultiplier - 1) * 100).toFixed(0)}%</span>
+                          </div>
+                        )}
+                        {!pricingBreakdown.meetsMinimum && (
+                          <div className="flex justify-between text-sm text-amber-600 font-medium">
+                            <span>Minimum price applied:</span>
+                            <span>${PricingService.MIN_PRICE_DOLLARS.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {calculatedPrice < PricingService.MIN_PRICE_DOLLARS && (
+                        <div className="pt-2 border-t border-primary-200">
+                          <p className="text-xs text-amber-600">
+                            ⚠️ Minimum payment is ${PricingService.MIN_PRICE_DOLLARS.toFixed(2)}. Price adjusted to meet minimum.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

@@ -3,6 +3,7 @@ import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { drivewaySearchSchema, createDrivewaySchema, type CreateDrivewayInput } from '@/lib/validations';
 import { requireAuth } from '@/lib/auth-middleware';
+import { PricingService } from '@/services/PricingService';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -192,6 +193,20 @@ export async function POST(request: NextRequest) {
     }
 
     const { title, description, address, pricePerHour, capacity, amenities, images, latitude, longitude, carSize }: CreateDrivewayInput = validationResult.data;
+
+    // Validate minimum price per hour
+    // To ensure 10-minute bookings meet $0.50 minimum, pricePerHour must be at least ~$3.00/hour
+    const minimumPricePerHour = PricingService.calculateMinimumPricePerHour();
+    if (pricePerHour < minimumPricePerHour) {
+      return NextResponse.json(
+        createApiError(
+          `Minimum price per hour is $${minimumPricePerHour.toFixed(2)}/hr to ensure bookings meet the $${PricingService.MIN_PRICE_DOLLARS.toFixed(2)} minimum payment requirement (for 10-minute bookings).`,
+          400,
+          'PRICE_TOO_LOW'
+        ),
+        { status: 400 }
+      );
+    }
 
     const created = await prisma.driveway.create({
       data: {

@@ -3,6 +3,7 @@ import { prisma } from '@parkway/database';
 import { createApiError, createApiResponse } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
 import { createDrivewaySchema } from '@/lib/validations';
+import { PricingService } from '@/services/PricingService';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,7 +51,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (validationResult.data.title !== undefined) updateData.title = validationResult.data.title;
     if (validationResult.data.description !== undefined) updateData.description = validationResult.data.description;
     if (validationResult.data.address !== undefined) updateData.address = validationResult.data.address;
-    if (validationResult.data.pricePerHour !== undefined) updateData.pricePerHour = validationResult.data.pricePerHour;
+    if (validationResult.data.pricePerHour !== undefined) {
+      // Validate minimum price per hour
+      const minimumPricePerHour = PricingService.calculateMinimumPricePerHour();
+      if (validationResult.data.pricePerHour < minimumPricePerHour) {
+        return NextResponse.json(
+          createApiError(
+            `Minimum price per hour is $${minimumPricePerHour.toFixed(2)}/hr to ensure bookings meet the $${PricingService.MIN_PRICE_DOLLARS.toFixed(2)} minimum payment requirement (for 10-minute bookings).`,
+            400,
+            'PRICE_TOO_LOW'
+          ),
+          { status: 400 }
+        );
+      }
+      updateData.pricePerHour = validationResult.data.pricePerHour;
+    }
     if (validationResult.data.capacity !== undefined) updateData.capacity = validationResult.data.capacity;
     if (validationResult.data.amenities !== undefined) updateData.amenities = validationResult.data.amenities;
     if (validationResult.data.images !== undefined) updateData.images = validationResult.data.images;
