@@ -6,10 +6,7 @@ import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
-import MapView from '@/components/ui/MapView';
-
-// Use MapView directly with stable key
-const MemoizedMapView = MapView;
+import MapViewDirect from '@/components/ui/MapViewDirect';
 import { useDriveways } from '@/hooks';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 
@@ -417,7 +414,7 @@ function SearchPageContent() {
             const shouldRender = !emptyResults && canRenderMap;
             console.log('[SearchPage] MapView render check - emptyResults:', emptyResults, 'canRenderMap:', canRenderMap, 'shouldRender:', shouldRender);
             return shouldRender ? (
-              <MemoizedMapView
+              <MapViewDirect
               key="search-map" // Stable key to prevent unmount on re-renders
               viewMode={viewMode}
               center={mapCenter}
