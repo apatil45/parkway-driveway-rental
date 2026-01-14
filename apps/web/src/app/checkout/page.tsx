@@ -85,7 +85,9 @@ function CheckoutContent() {
       } else if (err.response?.status >= 500) {
         setError('Unable to load booking details. Please try again in a moment.');
       } else {
-        setError(err.response?.data?.message || 'Unable to load booking details. Please try again.');
+        // Use createAppError for consistent user-friendly messages
+        const appError = createAppError(err);
+        setError(appError.userMessage);
       }
     } finally {
       setLoading(false);

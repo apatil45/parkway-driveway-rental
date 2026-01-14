@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import api from '@/lib/api';
+import { createAppError } from '@/lib/errors';
 
 interface ApiState<T> {
   data: T | null;
@@ -41,7 +42,9 @@ export function useApi<T = any>(options: UseApiOptions = {}) {
       onSuccess?.(data);
       return { success: true, data };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
+      // Use createAppError to get user-friendly message
+      const appError = createAppError(error);
+      const errorMessage = appError.userMessage;
       
       setState(prev => ({
         ...prev,
