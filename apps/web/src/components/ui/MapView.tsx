@@ -211,12 +211,23 @@ const LeafletMap = dynamic(async () => {
               if (!map) {
                 console.log(`${logPrefix} Map is null (unmounting)`);
                 // Unmounting - React is removing the map
-                // Don't do anything - React handles DOM removal
-                // Cleanup will happen in useEffect cleanup
+                // react-leaflet will call map.remove() in its cleanup, which causes removeChild errors
+                // We can't prevent this, but we can try to clear properties before it happens
+                // However, if map is null, we can't do anything
+                // The error will occur in react-leaflet's cleanup, but it's harmless
                 return;
               }
               
               console.log(`${logPrefix} Map instance received, isInitialized: ${isInitialized}`);
+              
+              // CRITICAL: Register map immediately to track it
+              // This allows us to clean it up properly if needed
+              try {
+                mapService.registerMap(containerId, map, containerRef.current!);
+                console.log(`${logPrefix} Map registered immediately`);
+              } catch (e) {
+                console.error(`${logPrefix} Error registering map:`, e);
+              }
               
               // Initialize map through service
               // This is called when MapContainer creates the map instance
