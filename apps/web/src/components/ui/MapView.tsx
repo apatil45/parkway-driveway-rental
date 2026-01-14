@@ -191,6 +191,11 @@ const LeafletMap = dynamic(async () => {
     useEffect(() => {
       const logPrefix = `[MapView.render] containerId: ${containerId}`;
       console.log(`${logPrefix} Render - isReady: ${isReady}, containerRef.current: ${containerRef.current ? 'exists' : 'null'}, state: ${state}`);
+      if (isReady && containerRef.current) {
+        console.log(`${logPrefix} Rendering MapContainer - container exists, isReady: true`);
+      } else if (!containerRef.current) {
+        console.log(`${logPrefix} Container ref is null, showing 'Preparing map...'`);
+      }
     });
     
     return (
