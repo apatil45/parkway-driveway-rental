@@ -100,21 +100,22 @@ class MapService {
     try {
       const leafletContainers = container.querySelectorAll?.('.leaflet-container');
       if (leafletContainers && leafletContainers.length > 0) {
-        // If there are still leaflet containers after innerHTML clear, force remove them
+        // If there are still leaflet containers after innerHTML clear, clear properties
+        // Don't use removeChild - just clear properties and let innerHTML handle removal
         leafletContainers.forEach((el) => {
           try {
             const leafletEl = el as HTMLElement;
-            // Clear properties
+            // Clear properties only - don't manipulate DOM structure
             delete (leafletEl as any)._leaflet_id;
             delete (leafletEl as any)._leaflet;
-            // Try to remove the element if it still exists
-            if (leafletEl.parentNode) {
-              leafletEl.parentNode.removeChild(leafletEl);
-            }
           } catch (e) {
             // Ignore - element might already be removed
           }
         });
+        // Clear innerHTML again to remove any remaining elements
+        if (container.parentNode || container.isConnected) {
+          container.innerHTML = '';
+        }
       }
     } catch (e) {
       // querySelector failed - container might be detached, but that's okay
