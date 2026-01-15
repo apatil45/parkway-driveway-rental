@@ -88,7 +88,3 @@ Required environment variables are documented in `env.template`. Key variables i
 - Authentication secrets
 - Payment processing keys
 - File storage configuration
-
-## License
-
-MIT License
