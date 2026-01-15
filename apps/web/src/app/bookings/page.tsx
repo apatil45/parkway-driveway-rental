@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
@@ -51,18 +51,29 @@ export default function BookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const [existingReviews, setExistingReviews] = useState<Record<string, { id: string; rating: number; comment?: string }>>({});
+  const isMountedRef = useRef(true);
 
   const router = useRouter();
   const { user } = useAuth();
   const { showToast } = useToast();
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     fetchBookings();
-  }, [router, statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]); // Only depend on statusFilter, not router
 
   // Auto-refresh bookings if there are any PENDING bookings with COMPLETED payment
   // This handles the case where payment is completed but webhook hasn't processed yet
   useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const hasPendingWithCompletedPayment = bookings.some(
       b => b.status === 'PENDING' && b.paymentStatus === 'COMPLETED'
     );
@@ -70,40 +81,69 @@ export default function BookingsPage() {
     if (hasPendingWithCompletedPayment) {
       // Poll every 3 seconds until booking is confirmed
       const interval = setInterval(() => {
-        fetchBookings(pagination.page);
+        if (isMountedRef.current) {
+          fetchBookings(pagination.page);
+        }
       }, 3000);
       
       return () => clearInterval(interval);
     }
-  }, [bookings, pagination.page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookings]); // Removed pagination.page to avoid unnecessary restarts
 
   // Fetch existing reviews for completed bookings
   useEffect(() => {
     if (bookings.length > 0 && user) {
       const completedBookings = bookings.filter(b => b.status === 'COMPLETED');
-      completedBookings.forEach(async (booking) => {
-        try {
-          const response = await api.get(`/reviews?drivewayId=${booking.driveway.id}&userId=${user.id}`);
-          const reviews = response.data.data?.reviews || [];
-          if (reviews.length > 0) {
-            const review = reviews[0];
+      
+      // Use Promise.allSettled to handle all requests safely
+      const fetchReviews = async () => {
+        const reviewPromises = completedBookings.map(async (booking) => {
+          try {
+            const response = await api.get(`/reviews?drivewayId=${booking.driveway.id}&userId=${user.id}`);
+            const reviews = response.data.data?.reviews || [];
+            if (reviews.length > 0) {
+              const review = reviews[0];
+              return {
+                drivewayId: booking.driveway.id,
+                review: {
+                  id: review.id,
+                  rating: review.rating,
+                  comment: review.comment
+                }
+              };
+            }
+          } catch (err) {
+            // No review exists yet, that's fine - don't log or throw
+            return null;
+          }
+          return null;
+        });
+
+        const results = await Promise.allSettled(reviewPromises);
+        
+        // Update state with successful results
+        results.forEach((result) => {
+          if (result.status === 'fulfilled' && result.value !== null) {
+            const value = result.value;
             setExistingReviews(prev => ({
               ...prev,
-              [booking.driveway.id]: {
-                id: review.id,
-                rating: review.rating,
-                comment: review.comment
-              }
+              [value.drivewayId]: value.review
             }));
           }
-        } catch (err) {
-          // No review exists yet, that's fine
-        }
+        });
+      };
+
+      fetchReviews().catch((err) => {
+        // Silently handle - reviews are optional
+        console.error('Error fetching reviews:', err);
       });
     }
   }, [bookings, user]);
 
   const fetchBookings = async (page = 1) => {
+    if (!isMountedRef.current) return; // Don't update if unmounted
+    
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -116,20 +156,27 @@ export default function BookingsPage() {
       }
 
       const response = await api.get(`/bookings?${params}`);
+      
+      if (!isMountedRef.current) return; // Check again after async operation
+      
       const { bookings: data, pagination: paginationData } = response.data.data;
       
       setBookings(data);
       setPagination(paginationData);
     } catch (err: any) {
+      if (!isMountedRef.current) return; // Don't update if unmounted
+      
       if (err.response?.status === 401) {
         // Auth is handled by cookies and useAuth hook
         // The API interceptor will handle token refresh or redirect
         router.push('/login');
       } else {
-        setError('Failed to load bookings');
+        setError('Unable to load your bookings. Please try again.');
       }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -151,9 +198,11 @@ export default function BookingsPage() {
       await fetchBookings(pagination.page);
       showToast(`Booking ${newStatus.toLowerCase()} successfully`, 'success');
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to update booking';
-      setError(msg);
-      showToast(msg, 'error');
+      // Use error handler for user-friendly messages
+      const { createAppError } = await import('@/lib/errors');
+      const appError = createAppError(err);
+      setError(appError.userMessage);
+      showToast(appError.userMessage, 'error');
     } finally {
       setLoading(false);
     }

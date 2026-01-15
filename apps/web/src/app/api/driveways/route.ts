@@ -3,6 +3,7 @@ import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { drivewaySearchSchema, createDrivewaySchema, type CreateDrivewayInput } from '@/lib/validations';
 import { requireAuth } from '@/lib/auth-middleware';
+import { PricingService } from '@/services/PricingService';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     if (!validationResult.success) {
       return NextResponse.json(
         createApiError(
-          'Invalid query parameters: ' + validationResult.error.errors.map(e => e.message).join(', '),
+          'Please check your search filters and try again.',
           400,
           'VALIDATION_ERROR'
         ),
@@ -161,7 +162,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get driveways error:', error);
     return NextResponse.json(
-      createApiError('Failed to retrieve driveways', 500, 'INTERNAL_ERROR'),
+      createApiError('Unable to load parking spaces. Please try again in a moment.', 500, 'INTERNAL_ERROR'),
       { status: 500 }
     );
   }
@@ -192,6 +193,20 @@ export async function POST(request: NextRequest) {
     }
 
     const { title, description, address, pricePerHour, capacity, amenities, images, latitude, longitude, carSize }: CreateDrivewayInput = validationResult.data;
+
+    // Validate minimum price per hour
+    // To ensure 10-minute bookings meet $0.50 minimum, pricePerHour must be at least ~$3.00/hour
+    const minimumPricePerHour = PricingService.calculateMinimumPricePerHour();
+    if (pricePerHour < minimumPricePerHour) {
+      return NextResponse.json(
+        createApiError(
+          `Minimum price per hour is $${minimumPricePerHour.toFixed(2)}/hr to ensure bookings meet the $${PricingService.MIN_PRICE_DOLLARS.toFixed(2)} minimum payment requirement (for 10-minute bookings).`,
+          400,
+          'PRICE_TOO_LOW'
+        ),
+        { status: 400 }
+      );
+    }
 
     const created = await prisma.driveway.create({
       data: {
@@ -225,6 +240,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(createApiResponse(created, 'Driveway created successfully', 201), { status: 201 });
   } catch (error) {
     console.error('Create driveway error:', error);
-    return NextResponse.json(createApiError('Failed to create driveway', 500, 'INTERNAL_ERROR'), { status: 500 });
+    return NextResponse.json(createApiError('Unable to create your listing. Please try again in a moment.', 500, 'INTERNAL_ERROR'), { status: 500 });
   }
 }

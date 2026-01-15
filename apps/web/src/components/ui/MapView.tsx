@@ -1,8 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRef, useEffect, useLayoutEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useMapLifecycle } from '@/hooks/useMapLifecycle';
+import { mapService } from '@/services/MapService';
 
 // Dynamic import prevents SSR issues
 const LeafletMap = dynamic(async () => {
@@ -14,7 +16,9 @@ const LeafletMap = dynamic(async () => {
     center,
     markers,
     height = '100%',
-    onMarkerClick
+    viewMode,
+    onMarkerClick,
+    containerId,
   }: {
     center: [number, number];
     markers: Array<{
@@ -27,29 +31,54 @@ const LeafletMap = dynamic(async () => {
       image?: string;
     }>;
     height?: string;
+    viewMode?: string;
     onMarkerClick?: (id: string) => void;
+    containerId: string;
   }) => {
     const { MapContainer, TileLayer, Marker, Popup, useMap } = L;
-    const mapInstanceRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const isInitializedRef = useRef(false);
-    const mapKeyRef = useRef<string>(`map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
-    const [canRender, setCanRender] = useState(false);
-    const mountCountRef = useRef(0);
+    const wasReadyRef = useRef<boolean>(false);
+
+    // Use map lifecycle hook
+    const { state, prepare, initialize, isReady, isInitialized } = useMapLifecycle({
+      containerId,
+      containerRef,
+    });
+
+    // Track when we become ready to prevent immediate unmount
+    useEffect(() => {
+      if (isReady && !wasReadyRef.current) {
+        wasReadyRef.current = true;
+        console.log(`[MapView] containerId: ${containerId} - First time becoming ready, will render MapContainer on next render`);
+      } else if (!isReady) {
+        wasReadyRef.current = false;
+      }
+    }, [isReady, containerId]);
 
     // Component to handle map updates
     const MapUpdater = ({ center }: { center: [number, number] }) => {
       const map = useMap();
       
       useEffect(() => {
-        if (map && center) {
-          map.setView(center, map.getZoom());
-          // Invalidate size to fix rendering issues
+        if (!map || !center) return;
+        if (!isInitialized) return;
+
+        try {
+          const currentZoom = map.getZoom ? map.getZoom() : 13;
+          map.setView(center, currentZoom);
           setTimeout(() => {
-            map.invalidateSize();
+            if (isInitialized) {
+              try {
+                map.invalidateSize();
+              } catch (e) {
+                // Ignore
+              }
+            }
           }, 100);
+        } catch (e) {
+          console.warn('Map update failed:', e);
         }
-      }, [center, map]);
+      }, [center, map, isInitialized]);
 
       return null;
     };
@@ -59,110 +88,38 @@ const LeafletMap = dynamic(async () => {
       const map = useMap();
 
       useEffect(() => {
-        if (!map) return;
+        if (!map || !isInitialized) return;
 
         const handleResize = () => {
           setTimeout(() => {
-            map.invalidateSize();
+            if (isInitialized) {
+              try {
+                map.invalidateSize();
+              } catch (e) {
+                // Ignore
+              }
+            }
           }, 100);
         };
 
         window.addEventListener('resize', handleResize);
         
-        // Initial resize after mount
         setTimeout(() => {
-          map.invalidateSize();
+          if (isInitialized) {
+            try {
+              map.invalidateSize();
+            } catch (e) {
+              // Ignore
+            }
+          }
         }, 100);
 
         return () => {
           window.removeEventListener('resize', handleResize);
         };
-      }, [map]);
+      }, [map, isInitialized]);
 
       return null;
-    };
-
-    // Cleanup function
-    const cleanupMap = () => {
-      if (mapInstanceRef.current) {
-        try {
-          mapInstanceRef.current.remove();
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-        mapInstanceRef.current = null;
-      }
-      if (containerRef.current) {
-        const container = containerRef.current;
-        if (container) {
-          // Remove any Leaflet containers inside
-          const leafletContainers = container.querySelectorAll('.leaflet-container');
-          leafletContainers.forEach((el) => {
-            const leafletEl = el as HTMLElement;
-            if ((leafletEl as any)._leaflet_id) {
-              try {
-                const map = (leafletEl as any)._leaflet;
-                if (map && typeof map.remove === 'function') {
-                  map.remove();
-                }
-              } catch (e) {
-                // Ignore
-              }
-              delete (leafletEl as any)._leaflet_id;
-              delete (leafletEl as any)._leaflet;
-            }
-            el.remove();
-          });
-          // Clear container tracking
-          delete (container as any)._leaflet_id;
-        }
-      }
-      isInitializedRef.current = false;
-    };
-
-    // Synchronous cleanup before render (useLayoutEffect runs before browser paints)
-    useLayoutEffect(() => {
-      mountCountRef.current += 1;
-      const currentMount = mountCountRef.current;
-      
-      if (containerRef.current) {
-        const container = containerRef.current;
-        
-        // Clean up any existing map instances (from previous mount)
-        if ((container as any)._leaflet_id) {
-          cleanupMap();
-        }
-        const leafletContainers = container.querySelectorAll('.leaflet-container');
-        if (leafletContainers.length > 0) {
-          cleanupMap();
-        }
-        
-        // Small delay to ensure cleanup is complete before rendering
-        // This prevents race condition between cleanup and initialization
-        const timer = setTimeout(() => {
-          // Only set canRender if this is still the current mount
-          // (prevents state updates from stale mounts)
-          if (mountCountRef.current === currentMount) {
-            setCanRender(true);
-          }
-        }, 10);
-
-        return () => {
-          clearTimeout(timer);
-          cleanupMap();
-          setCanRender(false);
-        };
-      }
-
-      return () => {
-        cleanupMap();
-        setCanRender(false);
-      };
-    }, []);
-
-    // Ref callback
-    const containerRefCallback = (node: HTMLDivElement | null) => {
-      containerRef.current = node;
     };
 
     // Create custom parking icon
@@ -194,19 +151,76 @@ const LeafletMap = dynamic(async () => {
       });
     }, []);
 
+    // Container ref callback - prepare when container is attached
+    // Use useRef to track if we've already prepared to avoid multiple calls
+    const hasPreparedRef = useRef(false);
+    
+    const containerRefCallback = useCallback((node: HTMLDivElement | null) => {
+      const logPrefix = `[MapView.containerRefCallback] containerId: ${containerId}`;
+      console.log(`${logPrefix} Ref callback called, node:`, node ? 'exists' : 'null', 'hasPrepared:', hasPreparedRef.current);
+      
+      if (!node) {
+        // Node is null - unmounting
+        console.log(`${logPrefix} Node is null (unmounting), resetting hasPrepared`);
+        hasPreparedRef.current = false;
+        containerRef.current = null;
+        return;
+      }
+      
+      // Only prepare once per container attachment
+      if (containerRef.current === node && hasPreparedRef.current) {
+        console.log(`${logPrefix} Same node, already prepared, skipping`);
+        return;
+      }
+      
+      // Set ref first
+      containerRef.current = node;
+      hasPreparedRef.current = false; // Reset flag
+      console.log(`${logPrefix} Ref set, will prepare...`);
+      
+      // Prepare only once when container is first attached
+      // Use double requestAnimationFrame to ensure DOM is fully settled
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Check if container is still the same and we haven't prepared yet
+          if (containerRef.current === node && !hasPreparedRef.current) {
+            console.log(`${logPrefix} Container still matches, calling prepare()`);
+            hasPreparedRef.current = true;
+            prepare();
+          } else {
+            if (containerRef.current !== node) {
+              console.warn(`${logPrefix} Container changed during requestAnimationFrame, skipping prepare`);
+            } else if (hasPreparedRef.current) {
+              console.log(`${logPrefix} Already prepared, skipping`);
+            }
+          }
+        });
+      });
+    }, [containerId, prepare]);
+
+    // Log render cycle
+    useEffect(() => {
+      const logPrefix = `[MapView.render] containerId: ${containerId}`;
+      console.log(`${logPrefix} Render - isReady: ${isReady}, containerRef.current: ${containerRef.current ? 'exists' : 'null'}, state: ${state}`);
+      if (isReady && containerRef.current) {
+        console.log(`${logPrefix} Rendering MapContainer - container exists, isReady: true`);
+      } else if (!containerRef.current) {
+        console.log(`${logPrefix} Container ref is null, showing 'Preparing map...'`);
+      }
+    });
+    
     return (
       <div
         ref={containerRefCallback}
         style={{ height, width: '100%', position: 'relative' }}
-        key={mapKeyRef.current}
       >
-        {!canRender ? (
+        {!isReady || !wasReadyRef.current ? (
           <div className="bg-gray-100 rounded-lg flex items-center justify-center h-full">
             <div className="text-gray-500 text-sm">Loading map...</div>
           </div>
-        ) : (
+        ) : containerRef.current ? (
           <MapContainer
-            key={mapKeyRef.current}
+            key={containerId}
             center={center}
             zoom={13}
             style={{ height, width: '100%', zIndex: 0 }}
@@ -214,95 +228,126 @@ const LeafletMap = dynamic(async () => {
             className="rounded-lg overflow-hidden"
             zoomControl={true}
             ref={(map) => {
-              if (map && !isInitializedRef.current) {
-                mapInstanceRef.current = map;
-                isInitializedRef.current = true;
-            } else if (map && isInitializedRef.current) {
-              // If already initialized, don't create another instance
-              // Silently skip - this is expected in StrictMode
-            }
+              const logPrefix = `[MapView.MapContainer.ref] containerId: ${containerId}`;
+              
+              if (!map) {
+                console.log(`${logPrefix} Map is null (unmounting)`);
+                // Unmounting - React is removing the map
+                // react-leaflet will call map.remove() in its cleanup, which causes removeChild errors
+                // We can't prevent this, but we can try to clear properties before it happens
+                // However, if map is null, we can't do anything
+                // The error will occur in react-leaflet's cleanup, but it's harmless
+                return;
+              }
+              
+              console.log(`${logPrefix} Map instance received, isInitialized: ${isInitialized}`);
+              
+              // CRITICAL: Register map immediately to track it
+              // This allows us to clean it up properly if needed
+              try {
+                mapService.registerMap(containerId, map, containerRef.current!);
+                console.log(`${logPrefix} Map registered immediately`);
+              } catch (e) {
+                console.error(`${logPrefix} Error registering map:`, e);
+              }
+              
+              // Initialize map through service
+              // This is called when MapContainer creates the map instance
+              // The initialize function has guards to prevent multiple calls
+              if (isInitialized) {
+                console.log(`${logPrefix} Already initialized, skipping`);
+                // Already initialized, don't call again
+                return;
+              }
+              
+              console.log(`${logPrefix} Calling initialize()`);
+              initialize(map);
             }}
           >
-          <MapUpdater center={center} />
-          <MapResizeHandler />
-          
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
+            <MapUpdater center={center} />
+            <MapResizeHandler />
+            
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
 
-          <MarkerClusterGroup
-            chunkedLoading
-            iconCreateFunction={(cluster) => {
-              const count = cluster.getChildCount();
-              return leaflet.default.divIcon({
-                html: `<div style="
-                  background: #2563eb;
-                  color: white;
-                  border-radius: 50%;
-                  width: 40px;
-                  height: 40px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-weight: bold;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                ">${count}</div>`,
-                className: 'custom-cluster',
-                iconSize: [40, 40],
-              });
-            }}
-          >
-            {markers.map((m) => (
-              <Marker
-                key={m.id}
-                position={m.position}
-                icon={parkingIcon}
-                eventHandlers={{
-                  click: () => onMarkerClick?.(m.id),
-                }}
-              >
-                <Popup closeButton={true} autoClose={false}>
-                  <div className="p-3 min-w-[200px]">
-                    {m.image && (
-                      <img
-                        src={m.image}
-                        alt={m.title}
-                        className="w-full h-24 object-cover rounded mb-2"
-                      />
-                    )}
-                    <div className="text-sm font-semibold text-gray-900 mb-1">
-                      {m.title}
-                    </div>
-                    {m.address && (
-                      <div className="text-xs text-gray-600 mb-2">{m.address}</div>
-                    )}
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-bold text-primary-600">
-                        ${m.price.toFixed(2)}/hr
-                      </span>
-                      {m.rating && (
-                        <span className="text-xs text-gray-600">
-                          ★ {m.rating.toFixed(1)}
-                        </span>
+            <MarkerClusterGroup
+              chunkedLoading
+              iconCreateFunction={(cluster: any) => {
+                const count = cluster.getChildCount();
+                return leaflet.default.divIcon({
+                  html: `<div style="
+                    background: #2563eb;
+                    color: white;
+                    border-radius: 50%;
+                    width: 40px;
+                    height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                  ">${count}</div>`,
+                  className: 'custom-cluster',
+                  iconSize: [40, 40],
+                });
+              }}
+            >
+              {markers.map((m) => (
+                <Marker
+                  key={m.id}
+                  position={m.position}
+                  icon={parkingIcon}
+                  eventHandlers={{
+                    click: () => onMarkerClick?.(m.id),
+                  }}
+                >
+                  <Popup closeButton={true} autoClose={false}>
+                    <div className="p-3 min-w-[200px]">
+                      {m.image && (
+                        <img
+                          src={m.image}
+                          alt={m.title}
+                          className="w-full h-24 object-cover rounded mb-2"
+                        />
                       )}
+                      <div className="text-sm font-semibold text-gray-900 mb-1">
+                        {m.title}
+                      </div>
+                      {m.address && (
+                        <div className="text-xs text-gray-600 mb-2">{m.address}</div>
+                      )}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-bold text-primary-600">
+                          ${m.price.toFixed(2)}/hr
+                        </span>
+                        {m.rating && (
+                          <span className="text-xs text-gray-600">
+                            ★ {m.rating.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                      <Link
+                        href={`/driveway/${m.id}`}
+                        className="block text-center text-xs text-primary-600 hover:text-primary-700 font-medium mt-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMarkerClick?.(m.id);
+                        }}
+                      >
+                        View Details →
+                      </Link>
                     </div>
-                    <Link
-                      href={`/driveway/${m.id}`}
-                      className="block text-center text-xs text-primary-600 hover:text-primary-700 font-medium mt-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMarkerClick?.(m.id);
-                      }}
-                    >
-                      View Details →
-                    </Link>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MarkerClusterGroup>
-        </MapContainer>
+                  </Popup>
+                </Marker>
+              ))}
+            </MarkerClusterGroup>
+          </MapContainer>
+        ) : (
+          <div className="bg-gray-100 rounded-lg flex items-center justify-center h-full">
+            <div className="text-gray-500 text-sm">Preparing map...</div>
+          </div>
         )}
       </div>
     );
@@ -319,17 +364,40 @@ interface MapMarker {
   image?: string;
 }
 
-export default function MapView({
+function MapView({
   center,
   markers,
   height = '100%',
+  viewMode,
   onMarkerClick
 }: {
   center: [number, number];
   markers: MapMarker[];
   height?: string;
+  viewMode?: string;
   onMarkerClick?: (id: string) => void;
 }) {
-  return <LeafletMap center={center} markers={markers} height={height} onMarkerClick={onMarkerClick} />;
+  // Generate stable container ID (never changes for this component instance)
+  const getContainerId = (): string => {
+    // Use crypto.randomUUID if available, otherwise generate a unique ID
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return `map-${crypto.randomUUID()}`;
+    }
+    return `map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+  const containerIdRef = useRef<string>(getContainerId());
+  
+  return (
+    <LeafletMap
+      center={center}
+      markers={markers}
+      height={height}
+      viewMode={viewMode}
+      onMarkerClick={onMarkerClick}
+      containerId={containerIdRef.current}
+    />
+  );
 }
 
+// Memoize MapView to prevent unnecessary re-renders
+export default MapView;

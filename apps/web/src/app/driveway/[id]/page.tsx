@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/hooks';
 import api from '@/lib/api';
+import { PricingService } from '@/services/PricingService';
+import { createAppError } from '@/lib/errors';
 
 interface Driveway {
   id: string;
@@ -74,11 +77,36 @@ export default function DrivewayDetailsPage() {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [calculatedHours, setCalculatedHours] = useState<number | null>(null);
+  const [pricingBreakdown, setPricingBreakdown] = useState<any>(null);
+  const [durationError, setDurationError] = useState<string | null>(null);
+  const isSubmittingRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   const router = useRouter();
   const { showToast } = useToast();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   const drivewayId = params?.id as string;
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Clean up sessionStorage if component unmounts without booking
+      try {
+        const savedData = sessionStorage.getItem('bookingFormData');
+        if (savedData) {
+          const formData = JSON.parse(savedData);
+          // Only clear if it's for this driveway and user navigated away
+          if (formData.drivewayId === drivewayId) {
+            sessionStorage.removeItem('bookingFormData');
+          }
+        }
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+    };
+  }, [drivewayId]);
 
   useEffect(() => {
     if (!drivewayId) return;
@@ -87,44 +115,144 @@ export default function DrivewayDetailsPage() {
       try {
         setLoading(true);
         const response = await api.get(`/driveways/${drivewayId}`);
-        setDriveway(response.data.data);
+        if (isMountedRef.current) {
+          setDriveway(response.data.data);
+        }
       } catch (err: any) {
+        if (!isMountedRef.current) return;
         if (err.response?.status === 404) {
-          setError('Driveway not found');
+          setError('This parking space is no longer available.');
         } else {
-          setError('Failed to load driveway details');
+          setError('Unable to load parking space details. Please try again.');
         }
       } finally {
-        setLoading(false);
+        if (isMountedRef.current) {
+          setLoading(false);
+        }
       }
     };
 
     fetchDriveway();
   }, [drivewayId]);
 
-  // Calculate price when times change
+  // Restore form data after login return
+  useEffect(() => {
+    if (isAuthenticated && drivewayId && showBookingForm) {
+      try {
+        const savedFormData = sessionStorage.getItem('bookingFormData');
+        if (savedFormData) {
+          const formData = JSON.parse(savedFormData);
+          // Only restore if it's for the same driveway
+          if (formData.drivewayId === drivewayId) {
+            setBookingForm({
+              startTime: formData.startTime || '',
+              endTime: formData.endTime || '',
+              specialRequests: formData.specialRequests || '',
+              vehicleInfo: formData.vehicleInfo || {
+                make: '',
+                model: '',
+                color: '',
+                licensePlate: ''
+              }
+            });
+            if (formData.calculatedPrice !== undefined) {
+              setCalculatedPrice(formData.calculatedPrice);
+            }
+            if (formData.calculatedHours !== undefined) {
+              setCalculatedHours(formData.calculatedHours);
+            }
+            // Clear saved data after restoring
+            sessionStorage.removeItem('bookingFormData');
+            showToast('Welcome back! Your booking details have been restored.', 'success');
+          } else {
+            // Clear data for different driveway
+            sessionStorage.removeItem('bookingFormData');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to restore form data:', err);
+        sessionStorage.removeItem('bookingFormData');
+      }
+    }
+  }, [isAuthenticated, drivewayId, showBookingForm]);
+
+  // Calculate price when times change with dynamic pricing
   useEffect(() => {
     if (bookingForm.startTime && bookingForm.endTime && driveway) {
       const start = new Date(bookingForm.startTime);
       const end = new Date(bookingForm.endTime);
       
+      // Validate duration first
+      const durationValidation = PricingService.validateDuration(start, end);
+      
+      if (!durationValidation.valid) {
+        setDurationError(durationValidation.error || null);
+        setCalculatedPrice(null);
+        setCalculatedHours(null);
+        setPricingBreakdown(null);
+        return;
+      }
+      
+      setDurationError(null);
+      
       if (start.getTime() < end.getTime() && start.getTime() > new Date().getTime()) {
-        const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-        const price = Math.round(hours * driveway.pricePerHour * 100) / 100;
-        setCalculatedHours(hours);
-        setCalculatedPrice(price);
+        // Calculate dynamic pricing
+        // For frontend, we'll use a simplified version (without demand multiplier)
+        // The backend will calculate the actual demand-based pricing
+        const breakdown = PricingService.calculatePrice({
+          basePricePerHour: driveway.pricePerHour,
+          startTime: start,
+          endTime: end,
+          demandMultiplier: 1.0, // Frontend doesn't know demand, backend will adjust
+        });
+        
+        setCalculatedHours(breakdown.hours);
+        setCalculatedPrice(breakdown.finalPrice);
+        setPricingBreakdown(breakdown);
       } else {
         setCalculatedPrice(null);
         setCalculatedHours(null);
+        setPricingBreakdown(null);
+        setDurationError(null);
       }
     } else {
       setCalculatedPrice(null);
       setCalculatedHours(null);
+      setPricingBreakdown(null);
+      setDurationError(null);
     }
   }, [bookingForm.startTime, bookingForm.endTime, driveway]);
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current) {
+      showToast('Please wait, your booking is being processed...', 'info');
+      return;
+    }
+    
+    // Check authentication with friendly message and form data persistence
+    if (!isAuthenticated) {
+      // Save form data to sessionStorage before redirect
+      try {
+        sessionStorage.setItem('bookingFormData', JSON.stringify({
+          ...bookingForm,
+          drivewayId,
+          calculatedPrice,
+          calculatedHours
+        }));
+      } catch (err) {
+        console.error('Failed to save form data:', err);
+      }
+      
+      showToast('Please log in to complete your booking', 'info');
+      const currentPath = window.location.pathname + window.location.search;
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+    
+    isSubmittingRef.current = true;
     setBookingLoading(true);
 
     try {
@@ -136,7 +264,7 @@ export default function DrivewayDetailsPage() {
       }
 
       if (!drivewayId) {
-        showToast('Invalid driveway ID', 'error');
+        showToast('Invalid parking space. Please try selecting a different one.', 'error');
         setBookingLoading(false);
         return;
       }
@@ -148,7 +276,7 @@ export default function DrivewayDetailsPage() {
       
       // Validate dates
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        showToast('Invalid date format', 'error');
+        showToast('Please select valid dates for your booking.', 'error');
         setBookingLoading(false);
         return;
       }
@@ -189,52 +317,92 @@ export default function DrivewayDetailsPage() {
 
       const booking = response.data?.data;
       
-      // Redirect to checkout page with booking ID
-      if (booking?.id) {
-        showToast('Booking created successfully! Redirecting to checkout...', 'success');
-        router.push(`/checkout?bookingId=${booking.id}`);
-      } else {
-        showToast('Booking created successfully!', 'success');
-        setShowBookingForm(false);
-        setBookingForm({
-          startTime: '',
-          endTime: '',
-          specialRequests: '',
-          vehicleInfo: {
-            make: '',
-            model: '',
-            color: '',
-            licensePlate: ''
-          }
-        });
+      // Ensure we have a valid booking response
+      if (!booking || !booking.id) {
+        console.error('Invalid booking response:', response.data);
+        showToast('Booking created but received invalid response. Please check your bookings.', 'error');
+        setBookingLoading(false);
+        // Still redirect to bookings page to let user check
+        router.push('/bookings');
+        return;
       }
+      
+      // Clear sessionStorage on successful booking
+      try {
+        sessionStorage.removeItem('bookingFormData');
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+      
+      // Reset ref before redirect
+      isSubmittingRef.current = false;
+      
+      // Redirect to checkout page with booking ID
+      showToast('Booking created successfully! Redirecting to checkout...', 'success');
+      setBookingLoading(false); // Reset loading before redirect
+      router.push(`/checkout?bookingId=${booking.id}`);
     } catch (err: any) {
       console.error('Booking error:', err);
       
-      // Extract detailed error message
-      let errorMessage = 'Failed to create booking';
-      
-      if (err.response?.data) {
-        const errorData = err.response.data;
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.error) {
-          errorMessage = typeof errorData.error === 'string' 
-            ? errorData.error 
-            : JSON.stringify(errorData.error);
-        } else if (errorData.errors) {
-          // Handle validation errors array
-          const validationErrors = Array.isArray(errorData.errors)
-            ? errorData.errors.map((e: any) => e.message || e).join(', ')
-            : JSON.stringify(errorData.errors);
-          errorMessage = `Validation failed: ${validationErrors}`;
+      // Handle network errors (no response)
+      if (!err.response) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          showToast('Request timed out. Please check your connection and try again.', 'error');
+          isSubmittingRef.current = false;
+          setBookingLoading(false);
+          return;
+        } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+          showToast('Network error. Please check your internet connection and try again.', 'error');
+          isSubmittingRef.current = false;
+          setBookingLoading(false);
+          return;
         }
-      } else if (err.message) {
-        errorMessage = err.message;
       }
       
-      showToast(errorMessage, 'error');
+      // Handle 401 (authentication) errors explicitly
+      if (err.response?.status === 401) {
+        // Save form data before redirect
+        try {
+          sessionStorage.setItem('bookingFormData', JSON.stringify({
+            ...bookingForm,
+            drivewayId,
+            calculatedPrice,
+            calculatedHours
+          }));
+        } catch (storageErr) {
+          console.error('Failed to save form data:', storageErr);
+        }
+        
+        showToast('Your session expired. Please log in again.', 'warning');
+        const currentPath = window.location.pathname + window.location.search;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        isSubmittingRef.current = false;
+        setBookingLoading(false);
+        return;
+      }
+      
+      // Handle specific error types
+      if (err.response?.status === 409) {
+        // Capacity exceeded
+        showToast('This time slot is no longer available. Please select a different time.', 'error');
+        isSubmittingRef.current = false;
+        setBookingLoading(false);
+        return;
+      } else if (err.response?.status >= 500) {
+        showToast('Server error. Please try again in a moment.', 'error');
+        isSubmittingRef.current = false;
+        setBookingLoading(false);
+        return;
+      }
+      
+      // Extract user-friendly error message
+      // Use the error handler to get proper user-friendly message
+      const appError = createAppError(err);
+      
+      // Always use userMessage from AppError (it's guaranteed to be user-friendly)
+      showToast(appError.userMessage, 'error');
     } finally {
+      isSubmittingRef.current = false;
       setBookingLoading(false);
     }
   };
@@ -424,6 +592,21 @@ export default function DrivewayDetailsPage() {
                 </div>
               ) : (
                 <form onSubmit={handleBookingSubmit} className="space-y-4">
+                  {/* Login reminder for unauthenticated users */}
+                  {!isAuthenticated && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                      <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-800">Log in to complete your booking</p>
+                          <p className="text-sm text-blue-700 mt-1">You can fill out the form now and log in when you're ready to confirm.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Start Time
@@ -452,14 +635,27 @@ export default function DrivewayDetailsPage() {
                     />
                   </div>
 
-                  {/* Price Preview */}
-                  {calculatedPrice !== null && calculatedHours !== null && (
-                    <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                  {/* Duration Error */}
+                  {durationError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-700 font-medium">{durationError}</p>
+                      <p className="text-xs text-red-600 mt-1">
+                        Minimum booking duration is 10 minutes. Please select a longer time period.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Price Preview with Dynamic Pricing Breakdown */}
+                  {calculatedPrice !== null && calculatedHours !== null && pricingBreakdown && !durationError && (
+                    <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg space-y-3">
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="text-sm text-gray-600">Duration</p>
                           <p className="text-lg font-semibold text-gray-900">
-                            {calculatedHours.toFixed(1)} {calculatedHours === 1 ? 'hour' : 'hours'}
+                            {calculatedHours < 1 
+                              ? `${Math.round(calculatedHours * 60)} minutes (minimum 10 minutes)`
+                              : `${calculatedHours.toFixed(2)} ${calculatedHours === 1 ? 'hour' : 'hours'}`
+                            }
                           </p>
                         </div>
                         <div className="text-right">
@@ -469,9 +665,48 @@ export default function DrivewayDetailsPage() {
                           </p>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        @ ${driveway.pricePerHour.toFixed(2)}/hour
-                      </p>
+                      
+                      {/* Pricing Breakdown */}
+                      <div className="pt-3 border-t border-primary-200 space-y-1.5">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Base rate:</span>
+                          <span className="text-gray-900">${pricingBreakdown.basePrice.toFixed(2)}/hr</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Base total:</span>
+                          <span className="text-gray-900">${pricingBreakdown.baseTotal.toFixed(2)}</span>
+                        </div>
+                        {pricingBreakdown.timeMultiplier !== 1.0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">
+                              {pricingBreakdown.timeMultiplier > 1 ? 'Peak hours' : 'Off-peak'}:
+                            </span>
+                            <span className={pricingBreakdown.timeMultiplier > 1 ? 'text-orange-600 font-medium' : 'text-green-600 font-medium'}>
+                              {pricingBreakdown.timeMultiplier > 1 ? '+' : ''}{((pricingBreakdown.timeMultiplier - 1) * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        )}
+                        {pricingBreakdown.dayMultiplier !== 1.0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Weekend:</span>
+                            <span className="text-orange-600 font-medium">+{((pricingBreakdown.dayMultiplier - 1) * 100).toFixed(0)}%</span>
+                          </div>
+                        )}
+                        {!pricingBreakdown.meetsMinimum && (
+                          <div className="flex justify-between text-sm text-amber-600 font-medium">
+                            <span>Minimum price applied:</span>
+                            <span>${PricingService.MIN_PRICE_DOLLARS.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {calculatedPrice < PricingService.MIN_PRICE_DOLLARS && (
+                        <div className="pt-2 border-t border-primary-200">
+                          <p className="text-xs text-amber-600">
+                            ⚠️ Minimum payment is ${PricingService.MIN_PRICE_DOLLARS.toFixed(2)}. Price adjusted to meet minimum.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -550,7 +785,7 @@ export default function DrivewayDetailsPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={bookingLoading}
+                      disabled={bookingLoading || authLoading}
                       className="btn btn-primary flex-1 min-h-[48px] text-base"
                     >
                       {bookingLoading ? 'Booking...' : 'Confirm Booking'}

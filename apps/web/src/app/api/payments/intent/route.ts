@@ -157,9 +157,35 @@ export async function POST(request: NextRequest) {
     }
     
     // Create new payment intent without booking (requires authentication)
-    const amountNum = Number(amount ?? 1000);
-    if (!Number.isFinite(amountNum) || amountNum <= 0) {
-      return NextResponse.json(createApiError('Invalid amount', 400, 'VALIDATION_ERROR'), { status: 400 });
+    // Amount can come in as dollars (e.g., 15.00) or cents (e.g., 1500)
+    // We need to determine which format it is
+    let amountNum: number;
+    
+    if (!amount) {
+      console.error('[PAYMENT] Missing amount in request:', { body, bookingId });
+      return NextResponse.json(createApiError('Payment amount is required.', 400, 'VALIDATION_ERROR'), { status: 400 });
+    }
+    
+    const amountValue = Number(amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      console.error('[PAYMENT] Invalid amount value:', { amount, amountValue, bookingId });
+      return NextResponse.json(createApiError('Please enter a valid payment amount.', 400, 'VALIDATION_ERROR'), { status: 400 });
+    }
+    
+    // If amount is less than 100, assume it's in dollars and convert to cents
+    // Otherwise assume it's already in cents
+    if (amountValue < 100) {
+      amountNum = Math.round(amountValue * 100);
+      console.log('[PAYMENT] Amount converted from dollars to cents:', { original: amountValue, converted: amountNum });
+    } else {
+      amountNum = Math.round(amountValue);
+      console.log('[PAYMENT] Amount already in cents:', { amount: amountNum });
+    }
+    
+    // Stripe minimum is 50 cents ($0.50)
+    if (amountNum < 50) {
+      console.error('[PAYMENT] Amount too small:', { amountNum, original: amount });
+      return NextResponse.json(createApiError('Payment amount must be at least $0.50.', 400, 'VALIDATION_ERROR'), { status: 400 });
     }
 
     const secret = process.env.STRIPE_SECRET_KEY;
@@ -182,12 +208,30 @@ export async function POST(request: NextRequest) {
         });
         
         if (error.type === 'StripeCardError') {
-          return NextResponse.json(createApiError('Card error: ' + error.message, 400, 'CARD_ERROR'), { status: 400 });
+          return NextResponse.json(createApiError(error.message || 'Your card was declined. Please check your card details and try again.', 400, 'CARD_ERROR'), { status: 400 });
         }
         if (error.type === 'StripeInvalidRequestError') {
-          return NextResponse.json(createApiError('Invalid payment request: ' + error.message, 400, 'INVALID_REQUEST'), { status: 400 });
+          console.error('[PAYMENT] Stripe invalid request error:', {
+            message: error.message,
+            code: error.code,
+            param: error.param,
+            amount: amountNum,
+            bookingId
+          });
+          // Provide more specific error message based on Stripe's error
+          let userMessage = 'Please check your payment information and try again.';
+          if (error.message) {
+            if (error.message.includes('amount')) {
+              userMessage = 'Invalid payment amount. Please check the amount and try again.';
+            } else if (error.message.includes('currency')) {
+              userMessage = 'Invalid currency. Please contact support.';
+            } else if (error.message.includes('api_key')) {
+              userMessage = 'Payment processing configuration error. Please contact support.';
+            }
+          }
+          return NextResponse.json(createApiError(userMessage, 400, 'INVALID_REQUEST'), { status: 400 });
         }
-        return NextResponse.json(createApiError('Payment processing failed', 500, 'PAYMENT_ERROR'), { status: 500 });
+        return NextResponse.json(createApiError('Unable to process payment. Please try again in a moment.', 500, 'PAYMENT_ERROR'), { status: 500 });
       }
     }
 
@@ -236,7 +280,7 @@ export async function POST(request: NextRequest) {
     }
     
     console.error('[PAYMENT] Payment intent error:', e);
-    return NextResponse.json(createApiError('Failed to create payment intent', 500, 'INTERNAL_ERROR'), { status: 500 });
+    return NextResponse.json(createApiError('Unable to set up payment. Please try again in a moment.', 500, 'INTERNAL_ERROR'), { status: 500 });
   }
 }
 

@@ -44,6 +44,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     : [
         { href: '/search', label: 'Search Parking' },
         { href: '/about', label: 'About' },
+        { href: '/pricing', label: 'Pricing' },
+        { href: '/contact', label: 'Contact' },
       ];
 
   return (

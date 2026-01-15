@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense, useMemo, useRef, useCallback, memo } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
-import MapView from '@/components/ui/MapView';
+import MapViewDirect from '@/components/ui/MapViewDirect';
 import { useDriveways } from '@/hooks';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 
@@ -64,13 +64,29 @@ function SearchPageContent() {
     total: 0,
     totalPages: 0
   });
-  const [viewMode, setViewMode] = useState<'map' | 'list' | 'split'>('list');
+  const [viewMode] = useState<'map' | 'list' | 'split'>('split');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  
+  // MapService handles lifecycle - no need for container keys or manual cleanup
+  const [canRenderMap, setCanRenderMap] = useState(true);
+  const isMountedRef = useRef(true);
+  
+  // Simple: show map when on search page, hide when not
+  useEffect(() => {
+    setCanRenderMap(pathname === '/search');
+  }, [pathname]);
+  
+  // Track mount state for async operations
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
 
@@ -101,11 +117,16 @@ function SearchPageContent() {
   }, []); // Only run once on mount
 
 
+  // Initial search on mount
   useEffect(() => {
     performSearch();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
 
   const performSearch = async (page = 1) => {
+    if (!isMountedRef.current) return; // Don't update if unmounted
+    
     const params = {
       page: page.toString(),
       limit: '10',
@@ -121,7 +142,7 @@ function SearchPageContent() {
     };
 
     const result = await fetchDriveways(params);
-    if (result.success && result.data) {
+    if (result.success && result.data && isMountedRef.current) {
       setPagination(result.data.pagination);
     }
   };
@@ -221,7 +242,7 @@ function SearchPageContent() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <ErrorMessage
           title="Search Error"
-          message={error}
+          message={error.includes('Failed') || error.includes('Error') ? 'Unable to search for parking spaces. Please try again.' : error}
           onRetry={() => performSearch()}
         />
       </div>
@@ -231,42 +252,10 @@ function SearchPageContent() {
   return (
     <AppLayout showFooter={false}>
       <div className="min-h-screen bg-gray-50">
-      {/* View Mode Toggle */}
+      {/* Filters Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                onClick={() => setViewMode('map')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'map'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Map
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('split')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'split'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Both
-              </button>
-            </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
@@ -415,36 +404,36 @@ function SearchPageContent() {
       )}
 
       {/* Main Content Area - Split Layout */}
-      <div className={`flex ${viewMode === 'split' ? 'flex-col lg:flex-row' : 'flex-col'} h-[calc(100vh-4rem)]`}>
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
         {/* Map Section */}
-        {(viewMode === 'map' || viewMode === 'split') && (
-          <div 
-            ref={mapContainerRef}
-            key={`map-container-${viewMode}`}
-            className={`${
-              viewMode === 'split' 
-                ? 'w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200' 
-                : 'w-full h-full'
-            } relative bg-gray-100`}
-          >
-            {!emptyResults && (
-              <MapView
-                center={mapCenter}
-                markers={mapMarkers}
-                height="100%"
-                onMarkerClick={(id) => {
-                  setSelectedDriveway(id);
-                  const element = document.getElementById(`driveway-${id}`);
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    element.classList.add('ring-2', 'ring-primary-500');
-                    setTimeout(() => {
-                      element.classList.remove('ring-2', 'ring-primary-500');
-                    }, 2000);
-                  }
-                }}
-              />
-            )}
+        {/* MapService handles lifecycle - no container keys needed */}
+        <div 
+          className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200 relative bg-gray-100"
+        >
+          {(() => {
+            const shouldRender = !emptyResults && canRenderMap;
+            console.log('[SearchPage] MapView render check - emptyResults:', emptyResults, 'canRenderMap:', canRenderMap, 'shouldRender:', shouldRender);
+            return shouldRender ? (
+              <MapViewDirect
+              key="search-map" // Stable key to prevent unmount on re-renders
+              viewMode={viewMode}
+              center={mapCenter}
+              markers={mapMarkers}
+              height="100%"
+              onMarkerClick={(id: string) => {
+                setSelectedDriveway(id);
+                const element = document.getElementById(`driveway-${id}`);
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  element.classList.add('ring-2', 'ring-primary-500');
+                  setTimeout(() => {
+                    element.classList.remove('ring-2', 'ring-primary-500');
+                  }, 2000);
+                }
+              }}
+            />
+            ) : null;
+          })()}
             {emptyResults && (
               <div className="flex items-center justify-center h-full text-gray-500">
                 <div className="text-center">
@@ -454,15 +443,9 @@ function SearchPageContent() {
               </div>
             )}
           </div>
-        )}
 
         {/* Listings Section */}
-        {(viewMode === 'list' || viewMode === 'split') && (
-          <div className={`${
-            viewMode === 'split' 
-              ? 'w-full lg:w-1/2 h-1/2 lg:h-full overflow-y-auto' 
-              : 'w-full h-full overflow-y-auto'
-          } bg-white`}>
+        <div className="w-full lg:w-1/2 h-1/2 lg:h-full overflow-y-auto bg-white">
             <div className="p-4 sm:p-6">
               {emptyResults ? (
                 <div className="text-center py-12">
@@ -490,6 +473,9 @@ function SearchPageContent() {
                         }`}
                         onClick={() => {
                           setSelectedDriveway(driveway.id);
+                          // Unmount map before navigation
+                          setCanRenderMap(false);
+                          // Navigate - MapService handles cleanup automatically
                           router.push(`/driveway/${driveway.id}`);
                         }}
                       >
@@ -607,7 +593,6 @@ function SearchPageContent() {
               )}
             </div>
           </div>
-        )}
       </div>
       </div>
     </AppLayout>

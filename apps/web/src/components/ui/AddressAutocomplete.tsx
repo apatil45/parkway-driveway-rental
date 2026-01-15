@@ -590,7 +590,7 @@ export default function AddressAutocomplete({
             } catch (error) {
               console.error('Error processing voice recognition result:', error);
               setIsListening(false);
-              setError('Error processing voice input. Please try again.');
+              setError('Unable to process voice input. Please try speaking again or type your search.');
             }
           };
           
@@ -909,7 +909,7 @@ export default function AddressAutocomplete({
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
-        setError('Search unavailable. Please try again.');
+          setError('Search is temporarily unavailable. Please check your connection and try again.');
       }
     } finally {
       setLoading(false);
@@ -1244,7 +1244,7 @@ export default function AddressAutocomplete({
             <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-75"></div>
           </div>
           <div className="flex-1">
-            <p className="font-semibold text-blue-900">🎤 Listening...</p>
+            <p className="font-semibold text-blue-900">Listening...</p>
             <p className="text-xs text-blue-600 mt-0.5">
               {listeningStartTime && Date.now() - listeningStartTime < 2000 
                 ? 'Wait 2 seconds, then speak your search query clearly...'
