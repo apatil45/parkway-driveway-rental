@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useMemo, useRef, useCallback, memo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
+import { Card, LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete, ImageWithPlaceholder } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import MapViewDirect from '@/components/ui/MapViewDirect';
@@ -481,19 +481,14 @@ function SearchPageContent() {
                       >
                         <div className="flex">
                           {/* Image */}
-                          {driveway.images.length > 0 ? (
-                            <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
-                              <img
-                                src={driveway.images[0]}
-                                alt={driveway.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0 bg-gray-200 flex items-center justify-center">
-                              <span className="text-sm font-medium text-gray-500">P</span>
-                            </div>
-                          )}
+                          <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
+                            <ImageWithPlaceholder
+                              src={driveway.images.length > 0 ? driveway.images[0] : ''}
+                              alt={driveway.title}
+                              className="w-full h-full object-cover rounded"
+                              fallbackText={driveway.title.charAt(0).toUpperCase()}
+                            />
+                          </div>
 
                           {/* Content */}
                           <div className="flex-1 p-4">

@@ -25,9 +25,13 @@ export default function AppLayout({
   
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Skip Navigation Link for Accessibility */}
+      <a href="#main-content" className="skip-nav">
+        Skip to main content
+      </a>
       <Navbar />
       {showBreadcrumbs && <Breadcrumbs />}
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1" tabIndex={-1}>{children}</main>
       {showFooter && <Footer />}
       {showFloatingActions && <FloatingActions />}
     </div>

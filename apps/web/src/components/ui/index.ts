@@ -12,3 +12,6 @@ export { ToastProvider, useToast } from './Toast';
 export { default as Skeleton, SkeletonCard, SkeletonList } from './Skeleton';
 export { default as ReviewForm } from './ReviewForm';
 export { default as NotificationCenter } from './NotificationCenter';
+export { default as PasswordStrengthMeter } from './PasswordStrengthMeter';
+export { default as ConfirmDialog } from './ConfirmDialog';
+export { default as ImageWithPlaceholder } from './ImageWithPlaceholder';

@@ -7,7 +7,7 @@ import api from '@/lib/api';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/Toast';
-import { ReviewForm } from '@/components/ui';
+import { ReviewForm, ConfirmDialog } from '@/components/ui';
 
 interface Booking {
   id: string;
@@ -51,6 +51,8 @@ export default function BookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const [existingReviews, setExistingReviews] = useState<Record<string, { id: string; rating: number; comment?: string }>>({});
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; bookingId: string | null }>({ open: false, bookingId: null });
+  const [cancelLoading, setCancelLoading] = useState(false);
   const isMountedRef = useRef(true);
 
   const router = useRouter();
@@ -183,13 +185,8 @@ export default function BookingsPage() {
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
     // Show confirmation dialog for cancellations
     if (newStatus === 'CANCELLED') {
-      const confirmed = window.confirm(
-        'Are you sure you want to cancel this booking? ' +
-        'This action cannot be undone. If payment was completed, refunds will be processed according to our cancellation policy.'
-      );
-      if (!confirmed) {
-        return;
-      }
+      setCancelDialog({ open: true, bookingId });
+      return;
     }
 
     try {
@@ -205,6 +202,25 @@ export default function BookingsPage() {
       showToast(appError.userMessage, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelDialog.bookingId) return;
+
+    try {
+      setCancelLoading(true);
+      await api.patch(`/bookings/${cancelDialog.bookingId}`, { status: 'CANCELLED' });
+      await fetchBookings(pagination.page);
+      showToast('Booking cancelled successfully', 'success');
+      setCancelDialog({ open: false, bookingId: null });
+    } catch (err: any) {
+      const { createAppError } = await import('@/lib/errors');
+      const appError = createAppError(err);
+      setError(appError.userMessage);
+      showToast(appError.userMessage, 'error');
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -280,10 +296,15 @@ export default function BookingsPage() {
           
           {/* Status Filter */}
           <div className="flex space-x-2">
+            <label htmlFor="status-filter" className="sr-only">
+              Filter bookings by status
+            </label>
             <select
+              id="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="input"
+              aria-label="Filter bookings by status"
             >
               <option value="all">All Status</option>
               <option value="PENDING">Pending</option>
@@ -465,6 +486,7 @@ export default function BookingsPage() {
                             setExpandedReviews(newExpanded);
                           }}
                           className="text-sm text-primary-600 hover:text-primary-800"
+                          aria-label={expandedReviews.has(booking.id) ? 'Hide review form' : 'Show review form'}
                         >
                           {expandedReviews.has(booking.id) ? 'Hide Review' : 'Update Review'}
                         </button>
@@ -520,6 +542,7 @@ export default function BookingsPage() {
                       <button
                         onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
                         className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        aria-label={`Cancel booking for ${booking.driveway.title}`}
                       >
                         Cancel Booking
                       </button>
@@ -529,6 +552,7 @@ export default function BookingsPage() {
                       <button
                         onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
                         className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        aria-label={`Cancel booking for ${booking.driveway.title}`}
                       >
                         Cancel
                       </button>
@@ -553,6 +577,7 @@ export default function BookingsPage() {
                 onClick={() => fetchBookings(pagination.page - 1)}
                 disabled={pagination.page === 1}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Go to previous page"
               >
                 Previous
               </button>
@@ -566,6 +591,8 @@ export default function BookingsPage() {
                       ? 'bg-primary-600 text-white border-primary-600'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
+                  aria-label={`Go to page ${page}`}
+                  aria-current={page === pagination.page ? 'page' : undefined}
                 >
                   {page}
                 </button>
@@ -575,12 +602,26 @@ export default function BookingsPage() {
                 onClick={() => fetchBookings(pagination.page + 1)}
                 disabled={pagination.page === pagination.totalPages}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Go to next page"
               >
                 Next
               </button>
             </nav>
           </div>
         )}
+
+        {/* Confirmation Dialog for Cancellation */}
+        <ConfirmDialog
+          open={cancelDialog.open}
+          onClose={() => setCancelDialog({ open: false, bookingId: null })}
+          onConfirm={handleConfirmCancel}
+          title="Cancel Booking"
+          message="Are you sure you want to cancel this booking? This action cannot be undone. If payment was completed, refunds will be processed according to our cancellation policy."
+          confirmText="Cancel Booking"
+          cancelText="Keep Booking"
+          variant="warning"
+          loading={cancelLoading}
+        />
       </div>
     </AppLayout>
   );

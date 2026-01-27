@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/components/ui/Toast';
+import { ImageWithPlaceholder } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api';
 import { PricingService } from '@/services/PricingService';
@@ -468,20 +469,25 @@ export default function DrivewayDetailsPage() {
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Images */}
-            {driveway.images.length > 0 && (
-              <div className="mb-8">
+            <div className="mb-8">
+              {driveway.images.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {driveway.images.map((image, index) => (
-                    <img
+                    <ImageWithPlaceholder
                       key={index}
                       src={image}
                       alt={`${driveway.title} - Image ${index + 1}`}
                       className="w-full h-64 object-cover rounded-lg"
+                      fallbackText={`Image ${index + 1}`}
                     />
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-500">No images available</span>
+                </div>
+              )}
+            </div>
 
             {/* Basic Info */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-8">

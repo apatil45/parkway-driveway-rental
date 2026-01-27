@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Select, Card, ErrorMessage } from '@/components/ui';
+import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 import { useAuth } from '@/hooks';
 import { registerSchema, type RegisterInput } from '@/lib/validations';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,8 +53,8 @@ export default function RegisterPage() {
 
   const roleOptions = [
     { value: 'DRIVER', label: 'Driver' },
-    { value: 'OWNER', label: 'Driveway Owner' },
-    { value: 'ADMIN', label: 'Admin' }
+    { value: 'OWNER', label: 'Driveway Owner' }
+    // ADMIN role removed - should only be assigned by existing admins
   ];
 
   return (
@@ -94,13 +95,20 @@ export default function RegisterPage() {
                 {...register('email')}
               />
               
-              <Input
-                label="Password"
-                type="password"
-                placeholder="Create a password"
-                error={errors.password?.message}
-                {...register('password')}
-              />
+              <div>
+                <Input
+                  label="Password"
+                  type="password"
+                  placeholder="Create a password"
+                  error={errors.password?.message}
+                  {...register('password')}
+                />
+                {password && (
+                  <div className="mt-2">
+                    <PasswordStrengthMeter password={password} />
+                  </div>
+                )}
+              </div>
               
               <Input
                 label="Confirm Password"

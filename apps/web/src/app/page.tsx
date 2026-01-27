@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout';
-import { Card, LoadingSpinner, AddressAutocomplete } from '@/components/ui';
+import { Card, LoadingSpinner, AddressAutocomplete, ImageWithPlaceholder } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api';
 import {
@@ -234,35 +234,45 @@ export default function Home() {
           </section>
 
           {/* Platform Stats */}
-          {stats && (
-            <section className="py-12">
-              <div className="container">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Platform at a Glance</h2>
+          <section className="py-12">
+            <div className="container">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Platform at a Glance</h2>
+              {statsLoading ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Card key={i} className="text-center">
+                      <div className="w-8 h-8 mx-auto mb-2 skeleton rounded"></div>
+                      <div className="h-8 w-16 mx-auto mb-2 skeleton rounded"></div>
+                      <div className="h-4 w-20 mx-auto skeleton rounded"></div>
+                    </Card>
+                  ))}
+                </div>
+              ) : stats ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card className="text-center">
-                    <UserGroupIcon className="w-8 h-8 text-primary-600 mx-auto mb-2" />
+                    <UserGroupIcon className="w-8 h-8 text-primary-600 mx-auto mb-2" aria-hidden="true" />
                     <div className="text-2xl font-bold text-gray-900">{stats.totalUsers.toLocaleString()}</div>
                     <div className="text-sm text-gray-600">Active Users</div>
                   </Card>
                   <Card className="text-center">
-                    <BuildingOfficeIcon className="w-8 h-8 text-primary-600 mx-auto mb-2" />
+                    <BuildingOfficeIcon className="w-8 h-8 text-primary-600 mx-auto mb-2" aria-hidden="true" />
                     <div className="text-2xl font-bold text-gray-900">{stats.activeDriveways.toLocaleString()}</div>
                     <div className="text-sm text-gray-600">Available Spaces</div>
                   </Card>
                   <Card className="text-center">
-                    <CheckCircleIcon className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <CheckCircleIcon className="w-8 h-8 text-green-600 mx-auto mb-2" aria-hidden="true" />
                     <div className="text-2xl font-bold text-gray-900">{stats.completedBookings.toLocaleString()}</div>
                     <div className="text-sm text-gray-600">Completed</div>
                   </Card>
                   <Card className="text-center">
-                    <StarIcon className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                    <StarIcon className="w-8 h-8 text-yellow-500 mx-auto mb-2" aria-hidden="true" />
                     <div className="text-2xl font-bold text-gray-900">{stats.averageRating.toFixed(1)}</div>
                     <div className="text-sm text-gray-600">Avg Rating</div>
                   </Card>
                 </div>
-              </div>
-            </section>
-          )}
+              ) : null}
+            </div>
+          </section>
 
           {/* Benefits Section */}
           <section className="py-12 bg-gray-50">
@@ -352,9 +362,18 @@ export default function Home() {
         </section>
 
         {/* Stats Section */}
-        {stats && (
-          <section className="py-16 bg-white border-b">
-            <div className="container">
+        <section className="py-16 bg-white border-b">
+          <div className="container">
+            {statsLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="text-center">
+                    <div className="h-16 w-24 mx-auto mb-2 skeleton rounded"></div>
+                    <div className="h-4 w-20 mx-auto skeleton rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : stats ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                 <div className="text-center">
                   <div className="text-4xl md:text-5xl font-bold text-primary-600 mb-2">
@@ -381,9 +400,9 @@ export default function Home() {
                   <div className="text-gray-600 font-medium">Average Rating</div>
                 </div>
               </div>
-            </div>
-          </section>
-        )}
+            ) : null}
+          </div>
+        </section>
 
         {/* How It Works Section - Enhanced with Steps */}
         <section className="py-24 bg-white">
@@ -595,7 +614,7 @@ export default function Home() {
                     .slice(0, 2) || 'U';
                   return (
                     <Card key={review.id}>
-                      <div className="flex items-center mb-4">
+                      <div className="flex items-center mb-4" role="img" aria-label={`${review.rating} out of 5 stars`}>
                         {[...Array(5)].map((_, i) => (
                           <StarIcon
                             key={i}
@@ -604,6 +623,7 @@ export default function Home() {
                                 ? 'text-yellow-400 fill-current'
                                 : 'text-gray-300'
                             }`}
+                            aria-hidden="true"
                           />
                         ))}
                       </div>
@@ -613,13 +633,14 @@ export default function Home() {
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3">
                           {review.user?.avatar ? (
-                            <img
+                            <ImageWithPlaceholder
                               src={review.user.avatar}
-                              alt={review.user.name}
+                              alt={`${review.user.name}'s avatar`}
                               className="w-10 h-10 rounded-full"
+                              fallbackText={initials}
                             />
                           ) : (
-                            <span className="text-primary-700 font-semibold text-sm">
+                            <span className="text-primary-700 font-semibold text-sm" aria-label={`${review.user?.name || 'User'}'s avatar`}>
                               {initials}
                             </span>
                           )}
