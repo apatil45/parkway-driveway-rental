@@ -121,7 +121,8 @@ playwright-report/
 *.jpg
 *.jpeg
 
-# Temporary documentation files
+# Temporary documentation files (analysis, reports, test docs)
+docs/temp/
 BOOKING_PAYMENT_*.md
 MAP_*.md
 PRODUCTION_BEHAVIOR.md
