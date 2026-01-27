@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,9 +25,7 @@ export async function GET(request: NextRequest) {
     if (!token) {
       // Return success with null user for unauthenticated users
       // This allows the endpoint to be called without auth and gracefully handle no token
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[AUTH] Me: No access token cookie found (expected for unauthenticated users)');
-      }
+      // No logging needed for expected unauthenticated state
       return NextResponse.json(
         createApiResponse(null, 'No authenticated user'),
         { status: 200 }
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      console.error('[AUTH] Me: JWT_SECRET not configured');
+      logger.error('[AUTH] Me: JWT_SECRET not configured');
       return NextResponse.json(
         createApiError('Server configuration error', 500, 'SERVER_ERROR'),
         { status: 500 }
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest) {
     try {
       decoded = jwt.verify(token, jwtSecret);
     } catch (verifyError: any) {
-      console.error('[AUTH] Me: Token verification failed', {
+      logger.warn('[AUTH] Me: Token verification failed', {
         error: verifyError.name,
         message: verifyError.message,
       });
@@ -90,11 +89,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(createApiResponse(user, 'User data retrieved successfully'));
   } catch (error: any) {
-    console.error('[AUTH] Me: Unexpected error', {
-      error: error.message,
-      stack: error.stack,
+    logger.error('[AUTH] Me: Unexpected error', {
       name: error.name,
-    });
+    }, error instanceof Error ? error : undefined);
     
     if (error instanceof Error && error.name === 'TokenExpiredError') {
       return NextResponse.json(

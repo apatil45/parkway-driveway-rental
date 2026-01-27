@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     try {
       paymentIntent = await client.paymentIntents.retrieve(paymentIntentId);
     } catch (stripeError: any) {
-      console.error('[PAYMENT VERIFY] Stripe error:', stripeError);
+      logger.error('[PAYMENT VERIFY] Stripe error', { paymentIntentId }, stripeError instanceof Error ? stripeError : undefined);
       return NextResponse.json(
         createApiError('Failed to retrieve payment intent from Stripe', 400, 'STRIPE_ERROR'),
         { status: 400 }
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     // Log error but don't fail loudly - webhook will handle it
-    console.warn('[PAYMENT VERIFY] Error (webhook will handle):', {
+    logger.warn('[PAYMENT VERIFY] Error (webhook will handle)', {
       message: error.message,
       type: error.type,
       bookingId,

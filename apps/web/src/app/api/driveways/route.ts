@@ -4,6 +4,7 @@ import { createApiResponse, createApiError } from '@parkway/shared';
 import { drivewaySearchSchema, createDrivewaySchema, type CreateDrivewayInput } from '@/lib/validations';
 import { requireAuth } from '@/lib/auth-middleware';
 import { PricingService } from '@/services/PricingService';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -150,7 +151,7 @@ export async function GET(request: NextRequest) {
       drivewaysWithRatings = drivewaysWithRatings.slice(0, limit);
     }
 
-    return NextResponse.json(createApiResponse({
+    const response = NextResponse.json(createApiResponse({
       driveways: drivewaysWithRatings,
       pagination: {
         page,
@@ -159,8 +160,16 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit)
       }
     }, 'Driveways retrieved successfully'));
+    
+    // Add caching headers for public data (60s cache, 5min stale)
+    response.headers.set(
+      'Cache-Control',
+      'public, s-maxage=60, stale-while-revalidate=300'
+    );
+    
+    return response;
   } catch (error) {
-    console.error('Get driveways error:', error);
+    logger.error('Get driveways error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Unable to load parking spaces. Please try again in a moment.', 500, 'INTERNAL_ERROR'),
       { status: 500 }
@@ -239,7 +248,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(createApiResponse(created, 'Driveway created successfully', 201), { status: 201 });
   } catch (error) {
-    console.error('Create driveway error:', error);
+    logger.error('Create driveway error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(createApiError('Unable to create your listing. Please try again in a moment.', 500, 'INTERNAL_ERROR'), { status: 500 });
   }
 }

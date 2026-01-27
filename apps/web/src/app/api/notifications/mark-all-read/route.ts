@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Mark all read error:', error);
+    logger.error('Mark all read error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to mark notifications as read', 500, 'INTERNAL_ERROR'),
       { status: 500 }

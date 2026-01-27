@@ -9,6 +9,7 @@ import {
 } from '@parkway/shared';
 import { loginSchema, type LoginInput } from '@/lib/validations';
 import { setAuthCookies } from '@/lib/cookie-utils';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -86,9 +87,22 @@ export async function POST(request: NextRequest) {
     
     const { email, password }: LoginInput = validationResult.data;
 
-    // Find user by email
+    // Find user by email (password needed for comparison, so we fetch it)
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true, // Needed for password comparison
+        roles: true,
+        isActive: true,
+        phone: true,
+        address: true,
+        avatar: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
 
     if (!user || !user.isActive) {
@@ -103,7 +117,7 @@ export async function POST(request: NextRequest) {
     try {
       isPasswordValid = await bcryptjs.compare(password, user.password);
     } catch (compareError) {
-      console.error('[AUTH] Password comparison error:', compareError);
+      logger.error('[AUTH] Password comparison error', { email }, compareError as Error);
       return NextResponse.json(
         createApiError('Authentication error', 500, 'AUTH_ERROR'),
         { status: 500 }
@@ -139,21 +153,16 @@ export async function POST(request: NextRequest) {
     setAuthCookies(res, token, refreshToken, request);
     return res;
   } catch (error) {
-    console.error('[AUTH] Login error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    
-    // Log detailed error in all environments for debugging
-    console.error('[AUTH] Login error details:', {
+    logger.error('[AUTH] Login error', {
       message: errorMessage,
-      stack: errorStack,
       env: {
         hasJwtSecret: !!process.env.JWT_SECRET,
         hasDbUrl: !!process.env.DATABASE_URL,
         nodeEnv: process.env.NODE_ENV,
         vercel: process.env.VERCEL
       }
-    });
+    }, error instanceof Error ? error : undefined);
     
     // In development, include error details; in production, keep it generic
     const isDev = process.env.NODE_ENV === 'development';

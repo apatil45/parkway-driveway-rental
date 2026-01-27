@@ -3,6 +3,7 @@ import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { createReviewSchema, type CreateReviewInput } from '@/lib/validations';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
       }
     }, 'Reviews retrieved successfully'));
   } catch (error) {
-    console.error('Get reviews error:', error);
+    logger.error('Get reviews error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to retrieve reviews', 500, 'INTERNAL_ERROR'),
       { status: 500 }
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('Create review error:', error);
+    logger.error('Create review error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to create review', 500, 'INTERNAL_ERROR'),
       { status: 500 }

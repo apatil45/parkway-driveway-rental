@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiResponse, createApiError } from '@parkway/shared';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
       )
     );
   } catch (error: any) {
-    console.error('Image upload error:', error);
+    logger.error('Image upload error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError(
         error.message || 'Failed to upload image',

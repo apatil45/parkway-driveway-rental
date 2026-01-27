@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail, emailTemplates } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -32,13 +33,17 @@ export async function POST(request: NextRequest) {
         });
 
         if (!existingBooking) {
-          console.error('[WEBHOOK] Booking not found for payment intent: ' + paymentIntentId);
+          logger.warn('[WEBHOOK] Booking not found for payment intent', { paymentIntentId });
           return NextResponse.json({ received: true, warning: 'Booking not found' });
         }
 
         // Only update if booking is in a valid state (not already cancelled or expired)
         if (existingBooking.status === 'CANCELLED' || existingBooking.status === 'EXPIRED') {
-          console.warn('[WEBHOOK] Payment succeeded but booking is ' + existingBooking.status + ': ' + existingBooking.id);
+          logger.warn('[WEBHOOK] Payment succeeded but booking is cancelled/expired', {
+            bookingId: existingBooking.id,
+            status: existingBooking.status,
+            paymentIntentId
+          });
           return NextResponse.json({ received: true, warning: 'Booking is cancelled or expired' });
         }
 
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (updatedBookings.count === 0) {
-          console.warn('[WEBHOOK] No bookings updated for payment intent: ' + paymentIntentId);
+          logger.warn('[WEBHOOK] No bookings updated for payment intent', { paymentIntentId });
           return NextResponse.json({ received: true, warning: 'No bookings updated' });
         }
 
@@ -72,7 +77,7 @@ export async function POST(request: NextRequest) {
         if (booking && event.data.object) {
           const paymentIntent = event.data.object as any;
           if (paymentIntent.metadata?.bookingId && paymentIntent.metadata.bookingId !== booking.id) {
-            console.warn('[WEBHOOK] Payment intent metadata mismatch:', {
+            logger.warn('[WEBHOOK] Payment intent metadata mismatch', {
               metadataBookingId: paymentIntent.metadata.bookingId,
               actualBookingId: booking.id,
               paymentIntentId
@@ -126,7 +131,7 @@ export async function POST(request: NextRequest) {
           });
         }
         
-        console.log('[WEBHOOK] Payment succeeded for intent: ' + paymentIntentId);
+        logger.info('[WEBHOOK] Payment succeeded', { paymentIntentId, bookingId: booking?.id });
       } else if (event.type === 'payment_intent.payment_failed') {
         const paymentIntent = event.data.object as any;
         const paymentIntentId = paymentIntent.id;
@@ -146,7 +151,7 @@ export async function POST(request: NextRequest) {
           },
         });
         
-        console.log('[WEBHOOK] Payment failed for intent: ' + paymentIntentId);
+        logger.info('[WEBHOOK] Payment failed', { paymentIntentId });
       } else if (event.type === 'charge.refunded') {
         // Stripe sends charge.refunded event for refunds, not payment_intent.refunded
         const charge = event.data.object as any;
@@ -197,12 +202,12 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        console.log('[WEBHOOK] Payment refunded for intent: ' + paymentIntentId);
+        logger.info('[WEBHOOK] Payment refunded', { paymentIntentId });
       }
       
       return NextResponse.json({ received: true, type: event.type });
     } catch (err) {
-      console.error('[WEBHOOK] Error:', err);
+      logger.error('[WEBHOOK] Error processing webhook', {}, err instanceof Error ? err : undefined);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
   }
@@ -211,15 +216,20 @@ export async function POST(request: NextRequest) {
   if (!signingSecret || !stripeSecret) {
     const isDev = process.env.NODE_ENV === 'development';
     if (isDev) {
-      console.error('[WEBHOOK] STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY is not configured.');
-      console.error('[WEBHOOK] Webhook processing requires both environment variables.');
+      logger.error('[WEBHOOK] STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY is not configured', {
+        hasWebhookSecret: !!signingSecret,
+        hasStripeSecret: !!stripeSecret
+      });
       return NextResponse.json(
         { error: 'Webhook processing is not configured', stub: true },
         { status: 503 }
       );
     }
     // In production, fail loudly
-    console.error('[WEBHOOK] CRITICAL: STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY is missing in production!');
+    logger.error('[WEBHOOK] CRITICAL: STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY is missing in production!', {
+      hasWebhookSecret: !!signingSecret,
+      hasStripeSecret: !!stripeSecret
+    });
     return NextResponse.json(
       { error: 'Webhook processing is not configured' },
       { status: 503 }
@@ -228,7 +238,7 @@ export async function POST(request: NextRequest) {
   
   // If signature is missing but secrets are configured, return error
   if (!sig) {
-    console.error('[WEBHOOK] Missing stripe-signature header');
+    logger.error('[WEBHOOK] Missing stripe-signature header');
     return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
   }
   

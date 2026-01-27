@@ -9,6 +9,7 @@ import {
 } from '@parkway/shared';
 import { registerSchema, type RegisterInput } from '@/lib/validations';
 import { setAuthCookies } from '@/lib/cookie-utils';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -69,9 +70,10 @@ export async function POST(request: NextRequest) {
     
     const { name, email, password, roles, phone, address }: RegisterInput = validationResult.data;
 
-    // Check if user already exists
+    // Check if user already exists (only fetch id for existence check)
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      select: { id: true }
     });
 
     if (existingUser) {
@@ -121,7 +123,7 @@ export async function POST(request: NextRequest) {
     setAuthCookies(res, token, refreshToken, request);
     return res;
   } catch (error) {
-    console.error('Registration error:', error);
+    logger.error('Registration error', {}, error instanceof Error ? error : undefined);
     const message = process.env.NODE_ENV === 'development' && error instanceof Error
       ? `Internal server error: ${error.message}`
       : 'Internal server error';

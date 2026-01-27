@@ -5,6 +5,7 @@ import { createBookingSchema, bookingQuerySchema, type CreateBookingInput, type 
 import { sendEmail, emailTemplates } from '@/lib/email';
 import { requireAuth } from '@/lib/auth-middleware';
 import { PricingService } from '@/services/PricingService';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
       }
     }, 'Bookings retrieved successfully'));
   } catch (error) {
-    console.error('Get bookings error:', error);
+    logger.error('Get bookings error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Unable to load your bookings. Please try again in a moment.', 500, 'INTERNAL_ERROR'),
       { status: 500 }
@@ -351,7 +352,10 @@ export async function POST(request: NextRequest) {
       });
     } catch (emailError) {
       // Email failure shouldn't break booking creation
-      console.error('Failed to send booking email:', emailError);
+      logger.warn('Failed to send booking email', { 
+        bookingId: booking.id,
+        error: emailError instanceof Error ? emailError.message : String(emailError)
+      });
     }
 
     return NextResponse.json(
@@ -359,7 +363,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('Create booking error:', error);
+    logger.error('Create booking error', {}, error instanceof Error ? error : undefined);
     
     // Handle capacity exceeded error from transaction
     if (error.message === 'CAPACITY_EXCEEDED') {

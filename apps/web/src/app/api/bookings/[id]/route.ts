@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(createApiResponse(booking, 'Booking retrieved successfully'));
   } catch (error) {
-    console.error('Get booking error:', error);
+    logger.error('Get booking error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to retrieve booking', 500, 'INTERNAL_ERROR'),
       { status: 500 }
@@ -138,7 +139,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json(createApiResponse(updated, 'Booking updated')); 
   } catch (error) {
-    console.error('Update booking error:', error);
+    logger.error('Update booking error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(createApiError('Failed to update booking', 500, 'INTERNAL_ERROR'), { status: 500 });
   }
 }

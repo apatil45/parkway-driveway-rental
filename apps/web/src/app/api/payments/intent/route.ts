@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -68,7 +69,11 @@ export async function POST(request: NextRequest) {
               // Verify amount matches (use booking totalPrice as source of truth)
               const intentAmount = intent.amount;
               if (intentAmount !== amountInCents) {
-                console.warn(`[PAYMENT] Amount mismatch: intent=${intentAmount}, booking=${amountInCents}`);
+                logger.warn('[PAYMENT] Amount mismatch', {
+                  intentAmount,
+                  bookingAmount: amountInCents,
+                  bookingId
+                });
                 // Use booking amount as source of truth, but log the discrepancy
               }
               
@@ -79,12 +84,11 @@ export async function POST(request: NextRequest) {
               };
             }
           } catch (error: any) {
-            console.error('[PAYMENT] Failed to retrieve payment intent:', {
-              error: error.message,
+            logger.error('[PAYMENT] Failed to retrieve payment intent', {
               type: error.type,
               code: error.code,
               bookingId
-            });
+            }, error instanceof Error ? error : undefined);
             // Fall through to create new intent if retrieval fails
           }
         }
@@ -117,12 +121,11 @@ export async function POST(request: NextRequest) {
               retrieved: false
             };
           } catch (error: any) {
-            console.error('[PAYMENT] Failed to create payment intent:', {
-              error: error.message,
+            logger.error('[PAYMENT] Failed to create payment intent', {
               type: error.type,
               code: error.code,
               bookingId
-            });
+            }, error instanceof Error ? error : undefined);
             
             if (error.type === 'StripeCardError') {
               throw new Error('STRIPE_CARD_ERROR');
@@ -136,8 +139,7 @@ export async function POST(request: NextRequest) {
         
         // Stripe is REQUIRED for booking payments
         if (!secret) {
-          console.error('[PAYMENT] CRITICAL: STRIPE_SECRET_KEY is required for booking payments.');
-          console.error('[PAYMENT] Please set STRIPE_SECRET_KEY in your environment variables.');
+          logger.error('[PAYMENT] CRITICAL: STRIPE_SECRET_KEY is required for booking payments', { bookingId });
           throw new Error('STRIPE_NOT_CONFIGURED');
         }
         
@@ -162,13 +164,13 @@ export async function POST(request: NextRequest) {
     let amountNum: number;
     
     if (!amount) {
-      console.error('[PAYMENT] Missing amount in request:', { body, bookingId });
+      logger.error('[PAYMENT] Missing amount in request', { bookingId });
       return NextResponse.json(createApiError('Payment amount is required.', 400, 'VALIDATION_ERROR'), { status: 400 });
     }
     
     const amountValue = Number(amount);
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
-      console.error('[PAYMENT] Invalid amount value:', { amount, amountValue, bookingId });
+      logger.error('[PAYMENT] Invalid amount value', { amount, amountValue, bookingId });
       return NextResponse.json(createApiError('Please enter a valid payment amount.', 400, 'VALIDATION_ERROR'), { status: 400 });
     }
     
@@ -176,15 +178,15 @@ export async function POST(request: NextRequest) {
     // Otherwise assume it's already in cents
     if (amountValue < 100) {
       amountNum = Math.round(amountValue * 100);
-      console.log('[PAYMENT] Amount converted from dollars to cents:', { original: amountValue, converted: amountNum });
+      logger.debug('[PAYMENT] Amount converted from dollars to cents', { original: amountValue, converted: amountNum });
     } else {
       amountNum = Math.round(amountValue);
-      console.log('[PAYMENT] Amount already in cents:', { amount: amountNum });
+      logger.debug('[PAYMENT] Amount already in cents', { amount: amountNum });
     }
     
     // Stripe minimum is 50 cents ($0.50)
     if (amountNum < 50) {
-      console.error('[PAYMENT] Amount too small:', { amountNum, original: amount });
+      logger.error('[PAYMENT] Amount too small', { amountNum, original: amount });
       return NextResponse.json(createApiError('Payment amount must be at least $0.50.', 400, 'VALIDATION_ERROR'), { status: 400 });
     }
 
@@ -201,23 +203,21 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json(createApiResponse({ clientSecret: intent.client_secret, amount: amountNum }, 'Payment intent created'));
       } catch (error: any) {
-        console.error('[PAYMENT] Failed to create payment intent:', {
-          error: error.message,
+        logger.error('[PAYMENT] Failed to create payment intent', {
           type: error.type,
           code: error.code
-        });
+        }, error instanceof Error ? error : undefined);
         
         if (error.type === 'StripeCardError') {
           return NextResponse.json(createApiError(error.message || 'Your card was declined. Please check your card details and try again.', 400, 'CARD_ERROR'), { status: 400 });
         }
         if (error.type === 'StripeInvalidRequestError') {
-          console.error('[PAYMENT] Stripe invalid request error:', {
-            message: error.message,
+          logger.error('[PAYMENT] Stripe invalid request error', {
             code: error.code,
             param: error.param,
             amount: amountNum,
             bookingId
-          });
+          }, error instanceof Error ? error : undefined);
           // Provide more specific error message based on Stripe's error
           let userMessage = 'Please check your payment information and try again.';
           if (error.message) {
@@ -236,8 +236,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Stripe is REQUIRED for booking payments
-    console.error('[PAYMENT] CRITICAL: STRIPE_SECRET_KEY is required for booking payments.');
-    console.error('[PAYMENT] Please set STRIPE_SECRET_KEY in your environment variables.');
+    logger.error('[PAYMENT] CRITICAL: STRIPE_SECRET_KEY is required for booking payments');
     return NextResponse.json(
       createApiError('Payment processing is not configured. Please contact support.', 503, 'SERVICE_UNAVAILABLE'),
       { status: 503 }
@@ -279,7 +278,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.error('[PAYMENT] Payment intent error:', e);
+    logger.error('[PAYMENT] Payment intent error', {}, e instanceof Error ? e : undefined);
     return NextResponse.json(createApiError('Unable to set up payment. Please try again in a moment.', 500, 'INTERNAL_ERROR'), { status: 500 });
   }
 }

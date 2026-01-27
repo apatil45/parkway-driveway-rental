@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { createApiResponse } from '@parkway/shared';
+import { logger } from '@/lib/logger';
 
 /**
  * Cron Job: Expire PENDING bookings that haven't been paid
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
       )
     );
   } catch (error) {
-    console.error('[CRON] Expire bookings error:', error);
+    logger.error('[CRON] Expire bookings error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       { error: 'Failed to expire bookings', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

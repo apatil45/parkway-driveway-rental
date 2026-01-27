@@ -4,6 +4,7 @@ import { createApiError, createApiResponse } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
 import { createDrivewaySchema } from '@/lib/validations';
 import { PricingService } from '@/services/PricingService';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -93,7 +94,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     
     return NextResponse.json(createApiResponse(updated, 'Driveway updated successfully'));
   } catch (error) {
-    console.error('Update driveway error:', error);
+    logger.error('Update driveway error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(createApiError('Failed to update driveway', 500, 'INTERNAL_ERROR'), { status: 500 });
   }
 }
@@ -155,7 +156,7 @@ export async function GET(
 
     return NextResponse.json(createApiResponse(drivewayWithRating, 'Driveway retrieved successfully'));
   } catch (error) {
-    console.error('Get driveway error:', error);
+    logger.error('Get driveway error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to retrieve driveway', 500, 'INTERNAL_ERROR'),
       { status: 500 }

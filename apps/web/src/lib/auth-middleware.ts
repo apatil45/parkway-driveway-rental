@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { createApiError } from '@parkway/shared';
+import { logger } from './logger';
 
 export interface AuthenticatedRequest {
   userId: string;
@@ -40,7 +41,7 @@ export async function verifyAuth(request: NextRequest): Promise<AuthResult> {
   try {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      console.error('[AUTH] JWT_SECRET is not set');
+      logger.error('[AUTH] JWT_SECRET is not set');
       return {
         success: false,
         error: NextResponse.json(
@@ -87,7 +88,7 @@ export async function verifyAuth(request: NextRequest): Promise<AuthResult> {
       };
     }
 
-    console.error('[AUTH] Token verification error:', error);
+    logger.error('[AUTH] Token verification error', {}, error instanceof Error ? error : undefined);
     return {
       success: false,
       error: NextResponse.json(

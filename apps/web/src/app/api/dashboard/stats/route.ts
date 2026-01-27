@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(createApiResponse(stats, 'Dashboard stats retrieved successfully'));
   } catch (error) {
-    console.error('Dashboard stats error:', error);
+    logger.error('Dashboard stats error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to retrieve dashboard stats', 500, 'INTERNAL_ERROR'),
       { status: 500 }

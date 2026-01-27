@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(createApiResponse(user, 'Profile retrieved successfully'));
   } catch (error) {
-    console.error('Get profile error:', error);
+    logger.error('Get profile error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to retrieve profile', 500, 'INTERNAL_ERROR'),
       { status: 500 }
@@ -96,7 +97,7 @@ export async function PATCH(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Update profile error:', error);
+    logger.error('Update profile error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to update profile', 500, 'INTERNAL_ERROR'),
       { status: 500 }

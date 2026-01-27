@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       }
     }, 'Notifications retrieved successfully'));
   } catch (error) {
-    console.error('Get notifications error:', error);
+    logger.error('Get notifications error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to retrieve notifications', 500, 'INTERNAL_ERROR'),
       { status: 500 }
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Create notification error:', error);
+    logger.error('Create notification error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       createApiError('Failed to create notification', 500, 'INTERNAL_ERROR'),
       { status: 500 }

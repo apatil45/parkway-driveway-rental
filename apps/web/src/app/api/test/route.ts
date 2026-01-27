@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { requireDevelopment } from '@/lib/api-protection';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,11 +12,11 @@ export async function GET(request: NextRequest) {
   if (devCheck) return devCheck;
 
   try {
-    console.log('Test API route called');
+    logger.debug('Test API route called');
     
     // Test basic Prisma query
     const userCount = await prisma.user.count();
-    console.log(`Found ${userCount} users`);
+    logger.debug(`Found ${userCount} users`);
     
     // Test driveways query
     const driveways = await prisma.driveway.findMany({
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
       take: 5
     });
     
-    console.log(`Found ${driveways.length} driveways`);
+    logger.debug(`Found ${driveways.length} driveways`);
     
     return NextResponse.json({
       success: true,
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Test API error:', error);
+    logger.error('Test API error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json({
       success: false,
       message: 'Test failed',

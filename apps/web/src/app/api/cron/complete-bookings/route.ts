@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@parkway/database';
 import { createApiResponse } from '@parkway/shared';
+import { logger } from '@/lib/logger';
 
 /**
  * Cron Job: Mark bookings as COMPLETED after endTime
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       )
     );
   } catch (error) {
-    console.error('[CRON] Complete bookings error:', error);
+    logger.error('[CRON] Complete bookings error', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
       { error: 'Failed to complete bookings', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

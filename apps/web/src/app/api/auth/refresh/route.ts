@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getCookieConfig } from '@/lib/cookie-utils';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       // Don't log as error - this is expected for unauthenticated users
       // Only log in development for debugging
       if (process.env.NODE_ENV === 'development') {
-        console.log('[AUTH] Refresh: No refresh token cookie found (expected for unauthenticated users)');
+        logger.debug('[AUTH] Refresh: No refresh token cookie found (expected for unauthenticated users)');
       }
       return NextResponse.json({ success: false, message: 'No refresh token', statusCode: 401 }, { status: 401 });
     }
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     const accessSecret = process.env.JWT_SECRET;
     
     if (!refreshSecret || !accessSecret) {
-      console.error('[AUTH] Refresh: JWT secrets not configured', {
+      logger.error('[AUTH] Refresh: JWT secrets not configured', {
         hasRefreshSecret: !!process.env.JWT_REFRESH_SECRET,
         hasJwtSecret: !!process.env.JWT_SECRET,
         vercel: process.env.VERCEL,
@@ -50,10 +51,10 @@ export async function POST(request: NextRequest) {
     try {
       decoded = jwt.verify(refresh, refreshSecret);
     } catch (verifyError: any) {
-      console.error('[AUTH] Refresh: Token verification failed', {
+      logger.error('[AUTH] Refresh: Token verification failed', {
         error: verifyError.name,
         message: verifyError.message,
-      });
+      }, verifyError instanceof Error ? verifyError : undefined);
       return NextResponse.json(
         { success: false, message: 'Invalid or expired refresh token', statusCode: 401 },
         { status: 401 }
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!decoded?.id) {
-      console.error('[AUTH] Refresh: Token missing user ID', { decoded });
+      logger.error('[AUTH] Refresh: Token missing user ID', { decoded });
       return NextResponse.json(
         { success: false, message: 'Invalid token format', statusCode: 401 },
         { status: 401 }
@@ -87,11 +88,11 @@ export async function POST(request: NextRequest) {
     
     return res;
   } catch (e: any) {
-    console.error('[AUTH] Refresh: Unexpected error', {
+    logger.error('[AUTH] Refresh: Unexpected error', {
       error: e.message,
       stack: e.stack,
       name: e.name,
-    });
+    }, e instanceof Error ? e : undefined);
     return NextResponse.json(
       { success: false, message: 'Token refresh failed', statusCode: 401 },
       { status: 401 }
