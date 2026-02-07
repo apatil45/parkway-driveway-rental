@@ -148,7 +148,7 @@ export default function FavoritesPage() {
               <HeartIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600 font-medium">No favorites yet</p>
               <p className="text-sm text-gray-500 mt-1">
-                Save driveways from the search or driveway page to see them here.
+                Save driveways from the search or driveway page to see them here!
               </p>
               <Link
                 href="/search"
