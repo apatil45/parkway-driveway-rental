@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { PrismaClient } from '@prisma/client';
 import { prisma } from '@parkway/database';
+
+type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { createBookingSchema, bookingQuerySchema, type CreateBookingInput, type BookingQueryParams } from '@/lib/validations';
 import { sendEmail, emailTemplates } from '@/lib/email';
@@ -261,7 +263,7 @@ export async function POST(request: NextRequest) {
     const totalPrice = pricingBreakdown.finalPrice;
 
     // Use transaction to prevent race conditions
-    const booking = await prisma.$transaction(async (tx: PrismaClient) => {
+    const booking = await prisma.$transaction(async (tx: TransactionClient) => {
       // Check overlapping bookings against capacity (ONLY CONFIRMED bookings reserve spots)
       // PENDING bookings don't reserve spots until payment is completed
       const overlappingCount = await tx.booking.count({

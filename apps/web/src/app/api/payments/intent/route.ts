@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { PrismaClient } from '@prisma/client';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
 import { logger } from '@/lib/logger';
+
+type TransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
       const { prisma } = await import('@parkway/database');
       
       // Use transaction to prevent race conditions and ensure data consistency
-      const result = await prisma.$transaction(async (tx: import('@prisma/client').PrismaClient) => {
+      const result = await prisma.$transaction(async (tx: TransactionClient) => {
         // Fetch booking with all necessary fields, including user ownership
         const booking = await tx.booking.findUnique({
           where: { id: bookingId },
