@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Button from './Button';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 
 interface ImageUploadProps {
   value: string[];
@@ -44,7 +44,7 @@ export default function ImageUpload({
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await api.post('/upload/image', formData, {
+        const response = await api.post<{ url: string }>('/upload/image', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -84,7 +84,7 @@ export default function ImageUpload({
       const formData = new FormData();
       formData.append('file', files[0]);
 
-      const response = await api.post('/upload/image', formData, {
+      const response = await api.post<{ url: string }>('/upload/image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

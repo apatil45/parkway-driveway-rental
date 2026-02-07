@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 
 interface User {
   id: string;
@@ -33,14 +33,14 @@ export function useAuth() {
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let isMounted = true;
-    
-    // Set a timeout to prevent infinite loading
+
     timeoutId = setTimeout(() => {
       if (isMounted) {
-        console.warn('[AUTH] Auth check timed out, assuming unauthenticated');
         setAuthState(prev => {
-          // Only update if still loading
           if (prev.loading) {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('[AUTH] Auth check timed out, assuming unauthenticated');
+            }
             return {
               ...prev,
               loading: false,
@@ -51,10 +51,12 @@ export function useAuth() {
           return prev;
         });
       }
-    }, 10000); // 10 second timeout
-    
-    checkAuth();
-    
+    }, 10000);
+
+    checkAuth().finally(() => {
+      clearTimeout(timeoutId);
+    });
+
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
@@ -63,9 +65,9 @@ export function useAuth() {
 
   const checkAuth = async () => {
     try {
-      const response = await api.get('/auth/me');
-      const user = response.data.data;
-      
+      const response = await api.get<User | null>('/auth/me');
+      const user: User | null = response.data.data;
+
       // If user is null, user is not authenticated (this is now a valid response)
       if (user) {
         setAuthState({
@@ -83,8 +85,8 @@ export function useAuth() {
       if (error.response?.status === 401) {
         try {
           await api.post('/auth/refresh');
-          const me = await api.get('/auth/me');
-          const user = me.data.data;
+          const me = await api.get<User | null>('/auth/me');
+          const user: User | null = me.data.data;
           if (user) {
             setAuthState({
               user,
@@ -113,8 +115,8 @@ export function useAuth() {
     try {
       setAuthState(prev => ({ ...prev, loading: true, error: '' }));
       
-      const response = await api.post('/auth/login', { email, password });
-      const user = response.data.data.user;
+      const response = await api.post<{ user: User }>('/auth/login', { email, password });
+      const user: User = response.data.data.user;
 
       setAuthState({
         user,
@@ -139,8 +141,8 @@ export function useAuth() {
     try {
       setAuthState(prev => ({ ...prev, loading: true, error: '' }));
       
-      const response = await api.post('/auth/register', userData);
-      const user = response.data.data.user;
+      const response = await api.post<{ user: User }>('/auth/register', userData);
+      const user: User = response.data.data.user;
 
       setAuthState({
         user,

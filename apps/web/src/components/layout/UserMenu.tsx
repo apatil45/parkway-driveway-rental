@@ -106,6 +106,14 @@ export default function UserMenu() {
               My Bookings
             </Link>
             
+            <Link
+              href="/favorites"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={() => setIsOpen(false)}
+            >
+              Favorites
+            </Link>
+            
             <div className="border-t border-gray-100 mt-1"></div>
             
             <Link

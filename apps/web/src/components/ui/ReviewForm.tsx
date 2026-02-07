@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button, Card } from './';
 import { useToast } from './Toast';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
 

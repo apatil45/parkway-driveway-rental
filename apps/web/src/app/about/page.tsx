@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, LoadingSpinner } from '@/components/ui';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 
 interface PublicStats {
   totalUsers: number;
@@ -21,7 +21,7 @@ export default function AboutPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await api.get('/stats/public');
+        const response = await api.get<PublicStats>('/stats/public');
         setStats(response.data.data);
       } catch (error) {
         console.error('Failed to fetch stats:', error);

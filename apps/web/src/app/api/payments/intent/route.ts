@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       const { prisma } = await import('@parkway/database');
       
       // Use transaction to prevent race conditions and ensure data consistency
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx: import('@prisma/client').PrismaClient) => {
         // Fetch booking with all necessary fields, including user ownership
         const booking = await tx.booking.findUnique({
           where: { id: bookingId },

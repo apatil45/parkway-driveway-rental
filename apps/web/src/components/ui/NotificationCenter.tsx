@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from './Toast';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import { 
   BellIcon, 
   XMarkIcon,
@@ -47,10 +47,10 @@ export default function NotificationCenter() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/notifications?limit=20');
+      const response = await api.get<{ notifications?: any[]; unreadCount?: number }>('/notifications?limit=20');
       const data = response.data.data;
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
+      setNotifications(data.notifications ?? []);
+      setUnreadCount(data.unreadCount ?? 0);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     } finally {
@@ -60,9 +60,9 @@ export default function NotificationCenter() {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await api.get('/notifications?limit=1');
+      const response = await api.get<{ unreadCount?: number }>('/notifications?limit=1');
       const data = response.data.data;
-      setUnreadCount(data.unreadCount || 0);
+      setUnreadCount(data.unreadCount ?? 0);
     } catch (err) {
       // Silently fail
     }

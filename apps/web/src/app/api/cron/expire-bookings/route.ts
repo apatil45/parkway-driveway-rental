@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       });
 
       await prisma.notification.createMany({
-        data: expiredBookingIds.flatMap(booking => [
+        data: expiredBookingIds.flatMap((booking: { userId: string; driveway: { ownerId: string; title: string } }) => [
           {
             userId: booking.userId,
             title: 'Booking Expired',

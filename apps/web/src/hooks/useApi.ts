@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import { createAppError } from '@/lib/errors';
 
 interface ApiState<T> {

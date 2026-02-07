@@ -52,6 +52,19 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: NextRequest) {
+  // Fail fast with a clear message when server is misconfigured
+  if (!process.env.JWT_SECRET) {
+    logger.error('[AUTH] Login: JWT_SECRET is not set');
+    return NextResponse.json(
+      createApiError(
+        'Server misconfiguration: JWT_SECRET is not set. Add JWT_SECRET to your .env file.',
+        503,
+        'SERVER_CONFIG'
+      ),
+      { status: 503 }
+    );
+  }
+
   try {
     // Rate limiting using improved utility
     const { rateLimiters } = await import('@/lib/rate-limit');

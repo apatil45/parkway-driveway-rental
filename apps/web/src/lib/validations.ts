@@ -64,6 +64,12 @@ export const createReviewSchema = z.object({
   comment: z.string().max(500, 'Comment cannot exceed 500 characters').optional().or(z.literal(''))
 });
 
+// Favorite validation schemas
+export const favoriteDrivewaySchema = z.object({
+  drivewayId: z.string().cuid('Invalid driveway ID')
+});
+
+
 // Query parameter validation schemas
 export const drivewaySearchSchema = z.object({
   page: z.string().transform(Number).pipe(z.number().int().min(1)).default('1'),
@@ -84,6 +90,7 @@ export const bookingQuerySchema = z.object({
 // Type exports
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type FavoriteDrivewayInput = z.infer<typeof favoriteDrivewaySchema>;
 export type CreateDrivewayInput = z.infer<typeof createDrivewaySchema>;
 export type UpdateDrivewayInput = z.infer<typeof updateDrivewaySchema>;
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;

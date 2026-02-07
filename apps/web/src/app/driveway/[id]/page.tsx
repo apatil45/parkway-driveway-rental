@@ -5,9 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/components/ui/Toast';
-import { ImageWithPlaceholder } from '@/components/ui';
+import { Button, ImageWithPlaceholder } from '@/components/ui';
+import FavoriteButton from '@/components/ui/FavoriteButton';
 import { useAuth } from '@/hooks';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import { PricingService } from '@/services/PricingService';
 import { createAppError } from '@/lib/errors';
 
@@ -58,6 +59,15 @@ interface BookingForm {
   };
 }
 
+interface BookingResponse {
+  id: string;
+}
+
+interface FavoriteItem {
+  driveway?: { id: string };
+  drivewayId?: string;
+}
+
 export default function DrivewayDetailsPage() {
   const params = useParams();
   const [driveway, setDriveway] = useState<Driveway | null>(null);
@@ -80,12 +90,13 @@ export default function DrivewayDetailsPage() {
   const [calculatedHours, setCalculatedHours] = useState<number | null>(null);
   const [pricingBreakdown, setPricingBreakdown] = useState<any>(null);
   const [durationError, setDurationError] = useState<string | null>(null);
+  const [isFavorited, setIsFavorited] = useState(false);
   const isSubmittingRef = useRef(false);
   const isMountedRef = useRef(true);
 
   const router = useRouter();
   const { showToast } = useToast();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   const drivewayId = params?.id as string;
 
@@ -115,7 +126,7 @@ export default function DrivewayDetailsPage() {
     const fetchDriveway = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/driveways/${drivewayId}`);
+        const response = await api.get<Driveway>(`/driveways/${drivewayId}`);
         if (isMountedRef.current) {
           setDriveway(response.data.data);
         }
@@ -176,6 +187,35 @@ export default function DrivewayDetailsPage() {
       }
     }
   }, [isAuthenticated, drivewayId, showBookingForm]);
+
+  // Check if driveway is favorited (only after auth has finished loading)
+  useEffect(() => {
+    if (authLoading || !isAuthenticated || !drivewayId) {
+      if (!authLoading && !isAuthenticated) {
+        setIsFavorited(false);
+      }
+      return;
+    }
+
+    const checkFavorite = async () => {
+      try {
+        const response = await api.get<FavoriteItem[]>('/favorites');
+        const favorites: FavoriteItem[] = response.data.data ?? [];
+        const isFav = favorites.some(
+          (fav) => fav.driveway?.id === drivewayId || fav.drivewayId === drivewayId
+        );
+        if (isMountedRef.current) {
+          setIsFavorited(isFav);
+        }
+      } catch (error) {
+        if (isMountedRef.current) {
+          setIsFavorited(false);
+        }
+      }
+    };
+
+    checkFavorite();
+  }, [authLoading, isAuthenticated, drivewayId]);
 
   // Calculate price when times change with dynamic pricing
   useEffect(() => {
@@ -314,10 +354,10 @@ export default function DrivewayDetailsPage() {
         requestBody.vehicleInfo = vehicleInfo;
       }
 
-      const response = await api.post('/bookings', requestBody);
+      const response = await api.post<BookingResponse>('/bookings', requestBody);
 
-      const booking = response.data?.data;
-      
+      const booking: BookingResponse | undefined = response.data?.data;
+
       // Ensure we have a valid booking response
       if (!booking || !booking.id) {
         console.error('Invalid booking response:', response.data);
@@ -462,6 +502,8 @@ export default function DrivewayDetailsPage() {
     );
   }
 
+  const isOwner = Boolean(isAuthenticated && user?.id === driveway?.owner?.id && user.id ===driveway.owner.id);
+
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 min-h-screen">
@@ -492,7 +534,19 @@ export default function DrivewayDetailsPage() {
             {/* Basic Info */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
               <div className="flex justify-between items-start mb-4">
-                <h1 className="text-3xl font-bold text-gray-900">{driveway.title}</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-bold text-gray-900">{driveway.title}</h1>
+                  {isAuthenticated && (
+                    <FavoriteButton
+                      drivewayId={drivewayId}
+                      isFavorite={isFavorited}
+                      onToggle={(newState) => setIsFavorited(newState)}
+                    />
+                  )}
+                  {isOwner && (
+                       <Link href={`/driveways/${drivewayId}/edit`} className="btn btn-primary">Edit</Link>
+                  )}
+                </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-primary-600">
                     {formatPrice(driveway.pricePerHour)}/hr

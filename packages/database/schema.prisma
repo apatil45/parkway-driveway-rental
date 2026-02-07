@@ -48,6 +48,7 @@ model User {
   driveways     Driveway[]
   bookings      Booking[]
   reviews       Review[]
+  favorites     Favorite[]
   notifications Notification[]
 
   @@map("users")
@@ -75,6 +76,7 @@ model Driveway {
   owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   bookings Booking[]
   reviews  Review[]
+  favorites Favorite[]
 
   @@index([ownerId])
   @@map("driveways")
@@ -123,6 +125,24 @@ model Review {
   @@index([drivewayId])
   @@map("reviews")
 }
+
+
+model Favorite {
+  id         String  @id @default(cuid())
+  userId     String
+  drivewayId String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  driveway Driveway @relation(fields: [drivewayId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, drivewayId])
+  @@index([userId])
+  @@index([drivewayId])
+  @@map("favorites")
+}
+
 
 model Notification {
   id        String   @id @default(cuid())

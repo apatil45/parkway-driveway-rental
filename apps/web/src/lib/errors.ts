@@ -161,6 +161,11 @@ function parseErrorMessage(message: string): string {
     return 'Please check your input and try again.';
   }
 
+  // DOM / map library errors (e.g. removeChild - React vs Leaflet)
+  if (lowerMessage.includes('removechild') || lowerMessage.includes('not a child of this node') || lowerMessage.includes('domexception')) {
+    return 'A display error occurred. Please refresh the page.';
+  }
+
   // If it's still a technical message, return generic user-friendly message
   if (lowerMessage.includes('error') || lowerMessage.includes('failed') || lowerMessage.includes('exception')) {
     return 'An error occurred. Please try again.';
@@ -283,13 +288,26 @@ export function logError(error: any, context?: string) {
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
   };
 
+  // Safe technical details for console (avoid circular refs / DOM nodes from raw error)
+  const technicalDetails = {
+    message: appError.message,
+    type: appError.type,
+    userMessage: appError.userMessage,
+    technicalMessage: appError.technicalMessage ?? null,
+    errorName: typeof error?.name === 'string' ? error.name : undefined,
+    errorMessage: typeof error?.message === 'string' ? error.message : undefined,
+    code: appError.code,
+    statusCode: appError.statusCode,
+    context: errorLog.context,
+  };
+
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
     console.group('Error Logged');
     console.error('Context:', errorLog.context);
     console.error('Type:', errorLog.type);
     console.error('User Message:', errorLog.userMessage);
-    console.error('Technical Details:', errorLog);
+    console.error('Technical Details:', technicalDetails);
     console.groupEnd();
   }
 

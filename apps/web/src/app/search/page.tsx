@@ -66,6 +66,8 @@ function SearchPageContent() {
   });
   const [viewMode] = useState<'map' | 'list' | 'split'>('split');
   const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearch] =useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,6 +76,7 @@ function SearchPageContent() {
   // MapService handles lifecycle - no need for container keys or manual cleanup
   const [canRenderMap, setCanRenderMap] = useState(true);
   const isMountedRef = useRef(true);
+  const locationDetectedRef = useRef(false);
   
   // Simple: show map when on search page, hide when not
   useEffect(() => {
@@ -101,7 +104,10 @@ function SearchPageContent() {
             latitude: String(latitude),
             longitude: String(longitude),
           }));
-          showToast('Location detected! You can now search nearby driveways.', 'success');
+          if (!locationDetectedRef.current) {
+            locationDetectedRef.current = true;
+            showToast('Location detected! You can now search nearby driveways.', 'success');
+          }
         },
         (error) => {
           // Silently fail - user can manually set location
@@ -152,6 +158,11 @@ function SearchPageContent() {
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleSearchSubmit = () =>{
+    handleFilterChange('location',searchQuery);
+    performSearch(1);
   };
 
   const handleSearch = () => {
@@ -251,11 +262,35 @@ function SearchPageContent() {
 
   return (
     <AppLayout showFooter={false}>
+
       <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center gap-2 flex-1 max-w-md">
+      </div>
+      
       {/* Filters Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className = "sticky top-0 z-50 bg-white border-b border-gray-200 ">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
+                        {/* Add this ABOVE the existing Filters button */}
+            <div className="flex items-center gap-2 flex-1 max-w-md">
+              <AddressAutocomplete
+                // label="Search Location"
+                value={searchQuery}
+                onChange={(address) => setSearch(address)}
+                onLocationSelect={(lat, lon) => {
+                  handleFilterChange('latitude', String(lat));
+                  handleFilterChange('longitude', String(lon));
+                  performSearch(1);
+                }}
+                placeholder="Search parking..."
+              />
+              <Button
+                onClick={handleSearchSubmit}
+                size="sm"
+              >
+                Search
+              </Button>
+            </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
@@ -266,8 +301,12 @@ function SearchPageContent() {
         </div>
       </div>
 
+
+
+
       {/* Filters Panel (Collapsible) */}
       {showFilters && (
+
         <div className="bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -282,6 +321,7 @@ function SearchPageContent() {
                     handleFilterChange('latitude', String(lat));
                     handleFilterChange('longitude', String(lon));
                   }}
+                  userLocationProp={filters.latitude && filters.longitude ? { lat: Number(filters.latitude), lon: Number(filters.longitude) } : undefined}
                   placeholder="City or address"
                   className="text-sm"
                 />
@@ -404,12 +444,19 @@ function SearchPageContent() {
       )}
 
       {/* Main Content Area - Split Layout */}
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
+      <div className="flex flex-row h-[calc(100vh-4rem)] min-h-0">
         {/* Map Section */}
         {/* MapService handles lifecycle - no container keys needed */}
-        <div 
-          className="w-full lg:w-1/2 h-1/2 lg:h-full border-r border-gray-200 relative bg-gray-100"
-        >
+        <div  
+          className="flex-1 min-w-0 h-full border-r border-gray-200 relative bg-gray-100 overflow-hidden">
+          {/* Mobile toggle for sidebar */}
+          <button
+            onClick={() => setSidebarOpen(s => !s)}
+            className="lg:hidden absolute top-4 right-4 z-50 bg-white p-2 rounded-full shadow"
+            aria-label="Toggle list"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18"></path><path d="M3 6h18"></path><path d="M3 18h18"></path></svg>
+          </button>
           {(() => {
             const shouldRender = !emptyResults && canRenderMap;
             console.log('[SearchPage] MapView render check - emptyResults:', emptyResults, 'canRenderMap:', canRenderMap, 'shouldRender:', shouldRender);
@@ -445,7 +492,8 @@ function SearchPageContent() {
           </div>
 
         {/* Listings Section */}
-        <div className="w-full lg:w-1/2 h-1/2 lg:h-full overflow-y-auto bg-white">
+        
+        <aside className={`${sidebarOpen ? 'block' : 'hidden'} lg:block w-80 max-w-[40%] min-w-[200px] h-full overflow-y-auto bg-white`}>
             <div className="p-4 sm:p-6">
               {emptyResults ? (
                 <div className="text-center py-12">
@@ -479,19 +527,7 @@ function SearchPageContent() {
                           router.push(`/driveway/${driveway.id}`);
                         }}
                       >
-                        <div className="flex">
-                          {/* Image */}
-                          <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
-                            <ImageWithPlaceholder
-                              src={driveway.images.length > 0 ? driveway.images[0] : ''}
-                              alt={driveway.title}
-                              className="w-full h-full object-cover rounded"
-                              fallbackText={driveway.title.charAt(0).toUpperCase()}
-                            />
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 p-4">
+                        <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1">
                                 <h3 className="text-base font-semibold text-gray-900 mb-1">
@@ -542,7 +578,6 @@ function SearchPageContent() {
                               )}
                             </div>
                           </div>
-                        </div>
                       </div>
                     ))}
                   </div>
@@ -587,7 +622,7 @@ function SearchPageContent() {
                 </>
               )}
             </div>
-          </div>
+          </aside>
       </div>
       </div>
     </AppLayout>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/Toast';
@@ -102,8 +102,8 @@ export default function BookingsPage() {
       const fetchReviews = async () => {
         const reviewPromises = completedBookings.map(async (booking) => {
           try {
-            const response = await api.get(`/reviews?drivewayId=${booking.driveway.id}&userId=${user.id}`);
-            const reviews = response.data.data?.reviews || [];
+            const response = await api.get<{ reviews?: any[] }>(`/reviews?drivewayId=${booking.driveway.id}&userId=${user.id}`);
+            const reviews = response.data.data?.reviews ?? [];
             if (reviews.length > 0) {
               const review = reviews[0];
               return {
@@ -157,10 +157,10 @@ export default function BookingsPage() {
         params.append('status', statusFilter);
       }
 
-      const response = await api.get(`/bookings?${params}`);
-      
+      const response = await api.get<{ bookings: Booking[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(`/bookings?${params}`);
+
       if (!isMountedRef.current) return; // Check again after async operation
-      
+
       const { bookings: data, pagination: paginationData } = response.data.data;
       
       setBookings(data);

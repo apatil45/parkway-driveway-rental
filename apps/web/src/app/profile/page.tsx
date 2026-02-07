@@ -6,7 +6,7 @@ import { Card, Input, Button, ImageUpload, AddressAutocomplete } from '@/compone
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/Toast';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import { UserIcon, EnvelopeIcon, PhoneIcon, MapPinIcon } from '@heroicons/react/24/outline';
 
 export default function ProfilePage() {

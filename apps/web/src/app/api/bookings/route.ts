@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { PrismaClient } from '@prisma/client';
 import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { createBookingSchema, bookingQuerySchema, type CreateBookingInput, type BookingQueryParams } from '@/lib/validations';
@@ -13,7 +14,7 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     // Use centralized auth middleware
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth(request); 
     if (!authResult.success) {
       return authResult.error!;
     }
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
       where: { ownerId: userId },
       select: { id: true }
     });
-    const drivewayIds = userDriveways.map(d => d.id);
+    const drivewayIds = userDriveways.map((d: { id: string }) => d.id);
 
     // Include bookings where user is the driver OR owner of the driveway
     const whereClause: any = {
@@ -260,7 +261,7 @@ export async function POST(request: NextRequest) {
     const totalPrice = pricingBreakdown.finalPrice;
 
     // Use transaction to prevent race conditions
-    const booking = await prisma.$transaction(async (tx) => {
+    const booking = await prisma.$transaction(async (tx: PrismaClient) => {
       // Check overlapping bookings against capacity (ONLY CONFIRMED bookings reserve spots)
       // PENDING bookings don't reserve spots until payment is completed
       const overlappingCount = await tx.booking.count({

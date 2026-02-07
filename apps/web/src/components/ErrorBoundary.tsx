@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { ErrorMessage } from './ui';
+import ErrorMessage from './ui/ErrorMessage';
 import { logError } from '@/lib/errors';
 
 interface Props {
@@ -38,9 +38,12 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      // Check if error is related to map container reuse
-      const isMapError = this.state.error?.message?.includes('Map container is being reused') ||
-                        this.state.error?.message?.includes('_leaflet_pos');
+      // Check if error is related to map / DOM (Leaflet vs React removeChild, etc.)
+      const msg = this.state.error?.message ?? '';
+      const isMapError = msg.includes('Map container is being reused') ||
+                        msg.includes('_leaflet_pos') ||
+                        msg.includes('removeChild') ||
+                        msg.includes('not a child of this node');
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">

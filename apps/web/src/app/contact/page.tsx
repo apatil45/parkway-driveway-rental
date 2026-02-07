@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout';
 import { Card } from '@/components/ui';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import {
   EnvelopeIcon,
   PhoneIcon,
@@ -41,13 +41,8 @@ export default function ContactPage() {
     setSubmitMessage('');
 
     try {
-      // In a real app, you'd send this to your backend API
-      // For now, we'll simulate an API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // TODO: Replace with actual API endpoint
-      // const response = await api.post('/contact', formData);
-      
+     
+      const response = await api.post('/contact',formData);
       setSubmitStatus('success');
       setSubmitMessage('Thank you for contacting us! We\'ll get back to you within 24 hours.');
       setFormData({
@@ -61,7 +56,7 @@ export default function ContactPage() {
       setSubmitStatus('error');
       setSubmitMessage(
         error.response?.data?.message || 
-        'Unable to send your message. Please try again or email us directly at support@parkway.com'
+        'Unable to send your message. Please try again or email us directly at parkwayhelp@gmail.com'
       );
     } finally {
       setIsSubmitting(false);
@@ -82,8 +77,8 @@ export default function ContactPage() {
     {
       icon: EnvelopeIcon,
       title: 'Email Us',
-      content: 'support@parkway.com',
-      link: 'mailto:support@parkway.com',
+      content: 'parkwayhelp@gmail.com',
+      link: 'mailto:parkwayhelp@gmail.com',
     },
     {
       icon: PhoneIcon,
@@ -94,7 +89,7 @@ export default function ContactPage() {
     {
       icon: MapPinIcon,
       title: 'Visit Us',
-      content: '123 Parking Street, City, State 12345',
+      content: '70 Lincoln Street, Jersey City, New Jersey, 07307',
       link: '#',
     },
     {

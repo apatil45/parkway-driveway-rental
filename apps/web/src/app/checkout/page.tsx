@@ -6,7 +6,7 @@ import { Card } from '@/components/ui';
 import StripeCheckout from '@/components/ui/StripeCheckout';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import { createAppError } from '@/lib/errors';
 import Link from 'next/link';
 
@@ -57,7 +57,7 @@ function CheckoutContent() {
 
     try {
       // Fetch single booking directly by ID
-      const response = await api.get(`/bookings/${bookingId}`);
+      const response = await api.get<Booking>(`/bookings/${bookingId}`);
       setBooking(response.data.data);
     } catch (err: any) {
       // Handle network errors (no response)

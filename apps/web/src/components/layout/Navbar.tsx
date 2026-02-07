@@ -24,6 +24,7 @@ export default function Navbar() {
         { href: '/search', label: 'Search' },
         { href: '/driveways', label: 'My Driveways' },
         { href: '/bookings', label: 'Bookings' },
+        { href: '/favorites', label: 'Favorites' },
       ]
     : [
         { href: '/search', label: 'Search' },

@@ -469,6 +469,7 @@ interface AddressAutocompleteProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  userLocationProp?: { lat: number; lon: number }; // User's current location for proximity prioritization
 }
 
 export default function AddressAutocomplete({
@@ -480,6 +481,7 @@ export default function AddressAutocomplete({
   required = false,
   disabled = false,
   className = '',
+  userLocationProp,
 }: AddressAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -719,6 +721,12 @@ export default function AddressAutocomplete({
   
   // Get user location
   useEffect(() => {
+    // Use passed location prop first (from parent), then auto-detect
+    if (userLocationProp) {
+      setUserLocation(userLocationProp);
+      return;
+    }
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -738,7 +746,7 @@ export default function AddressAutocomplete({
         }
       );
     }
-  }, []);
+  }, [userLocationProp]);
   
   // Fetch suggestions with error handling and caching
   const fetchSuggestions = useCallback(async (query: string) => {
@@ -851,23 +859,26 @@ export default function AddressAutocomplete({
         // Combine POI and address results
         const allResults: AddressSuggestion[] = [...poiResults, ...enhancedSuggestions];
         
-        // Smart ranking
+        // Smart ranking - prioritize proximity to user's current location
         const rankedSuggestions = allResults.sort((a, b) => {
           let scoreA = 0;
           let scoreB = 0;
           
-          if (a.isFavorite) scoreA += 150;
-          if (b.isFavorite) scoreB += 150;
-          if (a.isRecent) scoreA += 100;
-          if (b.isRecent) scoreB += 100;
+          // Proximity is most important: max 100 points
+          // Within 5km gets strong bonus, degrades with distance
+          if (a.distance !== undefined && b.distance !== undefined) {
+            scoreA += Math.max(0, 100 - a.distance * 15);
+            scoreB += Math.max(0, 100 - b.distance * 15);
+          } else if (a.distance !== undefined) scoreA += 100;
+          else if (b.distance !== undefined) scoreB += 100;
+          
+          // Then user preferences
+          if (a.isFavorite) scoreA += 120;
+          if (b.isFavorite) scoreB += 120;
+          if (a.isRecent) scoreA += 80;
+          if (b.isRecent) scoreB += 80;
           if (a.isPOI) scoreA += 30;
           if (b.isPOI) scoreB += 30;
-          
-          if (a.distance !== undefined && b.distance !== undefined) {
-            scoreA += Math.max(0, 50 - a.distance);
-            scoreB += Math.max(0, 50 - b.distance);
-          } else if (a.distance !== undefined) scoreA += 25;
-          else if (b.distance !== undefined) scoreB += 25;
           
           const queryLower = query.toLowerCase();
           if (a.display_name.toLowerCase().startsWith(queryLower)) scoreA += 10;

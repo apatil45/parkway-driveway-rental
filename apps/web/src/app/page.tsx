@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout';
 import { Card, LoadingSpinner, AddressAutocomplete, ImageWithPlaceholder } from '@/components/ui';
 import { useAuth } from '@/hooks';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -49,7 +49,7 @@ export default function Home() {
     // Fetch public stats (non-blocking - page can render without stats)
     const fetchStats = async () => {
       try {
-        const response = await api.get('/stats/public');
+        const response = await api.get<PublicStats>('/stats/public');
         setStats(response.data.data);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
@@ -62,8 +62,8 @@ export default function Home() {
     // Fetch real reviews for testimonials
     const fetchTestimonials = async () => {
       try {
-        const response = await api.get('/reviews?limit=3&page=1');
-        setTestimonials(response.data.data?.reviews || []);
+        const response = await api.get<{ reviews?: any[] }>('/reviews?limit=3&page=1');
+        setTestimonials(response.data.data?.reviews ?? []);
       } catch (error) {
         console.error('Failed to fetch testimonials:', error);
         // Don't block page rendering if testimonials fail

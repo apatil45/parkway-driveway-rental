@@ -12,56 +12,37 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get platform-wide statistics
+    // Get platform-wide statistics (await aggregates so we get numbers, not Promises)
     const [
       totalUsers,
       totalDriveways,
       activeDriveways,
       totalBookings,
       completedBookings,
-      totalEarnings,
-      averageRating
+      earningsResult,
+      ratingResult
     ] = await Promise.all([
-      // Total registered users
-      prisma.user.count({
-        where: { isActive: true }
-      }),
-
-      // Total driveways
+      prisma.user.count({ where: { isActive: true } }),
+      prisma.driveway.count({ where: { isActive: true } }),
       prisma.driveway.count({
-        where: { isActive: true }
+        where: { isActive: true, isAvailable: true }
       }),
-
-      // Active and available driveways
-      prisma.driveway.count({
-        where: {
-          isActive: true,
-          isAvailable: true
-        }
-      }),
-
-      // Total bookings
       prisma.booking.count(),
-
-      // Completed bookings
-      prisma.booking.count({
-        where: { status: 'COMPLETED' }
-      }),
-
-      // Total earnings (from completed payments)
+      prisma.booking.count({ where: { status: 'COMPLETED' } }),
       prisma.booking.aggregate({
         where: {
           status: 'COMPLETED',
           paymentStatus: 'COMPLETED'
         },
         _sum: { totalPrice: true }
-      }).then((result: any) => result._sum.totalPrice || 0),
-
-      // Average rating across all driveways
+      }),
       prisma.review.aggregate({
         _avg: { rating: true }
-      }).then((result: any) => result._avg.rating || 0)
+      })
     ]);
+
+    const totalEarnings = Number(earningsResult._sum?.totalPrice ?? 0);
+    const avgRating = ratingResult._avg?.rating ?? 0;
 
     const stats = {
       totalUsers,
@@ -69,8 +50,8 @@ export async function GET(request: NextRequest) {
       activeDriveways,
       totalBookings,
       completedBookings,
-      totalEarnings: Math.round(totalEarnings * 100) / 100, // Round to 2 decimal places
-      averageRating: Number(averageRating.toFixed(1))
+      totalEarnings: Math.round(totalEarnings * 100) / 100,
+      averageRating: Number(Number(avgRating).toFixed(1))
     };
 
     const response = NextResponse.json(createApiResponse(stats, 'Public stats retrieved successfully'));

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, Input, Button, ImageUpload, AddressAutocomplete } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 
 export default function EditDrivewayPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -27,9 +27,10 @@ export default function EditDrivewayPage({ params }: { params: { id: string } })
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get('/driveways?owner=me&limit=200');
-        const list = res.data?.data?.driveways || res.data?.data || [];
-        const d = list.find((x: any) => x.id === params.id);
+        const res = await api.get<{ driveways?: any[] }>('/driveways?owner=me&limit=50');
+        const raw = res.data?.data;
+        const list = Array.isArray(raw?.driveways) ? raw.driveways : (Array.isArray(raw) ? raw : []);
+        const d = list.find((x: { id: string }) => x.id === params.id);
         if (d) setForm({
           title: d.title,
           address: d.address,
@@ -44,7 +45,7 @@ export default function EditDrivewayPage({ params }: { params: { id: string } })
         setLoading(false);
       }
     })();
-  }, [params.id]);
+  },);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

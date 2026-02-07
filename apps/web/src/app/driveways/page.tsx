@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, Button, SkeletonList } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 
 interface DrivewayItem {
   id: string;
@@ -23,9 +23,9 @@ export default function OwnerDrivewaysPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get('/driveways?owner=me&limit=50');
+      const res = await api.get<{ driveways?: any[] }>('/driveways?owner=me&limit=50');
       const data = res.data?.data;
-      const list = Array.isArray(data?.driveways) ? data.driveways : data;
+      const list = Array.isArray(data?.driveways) ? data.driveways : (Array.isArray(data) ? data : []);
       setItems(list || []);
     } catch (err: any) {
       console.error('Failed to load driveways:', err);

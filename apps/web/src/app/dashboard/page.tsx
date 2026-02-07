@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card, LoadingSpinner, ErrorMessage, Button } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useAuth, useDashboardStats } from '@/hooks';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 import { 
   CalendarIcon, 
   CheckCircleIcon, 
@@ -83,8 +83,8 @@ export default function DashboardPage() {
       const fetchNotifications = async () => {
         try {
           setNotificationsError(null);
-          const response = await api.get('/notifications?limit=3&page=1');
-          setNotifications(response.data.data?.notifications || []);
+          const response = await api.get<{ notifications?: any[] }>('/notifications?limit=3&page=1');
+          setNotifications(response.data.data?.notifications ?? []);
         } catch (error: any) {
           // User-friendly error handling - don't show intrusive errors
           console.error('Failed to fetch notifications:', error);

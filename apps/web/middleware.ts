@@ -43,3 +43,11 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };
+
+
+
+// edit fxn
+// popups map and list
+// map 100 list overlap- 30
+// search by name
+

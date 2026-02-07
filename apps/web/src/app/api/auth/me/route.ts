@@ -90,18 +90,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(createApiResponse(user, 'User data retrieved successfully'));
   } catch (error: any) {
     logger.error('[AUTH] Me: Unexpected error', {
-      name: error.name,
+      name: error?.name,
+      message: error instanceof Error ? error.message : String(error),
     }, error instanceof Error ? error : undefined);
-    
-    if (error instanceof Error && error.name === 'TokenExpiredError') {
+
+    // JWT-related errors → 401
+    if (error?.name === 'TokenExpiredError') {
       return NextResponse.json(
         createApiError('Token expired.', 401, 'TOKEN_EXPIRED'),
         { status: 401 }
       );
     }
+    if (error?.name === 'JsonWebTokenError') {
+      return NextResponse.json(
+        createApiError('Invalid token.', 401, 'INVALID_TOKEN'),
+        { status: 401 }
+      );
+    }
+
+    // DB / server errors → 500 so client doesn't treat as auth failure
     return NextResponse.json(
-      createApiError('Invalid token.', 401, 'INVALID_TOKEN'),
-      { status: 401 }
+      createApiError('Unable to verify session. Please try again.', 500, 'INTERNAL_ERROR'),
+      { status: 500 }
     );
   }
 }

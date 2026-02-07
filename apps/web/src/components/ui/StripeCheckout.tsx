@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui';
 import { useToast } from './Toast';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 
 const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
@@ -210,8 +210,8 @@ export default function StripeCheckout({
       try {
         // If bookingId is provided, fetch payment intent for that booking
         // Otherwise create a new payment intent
-        const res = await api.post('/payments/intent', bookingId ? { bookingId } : { amount });
-        setClientSecret(res.data?.data?.clientSecret || '');
+        const res = await api.post<{ clientSecret: string }>('/payments/intent', bookingId ? { bookingId } : { amount });
+        setClientSecret(res.data?.data?.clientSecret ?? '');
       } catch (err: any) {
         // Handle authentication errors gracefully
         if (err.response?.status === 401) {

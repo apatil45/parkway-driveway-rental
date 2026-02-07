@@ -6,7 +6,7 @@ import { Card, Input, Button, ImageUpload, AddressAutocomplete, ErrorDisplay } f
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import { useErrorHandler } from '@/hooks';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 
 export default function NewDrivewayPage() {
   const router = useRouter();

@@ -52,6 +52,18 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!process.env.JWT_SECRET) {
+    logger.error('[AUTH] Register: JWT_SECRET is not set');
+    return NextResponse.json(
+      createApiError(
+        'Server misconfiguration: JWT_SECRET is not set. Add JWT_SECRET to your .env file.',
+        503,
+        'SERVER_CONFIG'
+      ),
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json();
     

@@ -160,11 +160,11 @@ export default function MapViewDirect({
 
         // Invalidate size after a short delay to ensure container is rendered
         setTimeout(() => {
-          if (isMounted && mapRef.current) {
+          if (isMounted && mapRef.current && containerRef.current && containerRef.current.offsetWidth > 0) {
             try {
               mapRef.current.invalidateSize();
             } catch (e) {
-              // Ignore
+              console.error('[MapViewDirect] Error invalidating size:', e);
             }
           }
         }, 100);
@@ -315,12 +315,12 @@ export default function MapViewDirect({
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      if (mapRef.current) {
+      if (mapRef.current && containerRef.current && containerRef.current.offsetWidth > 0) {
         setTimeout(() => {
           try {
             mapRef.current.invalidateSize();
           } catch (e) {
-            // Ignore
+            console.error('[MapViewDirect] Error invalidating size on resize:', e);
           }
         }, 100);
       }
@@ -330,12 +330,17 @@ export default function MapViewDirect({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Map container must be an empty div so Leaflet owns its children - no React children
+  // inside it. Otherwise React's removeChild conflicts with Leaflet's DOM (NotFoundError).
   return (
     <div
-      ref={containerRef}
-      style={{ height, width: '100%', position: 'relative' }}
-      className="rounded-lg overflow-hidden"
-    >
+      style={{ height, width: '150%', position: 'relative',zIndex: 0 }}
+      className="rounded-lg overflow-auto">
+      <div
+        ref={containerRef}
+        style={{ position: 'absolute', inset: 0 }}
+        aria-hidden="true"
+      />
       {isLoading && (
         <div className="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center z-10">
           <div className="text-gray-500 text-sm">Loading map...</div>

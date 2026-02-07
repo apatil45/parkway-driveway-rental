@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout';
-import { Button } from '@/components/ui';
+import Button from '@/components/ui/Button';
 
 export default function NotFound() {
   return (
