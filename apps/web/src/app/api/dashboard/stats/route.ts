@@ -7,16 +7,17 @@ import { logger } from '@/lib/logger';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const ACTIVE_STATUSES = ['PENDING', 'CONFIRMED'] as const;
+const COMPLETED_OR_CONFIRMED = ['CONFIRMED', 'COMPLETED'] as const;
+
 export async function GET(request: NextRequest) {
   try {
-    // Use centralized auth middleware
     const authResult = await requireAuth(request);
     if (!authResult.success) {
       return authResult.error!;
     }
     const userId = authResult.userId!;
 
-    // Get user to check roles
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { roles: true }
@@ -32,65 +33,77 @@ export async function GET(request: NextRequest) {
     const isOwner = user.roles.includes('OWNER');
     const isDriver = user.roles.includes('DRIVER');
 
-    // Get booking statistics
+    const bookingScope = {
+      OR: [
+        { userId },
+        ...(isOwner ? [{ driveway: { ownerId: userId } }] : [])
+      ]
+    };
+
     const [
       totalBookings,
       activeBookings,
+      completedOrConfirmedBookings,
       totalEarnings,
       averageRating
     ] = await Promise.all([
-      // Total bookings (as driver or owner)
+      prisma.booking.count({ where: bookingScope }),
+
       prisma.booking.count({
         where: {
-          OR: [
-            { userId }, // Bookings made by user
-            ...(isOwner ? [{ driveway: { ownerId: userId } }] : []) // Bookings for user's driveways
-          ]
+          ...bookingScope,
+          status: { in: ACTIVE_STATUSES }
         }
       }),
 
-      // Active bookings (confirmed or pending)
       prisma.booking.count({
         where: {
-          OR: [
-            { userId, status: { in: ['PENDING', 'CONFIRMED'] as any } },
-            ...(isOwner ? [{ driveway: { ownerId: userId }, status: { in: ['PENDING', 'CONFIRMED'] as any } }] : [])
-          ]
+          ...bookingScope,
+          status: { in: COMPLETED_OR_CONFIRMED }
         }
       }),
 
-      // Total earnings (only for owners)
-      isOwner ? prisma.booking.aggregate({
-        where: {
-          driveway: { ownerId: userId },
-          paymentStatus: 'COMPLETED'
-        },
-        _sum: { totalPrice: true }
-      }).then((result: any) => result._sum.totalPrice || 0) : 0,
-
-      // Average rating (role-specific)
-      // For owners: average rating of reviews for their driveways
-      // For drivers: average rating of reviews they've given (not meaningful, but kept for consistency)
       isOwner
-        ? prisma.review.aggregate({
+        ? prisma.booking.aggregate({
             where: {
-              driveway: { ownerId: userId }
+              driveway: { ownerId: userId },
+              paymentStatus: 'COMPLETED'
             },
-            _avg: { rating: true }
-          }).then((result: any) => result._avg.rating || 0)
-        : prisma.review.aggregate({
-            where: {
-              userId // Reviews given by user (as driver)
-            },
-            _avg: { rating: true }
-          }).then((result: any) => result._avg.rating || 0)
+            _sum: { totalPrice: true }
+          }).then((r) => (r._sum?.totalPrice ?? 0) as number)
+        : Promise.resolve(0),
+
+      isOwner
+        ? prisma.review
+            .aggregate({
+              where: { driveway: { ownerId: userId } },
+              _avg: { rating: true },
+              _count: { rating: true }
+            })
+            .then((r) => (r._count.rating > 0 && r._avg?.rating != null ? Number(r._avg.rating.toFixed(1)) : null))
+        : (async () => {
+            const completedBookings = await prisma.booking.findMany({
+              where: { userId, status: 'COMPLETED' },
+              select: { drivewayId: true }
+            });
+            const drivewayIds = [...new Set(completedBookings.map((b) => b.drivewayId))];
+            if (drivewayIds.length === 0) return null;
+            const r = await prisma.review.aggregate({
+              where: { drivewayId: { in: drivewayIds } },
+              _avg: { rating: true },
+              _count: { rating: true }
+            });
+            return r._count.rating > 0 && r._avg?.rating != null ? Number(r._avg.rating.toFixed(1)) : null;
+          })()
     ]);
 
     const stats = {
       totalBookings,
       activeBookings,
+      completedOrConfirmedBookings,
       totalEarnings: isOwner ? totalEarnings : 0,
-      averageRating: Number(averageRating.toFixed(1))
+      totalEarningsScope: isOwner ? ('owner' as const) : null,
+      averageRating
     };
 
     return NextResponse.json(createApiResponse(stats, 'Dashboard stats retrieved successfully'));

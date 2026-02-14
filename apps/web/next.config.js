@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@parkway/database', '@parkway/shared'],
+  // Don't bundle Stripe Node SDK in API routes; load from node_modules at runtime (avoids bundling its deep dependency tree)
+  serverExternalPackages: ['stripe'],
   experimental: {
     externalDir: true,
   },
@@ -23,11 +25,11 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "connect-src 'self' https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org",
+              "connect-src 'self' https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://api.stripe.com https://js.stripe.com",
               "img-src 'self' data: https: blob:",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com",
               "style-src 'self' 'unsafe-inline'",
-              "frame-src 'self'",
+              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
             ].join('; '),
           },
         ],

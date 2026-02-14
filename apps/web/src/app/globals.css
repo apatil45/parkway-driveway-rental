@@ -79,17 +79,42 @@
   }
   
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base;
+    @apply w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base transition-shadow;
     min-height: 44px; /* Minimum touch target size - prevents zoom on iOS */
   }
   
+  .input:focus {
+    box-shadow: 0 0 0 3px rgb(var(--color-primary-500) / 0.2);
+  }
+  
   .card {
-    @apply bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] rounded-lg shadow border border-[color:rgb(var(--color-border))] p-6;
+    @apply bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] rounded-lg border border-[color:rgb(var(--color-border))] p-6 shadow-sm;
+  }
+
+  /* Section spacing for consistent page rhythm */
+  .page-section {
+    @apply py-12 md:py-16;
+  }
+
+  .section-heading {
+    @apply text-2xl md:text-3xl font-bold text-gray-900 tracking-tight;
+  }
+
+  .section-subheading {
+    @apply text-gray-600 mt-1;
   }
 
   /* Skeletons */
   .skeleton {
     @apply animate-pulse bg-gray-200 rounded; /* dark mode will still be acceptable */
+  }
+
+  /* Alerts: success and error */
+  .alert-success {
+    @apply flex items-start gap-3 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800;
+  }
+  .alert-error {
+    @apply flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800;
   }
 
   /* Accessibility: Visible focus indicators */

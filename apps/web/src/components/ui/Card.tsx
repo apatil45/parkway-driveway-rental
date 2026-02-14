@@ -31,7 +31,7 @@ export default function Card({
   const shadowClass = shadowClasses[shadow];
   
   return (
-    <div className={`bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] rounded-lg border border-[color:rgb(var(--color-border))] ${paddingClass} ${shadowClass} ${clickable ? 'transition-colors hover:bg-gray-50 cursor-pointer' : ''} ${className}`}>
+    <div className={`bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] rounded-xl border border-[color:rgb(var(--color-border))] ${paddingClass} ${shadowClass} ${clickable ? 'transition-all duration-200 hover:shadow-lg hover:border-gray-300 cursor-pointer' : ''} ${className}`}>
       {children}
     </div>
   );

@@ -38,8 +38,10 @@ interface User {
 interface DashboardStats {
   totalBookings: number;
   activeBookings: number;
+  completedOrConfirmedBookings?: number;
   totalEarnings: number;
-  averageRating: number;
+  totalEarningsScope?: 'owner' | null;
+  averageRating: number | null;
 }
 
 interface Notification {
@@ -169,12 +171,12 @@ export default function DashboardPage() {
     <AppLayout>
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
-        <div className="mb-8 flex justify-between items-start">
+        <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-1">
               Welcome back, {user?.name}!
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm sm:text-base">
               Manage your {isOwner ? 'driveways and bookings' : 'bookings'} from your dashboard.
             </p>
           </div>
@@ -201,27 +203,30 @@ export default function DashboardPage() {
           </div>
         ) : stats ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Link href="/bookings">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center">
-                  <div className="p-2 bg-primary-100 rounded-lg">
+            <Link href="/bookings" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl">
+              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary-100 rounded-xl shrink-0">
                     <CalendarIcon className="w-6 h-6 text-primary-600" />
                   </div>
-                  <div className="ml-4">
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-600">Total Bookings</p>
                     <p className="text-2xl font-bold">{stats.totalBookings}</p>
+                    {typeof stats.completedOrConfirmedBookings === 'number' && (
+                      <p className="text-xs text-gray-500 mt-0.5">{stats.completedOrConfirmedBookings} completed</p>
+                    )}
                   </div>
                 </div>
               </Card>
             </Link>
 
-            <Link href="/bookings?status=CONFIRMED">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
+            <Link href="/bookings?status=CONFIRMED" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl">
+              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-100 rounded-xl shrink-0">
                     <CheckCircleIcon className="w-6 h-6 text-green-700" />
                   </div>
-                  <div className="ml-4">
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-600">Active Bookings</p>
                     <p className="text-2xl font-bold">{stats.activeBookings}</p>
                   </div>
@@ -230,30 +235,40 @@ export default function DashboardPage() {
             </Link>
 
             {isOwner && (
-              <Link href="/bookings?status=COMPLETED">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <CurrencyDollarIcon className="w-6 h-6 text-yellow-700" />
-                  </div>
-                    <div className="ml-4">
+              <Link href="/bookings?status=COMPLETED" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl">
+                <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-amber-100 rounded-xl shrink-0">
+                      <CurrencyDollarIcon className="w-6 h-6 text-amber-700" />
+                    </div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-600">Total Earnings</p>
                       <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
+                      {stats.totalEarningsScope === 'owner' && (
+                        <p className="text-xs text-gray-500 mt-0.5">From completed payments</p>
+                      )}
                     </div>
                   </div>
                 </Card>
               </Link>
             )}
 
-            <Link href="/driveways">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
+            <Link href={isOwner ? '/driveways' : '/bookings'} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl">
+              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 rounded-xl shrink-0">
                     <StarIcon className="w-6 h-6 text-blue-700" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Average Rating</p>
-                    <p className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-600">
+                      {isOwner ? 'Average Rating' : 'Avg. rating (booked driveways)'}
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {stats.averageRating != null ? stats.averageRating.toFixed(1) : '—'}
+                    </p>
+                    {stats.averageRating == null && (
+                      <p className="text-xs text-gray-500 mt-0.5">No ratings yet</p>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -261,9 +276,9 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="mb-8">
-            <Card className="p-8 text-center">
-              <p className="text-gray-600 mb-4">No statistics available yet.</p>
-              <p className="text-sm text-gray-500">
+            <Card className="p-8 sm:p-10 text-center shadow-sm">
+              <p className="text-gray-700 font-medium mb-2">No statistics available yet.</p>
+              <p className="text-sm text-gray-500 max-w-md mx-auto">
                 {isOwner 
                   ? 'Start by listing your first driveway to see your stats here.'
                   : 'Make your first booking to see your statistics here.'}
@@ -275,15 +290,15 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {isOwner && (
-            <Card>
+            <Card className="shadow-sm transition-all duration-200 hover:shadow-md">
               <div className="text-center">
-                <div className="p-4 bg-primary-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <HomeIcon className="w-8 h-8 text-primary-700" />
+                <div className="p-4 bg-primary-100 rounded-xl w-14 h-14 mx-auto mb-4 flex items-center justify-center">
+                  <HomeIcon className="w-7 h-7 text-primary-700" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Manage Driveways</h3>
-                <p className="text-gray-600 mb-4">Add, edit, or remove your driveway listings</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Driveways</h3>
+                <p className="text-gray-600 text-sm mb-4">Add, edit, or remove your driveway listings</p>
                 <Link href="/driveways">
-                  <Button variant="primary" className="w-full">
+                  <Button variant="primary" className="w-full" size="md">
                     View Driveways
                   </Button>
                 </Link>
@@ -292,15 +307,15 @@ export default function DashboardPage() {
           )}
 
           {isDriver && (
-            <Card>
+            <Card className="shadow-sm transition-all duration-200 hover:shadow-md">
               <div className="text-center">
-                <div className="p-4 bg-green-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <MagnifyingGlassIcon className="w-8 h-8 text-green-700" />
+                <div className="p-4 bg-green-100 rounded-xl w-14 h-14 mx-auto mb-4 flex items-center justify-center">
+                  <MagnifyingGlassIcon className="w-7 h-7 text-green-700" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Find Parking</h3>
-                <p className="text-gray-600 mb-4">Search for available parking spots</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Find Parking</h3>
+                <p className="text-gray-600 text-sm mb-4">Search for available parking spots</p>
                 <Link href="/search">
-                  <Button variant="primary" className="w-full">
+                  <Button variant="primary" className="w-full" size="md">
                     Search Now
                   </Button>
                 </Link>
@@ -308,15 +323,15 @@ export default function DashboardPage() {
             </Card>
           )}
 
-          <Card>
+          <Card className="shadow-sm transition-all duration-200 hover:shadow-md">
             <div className="text-center">
-                <div className="p-4 bg-blue-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <BookOpenIcon className="w-8 h-8 text-blue-700" />
-                </div>
-              <h3 className="text-lg font-semibold mb-2">My Bookings</h3>
-              <p className="text-gray-600 mb-4">View and manage your bookings</p>
+              <div className="p-4 bg-blue-100 rounded-xl w-14 h-14 mx-auto mb-4 flex items-center justify-center">
+                <BookOpenIcon className="w-7 h-7 text-blue-700" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">My Bookings</h3>
+              <p className="text-gray-600 text-sm mb-4">View and manage your bookings</p>
               <Link href="/bookings">
-                <Button variant="primary" className="w-full">
+                <Button variant="primary" className="w-full" size="md">
                   View Bookings
                 </Button>
               </Link>

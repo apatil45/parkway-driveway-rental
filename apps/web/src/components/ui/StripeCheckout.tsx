@@ -200,27 +200,37 @@ export default function StripeCheckout({
   onSuccess?: () => void;
 }) {
   const [clientSecret, setClientSecret] = useState('');
-  const [stripePromise, setStripePromise] = useState<any>(null);
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+  const [stripeLoadError, setStripeLoadError] = useState<string | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       if (!publishableKey) return;
-      setStripePromise(loadStripe(publishableKey));
-      
+      setStripeLoadError(null);
+      setSetupError(null);
+
+      // Load Stripe.js; can fail if blocked by CSP or network. Elements needs the same Promise.
+      const stripePromiseInstance = loadStripe(publishableKey);
+      stripePromiseInstance.catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : 'Failed to load Stripe.js';
+        setStripeLoadError(msg);
+        console.error('[StripeCheckout] loadStripe failed:', e);
+      });
+      setStripePromise(stripePromiseInstance);
+
       try {
-        // If bookingId is provided, fetch payment intent for that booking
-        // Otherwise create a new payment intent
         const res = await api.post<{ clientSecret: string }>('/payments/intent', bookingId ? { bookingId } : { amount });
         setClientSecret(res.data?.data?.clientSecret ?? '');
       } catch (err: any) {
-        // Handle authentication errors gracefully
         if (err.response?.status === 401) {
-          // User is not authenticated - redirect to login
           if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
             window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
           }
           return;
         }
+        const message = err.response?.data?.message || err.message || 'Payment setup failed. Please try again.';
+        setSetupError(message);
         console.error('Failed to create payment intent:', err);
       }
     })();
@@ -239,6 +249,27 @@ export default function StripeCheckout({
             Development: Set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your .env.local file.
           </p>
         )}
+      </div>
+    );
+  }
+
+  if (stripeLoadError) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <h4 className="font-semibold text-red-800 mb-2">Stripe could not load</h4>
+        <p className="text-sm text-red-700 mb-2">{stripeLoadError}</p>
+        <p className="text-xs text-red-600">
+          Check your connection and that nothing is blocking scripts from js.stripe.com (e.g. Content-Security-Policy or an ad blocker).
+        </p>
+      </div>
+    );
+  }
+
+  if (setupError) {
+    return (
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <h4 className="font-semibold text-amber-800 mb-2">Payment setup failed</h4>
+        <p className="text-sm text-amber-700">{setupError}</p>
       </div>
     );
   }

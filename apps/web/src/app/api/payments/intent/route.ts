@@ -88,8 +88,9 @@ export async function POST(request: NextRequest) {
             }
           } catch (error: any) {
             logger.error('[PAYMENT] Failed to retrieve payment intent', {
-              type: error.type,
-              code: error.code,
+              type: error?.type,
+              code: error?.code,
+              message: error?.message,
               bookingId
             }, error instanceof Error ? error : undefined);
             // Fall through to create new intent if retrieval fails
@@ -124,19 +125,25 @@ export async function POST(request: NextRequest) {
               retrieved: false
             };
           } catch (error: any) {
+            const stripeMessage = error?.message ?? '';
             logger.error('[PAYMENT] Failed to create payment intent', {
-              type: error.type,
-              code: error.code,
+              type: error?.type,
+              code: error?.code,
+              message: stripeMessage,
               bookingId
             }, error instanceof Error ? error : undefined);
             
-            if (error.type === 'StripeCardError') {
+            if (error?.type === 'StripeCardError') {
               throw new Error('STRIPE_CARD_ERROR');
             }
-            if (error.type === 'StripeInvalidRequestError') {
+            if (error?.type === 'StripeInvalidRequestError') {
               throw new Error('STRIPE_INVALID_REQUEST');
             }
-            throw new Error('STRIPE_ERROR');
+            // Preserve Stripe message for API response (sanitize for invalid_api_key etc.)
+            const safeMessage = typeof stripeMessage === 'string' && stripeMessage.length > 0 && stripeMessage.length < 200
+              ? stripeMessage
+              : 'Payment processing failed';
+            throw Object.assign(new Error('STRIPE_ERROR'), { stripeMessage: safeMessage });
           }
         }
         
@@ -265,7 +272,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(createApiError('Invalid payment request', 400, 'INVALID_REQUEST'), { status: 400 });
     }
     if (e.message === 'STRIPE_ERROR') {
-      return NextResponse.json(createApiError('Payment processing failed', 500, 'PAYMENT_ERROR'), { status: 500 });
+      const message = (e as Error & { stripeMessage?: string }).stripeMessage || 'Payment processing failed';
+      return NextResponse.json(createApiError(message, 500, 'PAYMENT_ERROR'), { status: 500 });
     }
     if (e.message === 'STRIPE_NOT_CONFIGURED') {
       const isDev = process.env.NODE_ENV === 'development';

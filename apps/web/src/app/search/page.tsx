@@ -345,7 +345,7 @@ function SearchPageContent() {
   }
 
   return (
-    <AppLayout showFooter={false} showFloatingActions={false}>
+    <AppLayout showFooter={false}>
       {/* Map: full viewport (100%), starts below search bar with padding */}
       <ErrorBoundary fallback={
         <div className="fixed inset-0 z-0 flex items-center justify-center bg-gray-100" style={{ paddingTop: CONTENT_TOP_OFFSET }}>
@@ -389,26 +389,31 @@ function SearchPageContent() {
       </div>
       </ErrorBoundary>
 
-      {/* Filters bar: overlay on top of map, aligned with navbar (same container) */}
+      {/* Filters bar: overlay on top of map. Stack on very small screens to prevent overlap. */}
       <div className="sticky top-16 z-20 bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto sm:max-w-md">
-              <AddressAutocomplete
-                value={searchQuery}
-                onChange={(address) => setSearch(address)}
-                onLocationSelect={(lat, lon) => {
-                  handleFilterChange('latitude', String(lat));
-                  handleFilterChange('longitude', String(lon));
-                  performSearch(1);
-                }}
-                placeholder="Search driveways..."
-              />
-              <Button onClick={handleSearchSubmit} size="sm">
+        <div className="container mx-auto px-3 py-3 sm:px-4">
+          {/* Stack vertically on xs so search and List/Filters never overlap */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+            {/* Row 1 on small screens: search input + Search button (stacked on very narrow to avoid overlap) */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full min-w-0 sm:flex-1 sm:max-w-md">
+              <div className="flex-1 min-w-0 w-full">
+                <AddressAutocomplete
+                  value={searchQuery}
+                  onChange={(address) => setSearch(address)}
+                  onLocationSelect={(lat, lon) => {
+                    handleFilterChange('latitude', String(lat));
+                    handleFilterChange('longitude', String(lon));
+                    performSearch(1);
+                  }}
+                  placeholder="Search driveways..."
+                />
+              </div>
+              <Button onClick={handleSearchSubmit} size="sm" className="w-full sm:w-auto shrink-0">
                 Search
               </Button>
             </div>
-            <div className="flex items-center gap-2">
+            {/* Row 2 on small screens: List + Filters (own row so no overlap, full labels visible) */}
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
               <Button
                 type="button"
                 variant={sidebarOpen ? 'primary' : 'secondary'}
@@ -416,6 +421,7 @@ function SearchPageContent() {
                 onClick={() => setSidebarOpen((s) => !s)}
                 aria-label={sidebarOpen ? 'Hide list' : 'Show list'}
                 aria-expanded={sidebarOpen}
+                className="whitespace-nowrap flex-1 sm:flex-initial"
               >
                 List
               </Button>
@@ -424,6 +430,8 @@ function SearchPageContent() {
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
+                aria-label={showFilters ? 'Hide filters' : 'Show filters'}
+                className="whitespace-nowrap flex-1 sm:flex-initial"
               >
                 {showFilters ? 'Hide Filters' : 'Filters'}
               </Button>

@@ -7,7 +7,7 @@ import api from '@/lib/api-client';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/Toast';
-import { ReviewForm, ConfirmDialog } from '@/components/ui';
+import { ReviewForm, ConfirmDialog, ImageWithPlaceholder } from '@/components/ui';
 
 interface Booking {
   id: string;
@@ -48,11 +48,12 @@ export default function BookingsPage() {
     total: 0,
     totalPages: 0
   });
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('CONFIRMED');
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const [existingReviews, setExistingReviews] = useState<Record<string, { id: string; rating: number; comment?: string }>>({});
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; bookingId: string | null }>({ open: false, bookingId: null });
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
   const isMountedRef = useRef(true);
 
   const router = useRouter();
@@ -273,6 +274,42 @@ export default function BookingsPage() {
     }
   };
 
+  const getStatusLabel = (booking: Booking) => {
+    if (booking.status === 'PENDING' && booking.paymentStatus === 'PENDING') return 'Pending · Payment required';
+    if (booking.status === 'PENDING' && booking.paymentStatus === 'COMPLETED') return 'Confirming';
+    if (booking.status === 'CONFIRMED') return 'Confirmed · Paid';
+    if (booking.status === 'COMPLETED') return 'Completed';
+    if (booking.status === 'CANCELLED') return 'Cancelled';
+    if (booking.status === 'EXPIRED') return 'Expired';
+    return `${booking.status} · ${booking.paymentStatus}`;
+  };
+
+  const getStatusLabelClass = (booking: Booking) => {
+    if (booking.status === 'CONFIRMED' || (booking.status === 'PENDING' && booking.paymentStatus === 'COMPLETED')) return 'bg-green-100 text-green-800';
+    if (booking.status === 'COMPLETED') return 'bg-blue-100 text-blue-800';
+    if (booking.status === 'PENDING') return 'bg-yellow-100 text-yellow-800';
+    if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED') return 'bg-gray-100 text-gray-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const formatDateRange = (start: string, end: string) => {
+    const s = new Date(start);
+    const e = new Date(end);
+    const dateStr = s.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const startTime = s.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const endTime = e.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `${dateStr}, ${startTime} – ${endTime}`;
+  };
+
+  const toggleDetails = (bookingId: string) => {
+    setExpandedDetails((prev) => {
+      const next = new Set(prev);
+      if (next.has(bookingId)) next.delete(bookingId);
+      else next.add(bookingId);
+      return next;
+    });
+  };
+
   if (loading && bookings.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -290,324 +327,314 @@ export default function BookingsPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">My Bookings</h1>
-          
-          {/* Status Filter */}
-          <div className="flex space-x-2">
-            <label htmlFor="status-filter" className="sr-only">
-              Filter bookings by status
-            </label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="input"
-              aria-label="Filter bookings by status"
-            >
-              <option value="all">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="CONFIRMED">Confirmed</option>
-              <option value="CANCELLED">Cancelled</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="EXPIRED">Expired</option>
-            </select>
-          </div>
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
+        {/* Header: stacked on mobile, row on sm+ */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">My Bookings</h1>
+          <label htmlFor="status-filter" className="sr-only">Filter bookings by status</label>
+          <select
+            id="status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input w-full sm:w-auto min-h-[44px]"
+            aria-label="Filter bookings by status"
+          >
+            <option value="all">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="EXPIRED">Expired</option>
+          </select>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
-            {error}
+          <div className="alert-error mb-6" role="alert">
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>{error}</p>
           </div>
         )}
 
         {bookings.length === 0 && !loading ? (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium mb-2">No bookings found</h3>
-            <p className="text-gray-600 mb-4">
+          <div className="rounded-xl border border-[color:rgb(var(--color-border))] bg-[color:rgb(var(--color-surface))] shadow-sm p-10 sm:p-12 text-center">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No bookings found</h3>
+            <p className="text-gray-600 text-sm mb-6 max-w-sm mx-auto">
               {statusFilter === 'all' 
-                ? "You haven't made any bookings yet." 
-                : `No bookings with status "${statusFilter.toLowerCase()}".`
+                ? "You haven't made any bookings yet. Search for driveways to get started." 
+                : `No bookings with status "${statusFilter.toLowerCase()}". Try another filter.`
               }
             </p>
-            <Link href="/search" className="btn btn-primary">
+            <Link href="/search" className="btn btn-primary inline-flex items-center justify-center min-h-[44px] px-6">
               Find Driveways
             </Link>
           </div>
         ) : (
           <div className="space-y-6">
-            {bookings.map((booking) => (
-              <div key={booking.id} className="rounded-lg border border-[color:rgb(var(--color-border))] p-6 bg-[color:rgb(var(--color-surface))]">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-2">
-                      {booking.driveway.title}
-                    </h3>
-                    <p className="text-gray-600 mb-2">{booking.driveway.address}</p>
-                    <p className="text-sm text-gray-500">
-                      Owner: {booking.driveway.owner.name}
-                      {booking.driveway.owner.phone && (
-                        <span> • {booking.driveway.owner.phone}</span>
+            {bookings.map((booking) => {
+              const thumb = booking.driveway.images?.[0];
+              const durationHours = Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / (1000 * 60 * 60));
+              const detailsOpen = expandedDetails.has(booking.id);
+
+              return (
+                <article key={booking.id} className="rounded-lg border border-[color:rgb(var(--color-border))] overflow-hidden bg-[color:rgb(var(--color-surface))]">
+                  {/* Card: mobile = stacked; sm+ = thumbnail left, content right */}
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Thumbnail */}
+                    <div className="relative w-full sm:w-40 lg:w-48 h-36 sm:h-auto sm:min-h-[140px] flex-shrink-0 bg-gray-100">
+                      {thumb ? (
+                        <ImageWithPlaceholder
+                          src={thumb}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-400" aria-hidden>
+                          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
                       )}
-                    </p>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary-600 mb-2">
-                      {formatPrice(booking.totalPrice)}
                     </div>
-                    <div className="flex space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                        {booking.status}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
-                        {booking.paymentStatus}
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Booking Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Start Time</h4>
-                      <p className="text-gray-600">{formatDate(booking.startTime)}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">End Time</h4>
-                      <p className="text-gray-600">{formatDate(booking.endTime)}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Duration</h4>
-                      <p className="text-gray-600">
-                        {Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / (1000 * 60 * 60))} hours
+                    <div className="flex-1 p-4 sm:p-5 flex flex-col gap-3">
+                      {/* Title, one-line date, price, status */}
+                      <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start">
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-semibold truncate">{booking.driveway.title}</h3>
+                          <p className="text-sm text-gray-600 mt-0.5">{formatDateRange(booking.startTime, booking.endTime)}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 sm:flex-col sm:items-end">
+                          <span className="text-xl font-bold text-primary-600">{formatPrice(booking.totalPrice)}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusLabelClass(booking)}`}>
+                            {getStatusLabel(booking)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Address (truncated) */}
+                      <p className="text-gray-600 text-sm truncate" title={booking.driveway.address}>
+                        {booking.driveway.address}
                       </p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Booked On</h4>
-                      <p className="text-gray-600">{formatDate(booking.createdAt)}</p>
-                    </div>
-                  </div>
 
-                  {/* Booking Expiry Warning for PENDING bookings - Only show if payment is actually pending */}
-                  {booking.status === 'PENDING' && booking.paymentStatus === 'PENDING' && (
-                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <div>
-                          <p className="text-sm font-medium text-yellow-800">
-                            Payment Required
-                          </p>
-                          <p className="text-sm text-yellow-700">
-                            This booking will expire in 15 minutes if payment is not completed. Please complete payment to confirm your booking.
-                          </p>
+                      {/* Host + tap-to-call */}
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="text-gray-600">Host: {booking.driveway.owner.name}</span>
+                        {booking.driveway.owner.phone && (
+                          <a
+                            href={`tel:${booking.driveway.owner.phone.replace(/\D/g, '')}`}
+                            className="inline-flex items-center gap-1.5 min-h-[44px] min-w-[44px] px-3 text-primary-600 hover:text-primary-800 font-medium rounded-md hover:bg-primary-50 transition-colors"
+                            aria-label={`Call ${booking.driveway.owner.name}`}
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                            Call
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Alerts: compact */}
+                      {booking.status === 'PENDING' && booking.paymentStatus === 'PENDING' && (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800 flex-1">Payment required — booking expires in 15 min.</p>
                           <Link
                             href={`/checkout?bookingId=${booking.id}`}
-                            className="mt-2 inline-block text-sm font-medium text-yellow-800 hover:text-yellow-900 underline"
+                            className="btn btn-primary w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center"
                           >
-                            Complete Payment Now →
+                            Complete payment
                           </Link>
                         </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Payment Processing Message - Show if payment completed but webhook hasn't processed yet */}
-                  {booking.status === 'PENDING' && booking.paymentStatus === 'COMPLETED' && (
-                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 text-blue-600 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        <div>
-                          <p className="text-sm font-medium text-blue-800">
-                            Payment Received - Confirming Booking
-                          </p>
-                          <p className="text-sm text-blue-700">
-                            Your payment has been processed. We're confirming your booking. This page will update automatically.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Vehicle Information */}
-                {booking.vehicleInfo && (
-                  <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Vehicle Information</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Make:</span>
-                        <span className="ml-2 font-medium">{booking.vehicleInfo.make}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Model:</span>
-                        <span className="ml-2 font-medium">{booking.vehicleInfo.model}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Color:</span>
-                        <span className="ml-2 font-medium">{booking.vehicleInfo.color}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">License:</span>
-                        <span className="ml-2 font-medium">{booking.vehicleInfo.licensePlate}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Special Requests */}
-                {booking.specialRequests && (
-                  <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Special Requests</h4>
-                    <p className="text-gray-600">{booking.specialRequests}</p>
-                  </div>
-                )}
-
-                {/* Review Form for Completed Bookings (Driver only) */}
-                {booking.status === 'COMPLETED' && user && booking.driveway.owner.id !== user.id && (
-                  <div className="mt-6 pt-6 border-t border-[color:rgb(var(--color-border))]">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">Leave a Review</h4>
-                      {existingReviews[booking.driveway.id] && (
-                        <button
-                          onClick={() => {
-                            const newExpanded = new Set(expandedReviews);
-                            if (newExpanded.has(booking.id)) {
-                              newExpanded.delete(booking.id);
-                            } else {
-                              newExpanded.add(booking.id);
-                            }
-                            setExpandedReviews(newExpanded);
-                          }}
-                          className="text-sm text-primary-600 hover:text-primary-800"
-                          aria-label={expandedReviews.has(booking.id) ? 'Hide review form' : 'Show review form'}
-                        >
-                          {expandedReviews.has(booking.id) ? 'Hide Review' : 'Update Review'}
-                        </button>
                       )}
-                    </div>
-                    {(expandedReviews.has(booking.id) || !existingReviews[booking.driveway.id]) && (
-                      <ReviewForm
-                        drivewayId={booking.driveway.id}
-                        bookingId={booking.id}
-                        existingReview={existingReviews[booking.driveway.id]}
-                        onSuccess={() => {
-                          fetchBookings(pagination.page);
-                          const newExpanded = new Set(expandedReviews);
-                          newExpanded.delete(booking.id);
-                          setExpandedReviews(newExpanded);
-                        }}
-                      />
-                    )}
-                    {existingReviews[booking.driveway.id] && !expandedReviews.has(booking.id) && (
-                      <div className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-yellow-400 text-lg">★</span>
-                          <span className="font-medium">{existingReviews[booking.driveway.id].rating} / 5</span>
+                      {booking.status === 'PENDING' && booking.paymentStatus === 'COMPLETED' && (
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                          <svg className="w-5 h-5 shrink-0 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Payment received — confirming booking. Page will update automatically.
                         </div>
-                        {existingReviews[booking.driveway.id].comment && (
-                          <p className="text-gray-600 text-sm">{existingReviews[booking.driveway.id].comment}</p>
-                        )}
-                        <button
-                          onClick={() => {
-                            const newExpanded = new Set(expandedReviews);
-                            newExpanded.add(booking.id);
-                            setExpandedReviews(newExpanded);
-                          }}
-                          className="mt-2 text-sm text-primary-600 hover:text-primary-800"
-                        >
-                          Update Review
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
 
-                {/* Actions */}
-                <div className="flex justify-between items-center pt-4 border-t border-[color:rgb(var(--color-border))]">
-                  <div className="flex flex-wrap gap-2 sm:gap-4">
-                    <Link
-                      href={`/driveway/${booking.driveway.id}`}
-                      className="text-primary-600 hover:text-primary-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-primary-50 transition-colors"
-                    >
-                      View Driveway
-                    </Link>
-                    {booking.status === 'PENDING' && (
-                      <button
-                        onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        aria-label={`Cancel booking for ${booking.driveway.title}`}
-                      >
-                        Cancel Booking
-                      </button>
-                    )}
-                    {/* Owner controls */}
-                    {user && booking.driveway.owner.id === user.id && booking.status === 'PENDING' && (
-                      <button
-                        onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        aria-label={`Cancel booking for ${booking.driveway.title}`}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                    {/* Note: Bookings are automatically confirmed after payment is completed via Stripe webhook */}
+                      {/* Collapsible details on mobile; always visible on lg */}
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => toggleDetails(booking.id)}
+                          className="lg:sr-only text-sm font-medium text-primary-600 hover:text-primary-800 py-2 min-h-[44px] flex items-center"
+                          aria-expanded={detailsOpen}
+                          aria-controls={`details-${booking.id}`}
+                        >
+                          {detailsOpen ? 'Hide details' : 'Show details'}
+                        </button>
+                        <div
+                          id={`details-${booking.id}`}
+                          className={`${detailsOpen ? 'block' : 'hidden'} lg:block mt-2 pt-3 border-t border-[color:rgb(var(--color-border))] space-y-3`}
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                            <div><span className="text-gray-500">Start</span><br />{formatDate(booking.startTime)}</div>
+                            <div><span className="text-gray-500">End</span><br />{formatDate(booking.endTime)}</div>
+                            <div><span className="text-gray-500">Duration</span><br />{durationHours} hours</div>
+                            <div><span className="text-gray-500">Booked on</span><br />{formatDate(booking.createdAt)}</div>
+                          </div>
+                          {booking.vehicleInfo && (
+                            <div className="text-sm">
+                              <span className="text-gray-500">Vehicle: </span>
+                              <span>{booking.vehicleInfo.make} {booking.vehicleInfo.model}, {booking.vehicleInfo.color} · {booking.vehicleInfo.licensePlate}</span>
+                            </div>
+                          )}
+                          {booking.specialRequests && (
+                            <div className="text-sm"><span className="text-gray-500">Special requests: </span>{booking.specialRequests}</div>
+                          )}
+                          <p className="text-xs text-gray-500">Booking ID: {booking.id}</p>
+                        </div>
+                      </div>
+
+                      {/* Review block (unchanged) */}
+                      {booking.status === 'COMPLETED' && user && booking.driveway.owner.id !== user.id && (
+                        <div className="mt-2 pt-4 border-t border-[color:rgb(var(--color-border))]">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-medium text-gray-900 text-sm">Leave a Review</h4>
+                            {existingReviews[booking.driveway.id] && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = new Set(expandedReviews);
+                                  if (next.has(booking.id)) next.delete(booking.id);
+                                  else next.add(booking.id);
+                                  setExpandedReviews(next);
+                                }}
+                                className="text-sm text-primary-600 hover:text-primary-800 min-h-[44px] min-w-[44px] flex items-center"
+                                aria-label={expandedReviews.has(booking.id) ? 'Hide review form' : 'Show review form'}
+                              >
+                                {expandedReviews.has(booking.id) ? 'Hide Review' : 'Update Review'}
+                              </button>
+                            )}
+                          </div>
+                          {(expandedReviews.has(booking.id) || !existingReviews[booking.driveway.id]) && (
+                            <ReviewForm
+                              drivewayId={booking.driveway.id}
+                              bookingId={booking.id}
+                              existingReview={existingReviews[booking.driveway.id]}
+                              onSuccess={() => {
+                                fetchBookings(pagination.page);
+                                setExpandedReviews((prev) => { const n = new Set(prev); n.delete(booking.id); return n; });
+                              }}
+                            />
+                          )}
+                          {existingReviews[booking.driveway.id] && !expandedReviews.has(booking.id) && (
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-yellow-500">★</span>
+                                <span className="font-medium">{existingReviews[booking.driveway.id].rating} / 5</span>
+                              </div>
+                              {existingReviews[booking.driveway.id].comment && (
+                                <p className="text-gray-600 text-sm">{existingReviews[booking.driveway.id].comment}</p>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setExpandedReviews((prev) => { const n = new Set(prev); n.add(booking.id); return n; })}
+                                className="mt-2 text-sm text-primary-600 hover:text-primary-800 min-h-[44px]"
+                              >
+                                Update Review
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Actions: stacked on mobile (full-width, 44px), inline on sm+ */}
+                      <div className="flex flex-col-reverse sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 pt-4 border-t border-[color:rgb(var(--color-border))]">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                          {/* Primary: Pay or Get directions */}
+                          {booking.status === 'PENDING' && booking.paymentStatus === 'PENDING' && (
+                            <Link
+                              href={`/checkout?bookingId=${booking.id}`}
+                              className="btn btn-primary w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center"
+                            >
+                              Pay now
+                            </Link>
+                          )}
+                          {user && booking.driveway.owner.id !== user.id &&
+                            (booking.status === 'CONFIRMED' || (booking.status === 'PENDING' && booking.paymentStatus === 'COMPLETED')) && (
+                            <Link
+                              href={`/bookings/${booking.id}/navigate`}
+                              className="btn btn-primary w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2"
+                              aria-label={`Get directions to ${booking.driveway.title}`}
+                            >
+                              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                              </svg>
+                              Get directions
+                            </Link>
+                          )}
+                          <Link
+                            href={`/driveway/${booking.driveway.id}`}
+                            className="btn btn-secondary w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center"
+                          >
+                            View driveway
+                          </Link>
+                          {booking.status === 'PENDING' && (
+                            <button
+                              type="button"
+                              onClick={() => handleStatusChange(booking.id, 'CANCELLED')}
+                              className="w-full sm:w-auto min-h-[44px] px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors border border-red-200"
+                              aria-label={`Cancel booking for ${booking.driveway.title}`}
+                            >
+                              {user && booking.driveway.owner.id === user.id ? 'Cancel' : 'Cancel booking'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="text-sm text-gray-500">
-                    Booking ID: {booking.id}
-                  </div>
-                </div>
-              </div>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
 
-        {/* Pagination */}
+        {/* Pagination: large touch targets on mobile */}
         {pagination.totalPages > 1 && (
-          <div className="mt-8 flex justify-center">
-            <nav className="flex space-x-2">
+          <nav className="mt-8 flex flex-wrap justify-center gap-2" aria-label="Bookings pagination">
+            <button
+              type="button"
+              onClick={() => fetchBookings(pagination.page - 1)}
+              disabled={pagination.page === 1}
+              className="min-h-[44px] min-w-[44px] px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Go to previous page"
+            >
+              Previous
+            </button>
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
               <button
-                onClick={() => fetchBookings(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Go to previous page"
+                key={page}
+                type="button"
+                onClick={() => fetchBookings(page)}
+                className={`min-h-[44px] min-w-[44px] px-3 py-2 border rounded-md text-sm font-medium ${
+                  page === pagination.page
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+                aria-label={`Go to page ${page}`}
+                aria-current={page === pagination.page ? 'page' : undefined}
               >
-                Previous
+                {page}
               </button>
-              
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => fetchBookings(page)}
-                  className={`px-3 py-2 border rounded-md text-sm font-medium ${
-                    page === pagination.page
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                  aria-label={`Go to page ${page}`}
-                  aria-current={page === pagination.page ? 'page' : undefined}
-                >
-                  {page}
-                </button>
-              ))}
-              
-              <button
-                onClick={() => fetchBookings(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Go to next page"
-              >
-                Next
-              </button>
-            </nav>
-          </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => fetchBookings(pagination.page + 1)}
+              disabled={pagination.page === pagination.totalPages}
+              className="min-h-[44px] min-w-[44px] px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Go to next page"
+            >
+              Next
+            </button>
+          </nav>
         )}
 
         {/* Confirmation Dialog for Cancellation */}

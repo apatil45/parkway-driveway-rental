@@ -22,11 +22,6 @@ jest.mock('@/components/layout/Breadcrumbs', () => ({
   default: () => <nav data-testid="breadcrumbs">Breadcrumbs</nav>,
 }));
 
-jest.mock('@/components/ui/FloatingActions', () => ({
-  __esModule: true,
-  default: () => <div data-testid="floating-actions">FloatingActions</div>,
-}));
-
 describe('AppLayout Component', () => {
   it('wraps children', () => {
     render(
@@ -68,16 +63,6 @@ describe('AppLayout Component', () => {
     expect(screen.getByTestId('breadcrumbs')).toBeInTheDocument();
   });
 
-  it('includes FloatingActions by default', () => {
-    render(
-      <AppLayout>
-        <div>Content</div>
-      </AppLayout>
-    );
-    
-    expect(screen.getByTestId('floating-actions')).toBeInTheDocument();
-  });
-
   it('hides breadcrumbs when showBreadcrumbs is false', () => {
     render(
       <AppLayout showBreadcrumbs={false}>
@@ -96,16 +81,6 @@ describe('AppLayout Component', () => {
     );
     
     expect(screen.queryByTestId('footer')).not.toBeInTheDocument();
-  });
-
-  it('hides floating actions when showFloatingActions is false', () => {
-    render(
-      <AppLayout showFloatingActions={false}>
-        <div>Content</div>
-      </AppLayout>
-    );
-    
-    expect(screen.queryByTestId('floating-actions')).not.toBeInTheDocument();
   });
 
   it('has proper layout structure', () => {

@@ -27,7 +27,8 @@
     "db:seed": "cd packages/database && prisma db seed",
     "db:studio": "cd packages/database && prisma studio",
     "db:push": "cd packages/database && prisma db push",
-    "validate-env": "cd apps/web && node scripts/validate-env.js"
+    "validate-env": "cd apps/web && node scripts/validate-env.js",
+    "fix:stripe-deps": "npm install es-errors es-object-atoms call-bind-apply-helpers get-intrinsic get-proto dunder-proto has-symbols call-bind side-channel side-channel-weakmap --ignore-scripts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
@@ -44,5 +45,17 @@
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
-  "packageManager": "npm@9.8.1"
+  "packageManager": "npm@9.8.1",
+  "dependencies": {
+    "call-bind": "^1.0.8",
+    "call-bind-apply-helpers": "^1.0.2",
+    "dunder-proto": "^1.0.1",
+    "es-errors": "^1.3.0",
+    "es-object-atoms": "^1.1.1",
+    "get-intrinsic": "^1.3.0",
+    "get-proto": "^1.0.1",
+    "has-symbols": "^1.1.0",
+    "side-channel": "^1.1.0",
+    "side-channel-weakmap": "^1.0.2"
+  }
 }
