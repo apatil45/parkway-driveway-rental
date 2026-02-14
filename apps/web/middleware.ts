@@ -46,8 +46,12 @@ export const config = {
 
 
 
-// edit fxn
-// popups map and list
-// map 100 list overlap- 30
-// search by name
+// edit map view
 
+//latest version on dev
+
+// live loc tracking
+
+//align floating action bttn
+
+// how to test multiple(10) users

@@ -46,9 +46,9 @@ export default function MapViewDirect({
 
   // Initialize Leaflet map directly
   useEffect(() => {
-    if (!containerRef.current) return;
-
     const container = containerRef.current;
+    if (!container) return;
+
     let isMounted = true;
 
     // Dynamic import of Leaflet
@@ -59,6 +59,12 @@ export default function MapViewDirect({
 
         // Import Leaflet
         const L = (await import('leaflet')).default;
+
+        // Re-check container after async (may have unmounted)
+        if (!containerRef.current || !container.isConnected) {
+          setIsLoading(false);
+          return;
+        }
 
         // Check if container is safe
         if (!mapService.isContainerSafe(container)) {
@@ -160,12 +166,14 @@ export default function MapViewDirect({
 
         // Invalidate size after a short delay to ensure container is rendered
         setTimeout(() => {
-          if (isMounted && mapRef.current && containerRef.current && containerRef.current.offsetWidth > 0) {
-            try {
-              mapRef.current.invalidateSize();
-            } catch (e) {
-              console.error('[MapViewDirect] Error invalidating size:', e);
-            }
+          const container = containerRef.current;
+          const map = mapRef.current;
+          if (!isMounted || !map || !container) return;
+          try {
+            const el = map.getContainer?.() ?? map._container;
+            if (el && el.offsetWidth > 0) map.invalidateSize();
+          } catch (e) {
+            console.error('[MapViewDirect] Error invalidating size:', e);
           }
         }, 100);
 
@@ -315,15 +323,20 @@ export default function MapViewDirect({
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      if (mapRef.current && containerRef.current && containerRef.current.offsetWidth > 0) {
-        setTimeout(() => {
-          try {
-            mapRef.current.invalidateSize();
-          } catch (e) {
-            console.error('[MapViewDirect] Error invalidating size on resize:', e);
-          }
-        }, 100);
-      }
+      const container = containerRef.current;
+      const map = mapRef.current;
+      if (!map || !container) return;
+      setTimeout(() => {
+        const c = containerRef.current;
+        const m = mapRef.current;
+        if (!m || !c) return;
+        try {
+          const el = m.getContainer?.() ?? m._container;
+          if (el && el.offsetWidth > 0) m.invalidateSize();
+        } catch (e) {
+          console.error('[MapViewDirect] Error invalidating size on resize:', e);
+        }
+      }, 100);
     };
 
     window.addEventListener('resize', handleResize);

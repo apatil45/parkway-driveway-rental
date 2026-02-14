@@ -44,11 +44,7 @@ export default function ImageUpload({
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await api.post<{ url: string }>('/upload/image', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        const response = await api.post<{ url: string }>('/upload/image', formData);
 
         return response.data?.data?.url;
       });
@@ -84,11 +80,7 @@ export default function ImageUpload({
       const formData = new FormData();
       formData.append('file', files[0]);
 
-      const response = await api.post<{ url: string }>('/upload/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post<{ url: string }>('/upload/image', formData);
 
       const newUrl = response.data?.data?.url;
       if (newUrl) {

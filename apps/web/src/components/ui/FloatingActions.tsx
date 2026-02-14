@@ -60,7 +60,7 @@ export default function FloatingActions({ className = '' }: FloatingActionsProps
 
   return (
     <>
-      <div className={`fixed bottom-6 right-6 z-50 floating-actions ${className}`}>
+      <div className={`fixed bottom-6 right-1 z-0 floating-actions ${className}`}>
         {/* Action Buttons */}
         <div
           className={`flex flex-col-reverse gap-3 mb-3 transition-all duration-300 ${
@@ -89,7 +89,7 @@ export default function FloatingActions({ className = '' }: FloatingActionsProps
               </svg>
               <span className="text-sm font-medium">Quick Search</span>
             </button>
-            <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div className="relative right-full mr-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
                 Search for parking
               </div>
@@ -101,7 +101,7 @@ export default function FloatingActions({ className = '' }: FloatingActionsProps
             <div className="group relative">
               <button
                 onClick={handleListDriveway}
-                className="flex items-center gap-3 bg-primary-600 text-white shadow-lg rounded-full px-4 py-3 hover:bg-primary-700 transition-all hover:shadow-xl min-w-[180px]"
+                className="flex items-center gap-4 bg-primary-600 text-white shadow-lg rounded-full px-4 py-3 hover:bg-primary-700 transition-all hover:shadow-xl min-w-[180px]"
                 aria-label="List Driveway"
               >
                 <svg

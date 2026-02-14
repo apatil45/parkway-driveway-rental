@@ -67,11 +67,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
+          {/* Header - "Menu" to avoid duplicate logo with navbar */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <Link href="/" className="text-2xl font-bold text-primary-600" onClick={onClose}>
-              Parkway
-            </Link>
+            <span className="text-lg font-semibold text-gray-900">Menu</span>
             <button
               onClick={onClose}
               className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
