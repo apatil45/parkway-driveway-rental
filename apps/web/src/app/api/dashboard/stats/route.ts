@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
               where: { userId, status: 'COMPLETED' },
               select: { drivewayId: true }
             });
-            const drivewayIds = [...new Set(completedBookings.map((b) => b.drivewayId))];
+            const drivewayIds = Array.from(new Set(completedBookings.map((b) => b.drivewayId)));
             if (drivewayIds.length === 0) return null;
             const r = await prisma.review.aggregate({
               where: { drivewayId: { in: drivewayIds } },
