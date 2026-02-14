@@ -52,14 +52,14 @@ export async function GET(request: NextRequest) {
       prisma.booking.count({
         where: {
           ...bookingScope,
-          status: { in: ACTIVE_STATUSES }
+          status: { in: [...ACTIVE_STATUSES] }
         }
       }),
 
       prisma.booking.count({
         where: {
           ...bookingScope,
-          status: { in: COMPLETED_OR_CONFIRMED }
+          status: { in: [...COMPLETED_OR_CONFIRMED] }
         }
       }),
 
