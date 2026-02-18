@@ -11,6 +11,8 @@ export interface SearchResultsPanelProps {
   panelRef: React.RefObject<HTMLElement | null>;
   contentTopOffset: string;
   isMobileView: boolean;
+  /** When true, panel is in document flow (stacked above/below map on mobile) instead of fixed overlay */
+  stacked?: boolean;
   emptyResults: boolean;
   loading: boolean;
   driveways: SearchDriveway[];
@@ -46,6 +48,7 @@ export default function SearchResultsPanel({
   panelRef,
   contentTopOffset,
   isMobileView,
+  stacked = false,
   emptyResults,
   loading,
   driveways,
@@ -71,7 +74,7 @@ export default function SearchResultsPanel({
 
   return (
     <>
-      {open && (
+      {!stacked && open && (
         <div
           className="fixed inset-0 bg-black/15 z-10 lg:hidden"
           onClick={onClose}
@@ -83,16 +86,20 @@ export default function SearchResultsPanel({
         ref={panelRef as React.RefObject<HTMLElement>}
         role="region"
         aria-label="Search results"
-        aria-modal={open && isMobileView ? true : undefined}
-        className={`
+        aria-modal={!stacked && open && isMobileView ? true : undefined}
+        className={
+          stacked
+            ? 'relative w-full bg-white border-b border-gray-200 overflow-hidden overflow-y-auto'
+            : `
           fixed right-0 z-[15]
           w-full sm:w-96 max-w-[calc(100vw-2rem)]
           h-auto
           bg-white shadow-xl overflow-hidden overflow-y-auto
           transition-transform duration-300 ease-out
           ${open ? 'translate-x-0' : 'translate-x-full'}
-        `}
-        style={{ top: contentTopOffset, maxHeight: `calc(100vh - ${contentTopOffset})` }}
+        `
+        }
+        style={stacked ? undefined : { top: contentTopOffset, maxHeight: `calc(100vh - ${contentTopOffset})` }}
       >
         <div className="relative p-4 sm:p-6 pt-4 lg:pt-4">
           {emptyResults ? (
@@ -230,6 +237,20 @@ export default function SearchResultsPanel({
                   >
                     Next
                   </Button>
+                </div>
+              )}
+              {stacked && (
+                <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                  <a
+                    href="#search-list-mobile"
+                    className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('search-list-mobile')?.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  >
+                    Back to top ↑
+                  </a>
                 </div>
               )}
             </>

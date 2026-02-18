@@ -34,36 +34,36 @@ describe('Breadcrumbs Component', () => {
     expect(screen.getByText('New')).toBeInTheDocument();
   });
 
-  it('has correct navigation links', () => {
+  it('has correct navigation links and Home links to root', () => {
     mockUsePathname.mockReturnValue('/driveways/123/edit');
     
     render(<Breadcrumbs />);
     
     const homeLink = screen.getByText('Home');
-    expect(homeLink).toHaveAttribute('href', '/driveways');
+    expect(homeLink).toHaveAttribute('href', '/');
     
     const drivewaysLink = screen.getByText('Driveways');
     expect(drivewaysLink).toHaveAttribute('href', '/driveways');
   });
 
-  it('renders home link', () => {
-    mockUsePathname.mockReturnValue('/search');
+  it('renders Home link to root on deep routes', () => {
+    mockUsePathname.mockReturnValue('/driveways/new');
     
     render(<Breadcrumbs />);
     
     expect(screen.getByText('Home')).toBeInTheDocument();
     const homeLink = screen.getByText('Home');
-    expect(homeLink).toHaveAttribute('href', '/search');
+    expect(homeLink).toHaveAttribute('href', '/');
   });
 
-  it('handles dynamic segments', () => {
-    mockUsePathname.mockReturnValue('/driveways/abc123/details');
+  it('handles dynamic segments with friendly labels', () => {
+    mockUsePathname.mockReturnValue('/driveways/abc123xyz/details');
     
     render(<Breadcrumbs />);
     
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Driveways')).toBeInTheDocument();
-    expect(screen.getByText('Abc123')).toBeInTheDocument();
+    expect(screen.getByText('Listing')).toBeInTheDocument();
     expect(screen.getByText('Details')).toBeInTheDocument();
   });
 
@@ -91,12 +91,21 @@ describe('Breadcrumbs Component', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('formats path segments correctly', () => {
-    mockUsePathname.mockReturnValue('/my-bookings');
+  it('does not render on single-segment paths', () => {
+    mockUsePathname.mockReturnValue('/search');
+    
+    const { container } = render(<Breadcrumbs />);
+    
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('formats unknown path segments with title case', () => {
+    mockUsePathname.mockReturnValue('/some-section/my-page');
     
     render(<Breadcrumbs />);
     
-    expect(screen.getByText('My Bookings')).toBeInTheDocument();
+    expect(screen.getByText('Some Section')).toBeInTheDocument();
+    expect(screen.getByText('My Page')).toBeInTheDocument();
   });
 
   it('shows last segment as non-link', () => {
@@ -122,7 +131,7 @@ describe('Breadcrumbs Component', () => {
   });
 
   it('has proper styling classes', () => {
-    mockUsePathname.mockReturnValue('/search');
+    mockUsePathname.mockReturnValue('/driveways/new');
     
     const { container } = render(<Breadcrumbs />);
     
@@ -130,15 +139,16 @@ describe('Breadcrumbs Component', () => {
     expect(nav).toHaveClass('bg-gray-50', 'border-b', 'border-gray-200');
     
     const ol = container.querySelector('ol');
-    expect(ol).toHaveClass('flex', 'items-center', 'space-x-2', 'text-sm');
+    expect(ol).toHaveClass('flex', 'items-center', 'text-sm', 'gap-x-2', 'gap-y-1');
   });
 
-  it('has aria-label for accessibility', () => {
-    mockUsePathname.mockReturnValue('/search');
+  it('has aria-label and aria-current for accessibility', () => {
+    mockUsePathname.mockReturnValue('/driveways/new');
     
     const { container } = render(<Breadcrumbs />);
     
     const nav = container.querySelector('nav');
     expect(nav).toHaveAttribute('aria-label', 'Breadcrumb');
+    expect(screen.getByText('New')).toHaveAttribute('aria-current', 'page');
   });
 });

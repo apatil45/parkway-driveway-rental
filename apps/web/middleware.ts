@@ -46,12 +46,13 @@ export const config = {
 
 
 
-// edit map view
+// set env for testing or prod
 
-//latest version on dev
+// ci/cd pipelines
 
-// live loc tracking
+// ui finishes
 
-//align floating action bttn
+// see ux tutorials
 
-// how to test multiple(10) users
+// breadcrumps
+

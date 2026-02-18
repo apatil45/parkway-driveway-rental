@@ -3,45 +3,82 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+/** Known path segments → friendly labels */
+const SEGMENT_LABELS: Record<string, string> = {
+  bookings: 'Bookings',
+  booking: 'Booking',
+  driveways: 'Driveways',
+  driveway: 'Driveway',
+  navigate: 'Directions',
+  edit: 'Edit',
+  new: 'New',
+  search: 'Search',
+  favorites: 'Favorites',
+  checkout: 'Checkout',
+  dashboard: 'Dashboard',
+  profile: 'Profile',
+  pricing: 'Pricing',
+  about: 'About',
+  contact: 'Contact',
+};
+
+/** Heuristic: segment looks like an ID (cuid/uuid style) */
+function looksLikeId(segment: string): boolean {
+  if (segment.length < 8 || segment.length > 40) return false;
+  return /^[a-zA-Z0-9_-]+$/.test(segment);
+}
+
+/** Friendly label for a path segment given its parent segment */
+function getSegmentLabel(segment: string, parentSegment: string | null): string {
+  const lower = segment.toLowerCase();
+  if (SEGMENT_LABELS[lower]) return SEGMENT_LABELS[lower];
+  if (looksLikeId(segment)) {
+    if (parentSegment === 'bookings') return 'Booking';
+    if (parentSegment === 'driveway' || parentSegment === 'driveways') return 'Listing';
+  }
+  return segment
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export default function Breadcrumbs() {
   const pathname = usePathname();
 
-  // Don't show breadcrumbs on shallow pages
   if (pathname === '/' || pathname === '/login' || pathname === '/register') {
     return null;
   }
 
-  // Don't show on homepage (it has its own header)
-  if (pathname.split('/').filter(Boolean).length <= 1) {
-    return null;
-  }
-
   const paths = pathname.split('/').filter(Boolean);
-  const breadcrumbs = paths.map((path, index) => {
-    const href = '/' + paths.slice(0, index + 1).join('/');
-    const label = path
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  if (paths.length <= 1) return null;
 
-    return {
+  const items: { href: string; label: string; isLast: boolean }[] = [
+    { href: '/', label: 'Home', isLast: false },
+  ];
+
+  paths.forEach((segment, index) => {
+    const href = '/' + paths.slice(0, index + 1).join('/');
+    const parent = index > 0 ? paths[index - 1] : null;
+    const label = getSegmentLabel(segment, parent);
+    items.push({
       href,
-      label: index === 0 ? 'Home' : label,
+      label,
       isLast: index === paths.length - 1,
-    };
+    });
   });
 
   return (
     <nav className="bg-gray-50 border-b border-gray-200" aria-label="Breadcrumb">
       <div className="container mx-auto px-4 py-3">
-        <ol className="flex items-center space-x-2 text-sm">
-          {breadcrumbs.map((crumb, index) => (
-            <li key={crumb.href} className="flex items-center">
+        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          {items.map((crumb, index) => (
+            <li key={`${index}-${crumb.href}`} className="flex items-center">
               {index > 0 && (
                 <svg
-                  className="w-4 h-4 text-gray-400 mx-2"
+                  className="w-4 h-4 text-gray-400 mx-1 shrink-0"
                   fill="currentColor"
                   viewBox="0 0 20 20"
+                  aria-hidden
                 >
                   <path
                     fillRule="evenodd"
@@ -51,7 +88,9 @@ export default function Breadcrumbs() {
                 </svg>
               )}
               {crumb.isLast ? (
-                <span className="text-gray-900 font-medium">{crumb.label}</span>
+                <span className="text-gray-900 font-medium" aria-current="page">
+                  {crumb.label}
+                </span>
               ) : (
                 <Link
                   href={crumb.href}
@@ -67,4 +106,3 @@ export default function Breadcrumbs() {
     </nav>
   );
 }
-

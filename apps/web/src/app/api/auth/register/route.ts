@@ -82,6 +82,14 @@ export async function POST(request: NextRequest) {
     
     const { name, email, password, roles, phone, address }: RegisterInput = validationResult.data;
 
+    // Admin role cannot be self-assigned via registration
+    if (roles.includes('ADMIN')) {
+      return NextResponse.json(
+        createApiError('Admin role cannot be assigned during registration', 403, 'FORBIDDEN'),
+        { status: 403 }
+      );
+    }
+
     // Check if user already exists (only fetch id for existence check)
     const existingUser = await prisma.user.findUnique({
       where: { email },

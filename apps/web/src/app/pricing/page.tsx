@@ -382,7 +382,7 @@ export default function PricingPage() {
               Ready to Get Started?
             </h2>
             <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of users who are already using Parkway. Sign up is free and takes less than 2 minutes.
+              Join drivers and property owners already using Parkway. Sign up is free and takes less than 2 minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link

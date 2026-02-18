@@ -203,7 +203,9 @@ export default function AboutPage() {
         <Card className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to Get Started?</h2>
           <p className="text-lg text-gray-600 mb-8">
-            Join thousands of users who are already using Parkway to find parking or earn money.
+            {stats?.totalUsers != null && stats.totalUsers > 0
+              ? `Join ${stats.totalUsers.toLocaleString()} users already using Parkway to find parking or earn money.`
+              : 'Join drivers and property owners using Parkway to find parking or earn money.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="/register" className="btn btn-primary">

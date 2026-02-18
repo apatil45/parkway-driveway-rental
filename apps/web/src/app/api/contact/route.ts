@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { NextRequest, NextResponse } from 'next/server';
+import { createApiResponse, createApiError } from '@parkway/shared';
 
 interface ContactRequest {
   name: string;
@@ -31,15 +32,20 @@ transporter.verify((error, success) => {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📧 Contact form received');
+    // Contact form requires email configuration
+    if (!process.env.EMAIL_FROM || !process.env.EMAIL_TO || !process.env.EMAIL_HOST) {
+      return NextResponse.json(
+        createApiError('Contact form is temporarily unavailable. Please email us directly.', 503, 'SERVICE_UNAVAILABLE'),
+        { status: 503 }
+      );
+    }
+
     const body: ContactRequest = await request.json();
-    console.log('📧 Form data:', { name: body.name, email: body.email, subject: body.subject });
 
     // Validate required fields
     if (!body.name || !body.email || !body.subject || !body.message) {
-      console.error('❌ Missing fields:', { name: body.name, email: body.email, subject: body.subject, message: body.message });
       return NextResponse.json(
-        { message: 'Missing required fields' },
+        createApiError('Missing required fields: name, email, subject, and message are required', 400, 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }
@@ -77,24 +83,17 @@ export async function POST(request: NextRequest) {
       `,
     };
 
-    // Send both emails
-    console.log('Sending admin email to:', process.env.EMAIL_TO);
     await transporter.sendMail(adminEmail);
-    console.log('Admin email sent successfully');
-    
-    console.log('Sending user confirmation email to:', body.email);
     await transporter.sendMail(userEmail);
-    console.log('User confirmation email sent successfully');
 
     return NextResponse.json(
-      { message: 'Email sent successfully' },
+      createApiResponse({}, 'Email sent successfully'),
       { status: 200 }
     );
-  } catch (error: any) {
-    console.error('❌ EMAIL ERROR:', error.message);
-    console.error('Full error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to send email';
     return NextResponse.json(
-      { message: 'Failed to send email: ' + error.message },
+      createApiError('Failed to send email. Please try again or email us directly.', 500, 'INTERNAL_ERROR'),
       { status: 500 }
     );
   }

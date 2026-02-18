@@ -534,7 +534,9 @@ export default function Home() {
                 Why Choose Parkway?
               </h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Trusted by thousands of drivers and property owners nationwide
+                {stats?.totalUsers != null && stats.totalUsers > 0
+                  ? `Trusted by ${stats.totalUsers.toLocaleString()} drivers and property owners nationwide`
+                  : 'Trusted by drivers and property owners nationwide'}
               </p>
             </div>
 
@@ -567,8 +569,9 @@ export default function Home() {
                 <StarIcon className="w-10 h-10 text-primary-600 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Top Rated</h3>
                 <p className="text-gray-600 text-sm">
-                  {stats?.averageRating ? `${stats.averageRating.toFixed(1)}★` : '4.8★'} average rating 
-                  from thousands of satisfied users.
+                  {stats?.averageRating != null && stats.averageRating > 0
+                    ? `${stats.averageRating.toFixed(1)}★ average rating${stats?.totalUsers && stats.totalUsers > 0 ? ` from ${stats.totalUsers.toLocaleString()} satisfied users` : ''}.`
+                    : 'Top-rated platform. Be one of the first to leave a review.'}
                 </p>
               </Card>
             </div>
@@ -673,7 +676,9 @@ export default function Home() {
               Ready to Get Started?
             </h2>
             <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of users who are already using Parkway to find parking or earn money. 
+              {stats?.totalUsers != null && stats.totalUsers > 0
+                ? `Join ${stats.totalUsers.toLocaleString()} users already using Parkway to find parking or earn money. `
+                : 'Join drivers and property owners using Parkway to find parking or earn money. '}
               It's free to sign up and takes less than 2 minutes.
             </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

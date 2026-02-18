@@ -52,8 +52,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const osrmUrl =
-      `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+    const osrmUrl =`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
 
     const osrmResponse = await fetch(osrmUrl);
     const osrmData = await osrmResponse.json();

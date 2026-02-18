@@ -42,7 +42,8 @@ import {
   BuildingOfficeIcon,
   HomeIcon,
   BriefcaseIcon,
-  MicrophoneIcon
+  MicrophoneIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 interface AddressSuggestion {
@@ -464,23 +465,27 @@ interface AddressAutocompleteProps {
   value: string;
   onChange: (address: string) => void;
   onLocationSelect?: (lat: number, lon: number) => void;
+  onSubmit?: () => void;
   placeholder?: string;
   label?: string;
   required?: boolean;
   disabled?: boolean;
   className?: string;
-  userLocationProp?: { lat: number; lon: number }; // User's current location for proximity prioritization
+  minimal?: boolean;
+  userLocationProp?: { lat: number; lon: number };
 }
 
 export default function AddressAutocomplete({
   value,
   onChange,
   onLocationSelect,
+  onSubmit,
   placeholder,
   label,
   required = false,
   disabled = false,
   className = '',
+  minimal = false,
   userLocationProp,
 }: AddressAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -1067,8 +1072,21 @@ export default function AddressAutocomplete({
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    switch (e.key) {
+      case 'Enter':
+        e.preventDefault();
+        if (showSuggestions && suggestions.length > 0 && selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          handleSelectSuggestion(suggestions[selectedIndex]);
+        } else if (minimal && onSubmit) {
+          onSubmit();
+        }
+        return;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        return;
+    }
     if (!showSuggestions || suggestions.length === 0) return;
-    
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -1079,16 +1097,6 @@ export default function AddressAutocomplete({
       case 'ArrowUp':
         e.preventDefault();
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-          handleSelectSuggestion(suggestions[selectedIndex]);
-        }
-        break;
-      case 'Escape':
-        setShowSuggestions(false);
-        setSelectedIndex(-1);
         break;
     }
   };
@@ -1207,7 +1215,7 @@ export default function AddressAutocomplete({
           placeholder={displayPlaceholder}
           required={required}
           disabled={disabled}
-          className="w-full pl-10 pr-24 py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className={`w-full py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${minimal ? 'pl-10 pr-12' : 'pl-10 pr-24'}`}
         />
         <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         
@@ -1215,35 +1223,49 @@ export default function AddressAutocomplete({
           {loading && (
             <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
           )}
-          <button
-            type="button"
-            onClick={handleVoiceSearch}
-            disabled={!voiceSupported}
-            className={`p-1 transition-colors ${
-              isListening 
-                ? 'text-red-600 animate-pulse' 
-                : voiceSupported
-                ? 'text-gray-400 hover:text-primary-600'
-                : 'text-gray-300 cursor-not-allowed opacity-50'
-            }`}
-            title={
-              isListening 
-                ? 'Listening... Click to stop' 
-                : voiceSupported 
-                ? 'Voice search' 
-                : 'Voice search not supported in this browser'
-            }
-          >
-            <MicrophoneIcon className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowTips(!showTips)}
-            className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
-            title="Search tips"
-          >
-            <InformationCircleIcon className="w-5 h-5" />
-          </button>
+          {minimal && onSubmit ? (
+            <button
+              type="button"
+              onClick={onSubmit}
+              className="p-1.5 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-full transition-colors"
+              title="Search"
+              aria-label="Search"
+            >
+              <MagnifyingGlassIcon className="w-5 h-5" />
+            </button>
+          ) : !minimal && (
+            <>
+              <button
+                type="button"
+                onClick={handleVoiceSearch}
+                disabled={!voiceSupported}
+                className={`p-1 transition-colors ${
+                  isListening 
+                    ? 'text-red-600 animate-pulse' 
+                    : voiceSupported
+                    ? 'text-gray-400 hover:text-primary-600'
+                    : 'text-gray-300 cursor-not-allowed opacity-50'
+                }`}
+                title={
+                  isListening 
+                    ? 'Listening... Click to stop' 
+                    : voiceSupported 
+                    ? 'Voice search' 
+                    : 'Voice search not supported in this browser'
+                }
+              >
+                <MicrophoneIcon className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTips(!showTips)}
+                className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+                title="Search tips"
+              >
+                <InformationCircleIcon className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
       

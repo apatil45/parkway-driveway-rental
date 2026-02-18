@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import MapViewDirect from '@/components/ui/MapViewDirect';
 import { useDriveways } from '@/hooks';
-import { MapPinIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { SearchDriveway } from '@/types/driveway';
 import SearchResultsPanel from '@/components/search/SearchResultsPanel';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -49,6 +49,7 @@ function SearchPageContent() {
     totalPages: 0
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
   const [searchQuery, setSearch] =useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
@@ -224,6 +225,7 @@ function SearchPageContent() {
     handleFilterChange('location', searchQuery);
     performSearch(1, nextFilters);
     updateSearchUrl(1, nextFilters);
+    setMobileSearchExpanded(false); // collapse search bar on mobile after submit
   };
 
   const handleSearch = () => {
@@ -347,6 +349,7 @@ function SearchPageContent() {
   return (
     <AppLayout showFooter={false}>
       {/* Map: full viewport (100%), starts below search bar with padding */}
+      {/* Desktop: full-viewport map (hidden on mobile; mobile uses stacked layout below) */}
       <ErrorBoundary fallback={
         <div className="fixed inset-0 z-0 flex items-center justify-center bg-gray-100" style={{ paddingTop: CONTENT_TOP_OFFSET }}>
           <div className="text-center p-6 bg-white rounded-lg shadow-lg max-w-md">
@@ -355,11 +358,11 @@ function SearchPageContent() {
           </div>
         </div>
       }>
-      <div className="fixed inset-0 z-0" style={{ paddingTop: CONTENT_TOP_OFFSET }}>
+      <div className="hidden lg:block fixed inset-0 z-0" style={{ paddingTop: CONTENT_TOP_OFFSET }}>
         <div className="absolute inset-0 bg-gray-100 overflow-hidden">
           {!emptyResults && canRenderMap ? (
             <MapViewDirect
-              key="search-map"
+              key="search-map-desktop"
               viewMode="split"
               center={mapCenter}
               markers={mapMarkers}
@@ -389,12 +392,107 @@ function SearchPageContent() {
       </div>
       </ErrorBoundary>
 
-      {/* Filters bar: overlay on top of map. Stack on very small screens to prevent overlap. */}
-      <div className="sticky top-16 z-20 bg-white border-b border-gray-200 shadow-sm">
+      {/* Mobile: map fixed on top (starts below navbar only), list scrollable below */}
+      <div className="lg:hidden" aria-label="Search results and map">
+        <section
+          id="search-map-mobile"
+          className="fixed left-0 right-0 z-0 bg-gray-100 border-b border-gray-200"
+          style={{ top: '4rem', height: '50vh' }}
+          aria-label="Map"
+        >
+          {!emptyResults && canRenderMap ? (
+            <MapViewDirect
+              key="search-map-mobile"
+              viewMode="split"
+              center={mapCenter}
+              markers={mapMarkers}
+              height="100%"
+              onMarkerClick={(id: string) => setSelectedDriveway(id)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-gray-500 h-full">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-600 mb-2">Map</div>
+                <p className="text-sm">No driveways to display on map</p>
+              </div>
+            </div>
+          )}
+        </section>
+        <div
+          id="search-list-mobile"
+          className="fixed left-0 right-0 bottom-0 overflow-y-auto bg-white z-[5]"
+          style={{ top: 'calc(4rem + 50vh)' }}
+          aria-label="Results list"
+        >
+          <SearchResultsPanel
+            open={true}
+            onClose={closeListAndReturnFocus}
+            panelRef={listPanelRef}
+            contentTopOffset={CONTENT_TOP_OFFSET}
+            isMobileView={isMobileView}
+            stacked={true}
+            emptyResults={emptyResults}
+            loading={loading}
+            driveways={drivewayList}
+            pagination={pagination}
+            selectedDrivewayId={selectedDriveway}
+            onDrivewaySelect={(id) => setSelectedDriveway(id)}
+            onPageChange={handlePageChange}
+            onShowFilters={() => setShowFilters(true)}
+            formatPrice={formatPrice}
+            renderStars={renderStars}
+            calculateDistanceKm={calculateDistanceKm}
+          />
+        </div>
+      </div>
+
+      {/* Mobile: floating search button (no white strip when collapsed); expanded = overlay bar */}
+      {!mobileSearchExpanded && (
+        <div className="lg:hidden fixed bottom-6 right-6 z-30" aria-label="Search">
+          <button
+            type="button"
+            onClick={() => setMobileSearchExpanded(true)}
+            aria-label="Open search"
+            className="flex items-center justify-center w-14 h-14 rounded-full bg-primary-600 text-white shadow-lg hover:bg-primary-700 active:bg-primary-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          >
+            <MagnifyingGlassIcon className="w-6 h-6" aria-hidden />
+          </button>
+        </div>
+      )}
+
+      {/* Search bar: hidden on mobile when collapsed (no white strip); desktop always; mobile when expanded */}
+      <div
+        className={`sticky top-16 z-20 bg-white border-b border-gray-200 shadow-sm ${!mobileSearchExpanded ? 'hidden lg:block' : 'block'}`}
+      >
         <div className="container mx-auto px-3 py-3 sm:px-4">
-          {/* Stack vertically on xs so search and List/Filters never overlap */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
-            {/* Row 1 on small screens: search input + Search button (stacked on very narrow to avoid overlap) */}
+          {/* Mobile expanded: single row — address input with search icon inside, close on right */}
+          <div className="lg:hidden flex items-center gap-2 w-full max-w-lg mx-auto">
+            <div className="flex-1 min-w-0">
+              <AddressAutocomplete
+                value={searchQuery}
+                onChange={(address) => setSearch(address)}
+                onLocationSelect={(lat, lon) => {
+                  handleFilterChange('latitude', String(lat));
+                  handleFilterChange('longitude', String(lon));
+                  performSearch(1);
+                }}
+                onSubmit={handleSearchSubmit}
+                minimal
+                placeholder="Address or place"
+                className="text-base"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileSearchExpanded(false)}
+              aria-label="Close search"
+              className="shrink-0 flex items-center justify-center w-11 h-11 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            >
+              <XMarkIcon className="w-5 h-5" aria-hidden />
+            </button>
+          </div>
+          {/* Desktop: always show full search + List + Filters */}
+          <div className="hidden lg:flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full min-w-0 sm:flex-1 sm:max-w-md">
               <div className="flex-1 min-w-0 w-full">
                 <AddressAutocomplete
@@ -412,7 +510,6 @@ function SearchPageContent() {
                 Search
               </Button>
             </div>
-            {/* Row 2 on small screens: List + Filters (own row so no overlap, full labels visible) */}
             <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
               <Button
                 type="button"
@@ -579,35 +676,38 @@ function SearchPageContent() {
         </div>
       )}
 
-      {/* List overlay - overlapping the map */}
-      <ErrorBoundary fallback={
-        <div className="fixed right-4 max-w-sm p-4 bg-white rounded-lg shadow-lg border border-gray-200 z-40" style={{ top: CONTENT_TOP_OFFSET }}>
-          <p className="text-sm text-gray-700 mb-2">Results list failed to load.</p>
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Reload</Button>
-        </div>
-      }>
-        <SearchResultsPanel
-          open={sidebarOpen}
-          onClose={closeListAndReturnFocus}
-          panelRef={listPanelRef}
-          contentTopOffset={CONTENT_TOP_OFFSET}
-          isMobileView={isMobileView}
-          emptyResults={emptyResults}
-          loading={loading}
-          driveways={drivewayList}
-          pagination={pagination}
-          selectedDrivewayId={selectedDriveway}
-          onDrivewaySelect={(id) => {
-            setSelectedDriveway(id);
-            setCanRenderMap(false);
-          }}
-          onPageChange={handlePageChange}
-          onShowFilters={() => setShowFilters(true)}
-          formatPrice={formatPrice}
-          renderStars={renderStars}
-          calculateDistanceKm={calculateDistanceKm}
-        />
-      </ErrorBoundary>
+      {/* Desktop only: list overlay overlapping the map (hidden on mobile; mobile uses stacked layout above) */}
+      <div className="hidden lg:block">
+        <ErrorBoundary fallback={
+          <div className="fixed right-4 max-w-sm p-4 bg-white rounded-lg shadow-lg border border-gray-200 z-40" style={{ top: CONTENT_TOP_OFFSET }}>
+            <p className="text-sm text-gray-700 mb-2">Results list failed to load.</p>
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Reload</Button>
+          </div>
+        }>
+          <SearchResultsPanel
+            open={sidebarOpen}
+            onClose={closeListAndReturnFocus}
+            panelRef={listPanelRef}
+            contentTopOffset={CONTENT_TOP_OFFSET}
+            isMobileView={isMobileView}
+            stacked={false}
+            emptyResults={emptyResults}
+            loading={loading}
+            driveways={drivewayList}
+            pagination={pagination}
+            selectedDrivewayId={selectedDriveway}
+            onDrivewaySelect={(id) => {
+              setSelectedDriveway(id);
+              setCanRenderMap(false);
+            }}
+            onPageChange={handlePageChange}
+            onShowFilters={() => setShowFilters(true)}
+            formatPrice={formatPrice}
+            renderStars={renderStars}
+            calculateDistanceKm={calculateDistanceKm}
+          />
+        </ErrorBoundary>
+      </div>
     </AppLayout>
   );
 }
