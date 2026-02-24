@@ -33,7 +33,8 @@ export default function ForgotPasswordPage() {
     setSuccess(false);
     setDevResetLink(null);
     try {
-      const res = await api.post<{ data?: { resetLink?: string } }>('/auth/forgot-password', { email: data.email });
+      // API returns { data: { message?, resetLink? (dev only) } }; client types res.data as { data: T }
+      const res = await api.post<{ message?: string; resetLink?: string }>('/auth/forgot-password', { email: data.email });
       setSuccess(true);
       const resetLink = res.data?.data?.resetLink;
       if (resetLink) setDevResetLink(resetLink);
