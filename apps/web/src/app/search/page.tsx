@@ -870,7 +870,7 @@ function SearchPageContent() {
                 <label className="block text-xs font-medium text-gray-700 mb-1">Sort</label>
                 <Select
                   value={filters.sort || ''}
-                  onChange={(e) => handleFilterChange('sort', e.target.value as SearchFilters['sort'])}
+                  onChange={(e) => handleFilterChange('sort', (e.target.value ?? '') as SearchFilters['sort'])}
                   className="text-sm"
                   options={[
                     { value: '', label: 'Relevance' },
