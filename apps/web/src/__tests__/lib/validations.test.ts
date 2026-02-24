@@ -132,20 +132,27 @@ describe('Validation Schemas', () => {
   });
 
   describe('createDrivewaySchema', () => {
+    const baseValidData = {
+      title: 'Downtown Parking',
+      description: 'Great spot',
+      address: '123 Main St, City, State 12345',
+      latitude: 40.7128,
+      longitude: -74.0060,
+      pricePerHour: 5.00,
+      capacity: 2,
+      carSize: ['small', 'medium'],
+      amenities: ['covered'],
+      images: ['https://example.com/image.jpg'],
+      rightToListConfirmed: true as const,
+    };
+
     it('validates correct driveway data', () => {
-      const validData = {
-        title: 'Downtown Parking',
-        description: 'Great spot',
-        address: '123 Main St, City, State 12345',
-        latitude: 40.7128,
-        longitude: -74.0060,
-        pricePerHour: 5.00,
-        capacity: 2,
-        carSize: ['small', 'medium'],
-        amenities: ['covered'],
-        images: ['https://example.com/image.jpg'],
-      };
-      expect(() => createDrivewaySchema.parse(validData)).not.toThrow();
+      expect(() => createDrivewaySchema.parse(baseValidData)).not.toThrow();
+    });
+
+    it('rejects when rightToListConfirmed is missing or false', () => {
+      expect(() => createDrivewaySchema.parse({ ...baseValidData, rightToListConfirmed: undefined })).toThrow('right to list');
+      expect(() => createDrivewaySchema.parse({ ...baseValidData, rightToListConfirmed: false })).toThrow('right to list');
     });
 
     it('rejects short title', () => {
@@ -157,6 +164,7 @@ describe('Validation Schemas', () => {
         pricePerHour: 5.00,
         capacity: 1,
         carSize: ['small'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow('at least 3 characters');
     });
@@ -170,6 +178,7 @@ describe('Validation Schemas', () => {
         pricePerHour: 5.00,
         capacity: 1,
         carSize: ['small'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow('at least 5 characters');
     });
@@ -183,6 +192,7 @@ describe('Validation Schemas', () => {
         pricePerHour: 5.00,
         capacity: 1,
         carSize: ['small'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow('Invalid latitude');
     });
@@ -196,6 +206,7 @@ describe('Validation Schemas', () => {
         pricePerHour: 5.00,
         capacity: 1,
         carSize: ['small'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow();
     });
@@ -209,6 +220,7 @@ describe('Validation Schemas', () => {
         pricePerHour: 5.00,
         capacity: 1,
         carSize: ['small'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow('Invalid longitude');
     });
@@ -222,6 +234,7 @@ describe('Validation Schemas', () => {
         pricePerHour: -5.00,
         capacity: 1,
         carSize: ['small'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow('greater than 0');
     });
@@ -235,6 +248,7 @@ describe('Validation Schemas', () => {
         pricePerHour: 0,
         capacity: 1,
         carSize: ['small'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow('greater than 0');
     });
@@ -247,6 +261,7 @@ describe('Validation Schemas', () => {
         longitude: -74.0060,
         pricePerHour: 5.00,
         capacity: 0,
+        rightToListConfirmed: true,
         carSize: ['small'],
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow('at least 1');
@@ -275,6 +290,7 @@ describe('Validation Schemas', () => {
         capacity: 1,
         carSize: ['small'],
         images: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(validData)).not.toThrow();
     });
@@ -289,6 +305,7 @@ describe('Validation Schemas', () => {
         capacity: 1,
         carSize: ['small'],
         images: ['not-a-url'],
+        rightToListConfirmed: true,
       };
       expect(() => createDrivewaySchema.parse(invalidData)).toThrow();
     });

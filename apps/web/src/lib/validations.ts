@@ -14,7 +14,7 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
     .regex(/[a-z]/, 'Password must include at least one lowercase letter')
     .regex(/\d/, 'Password must include at least one number'),
-  roles: z.array(z.enum(['DRIVER', 'OWNER', 'ADMIN'])).min(1, 'Please select at least one role'),
+  roles: z.array(z.enum(['DRIVER', 'OWNER'])).min(1, 'Please select at least one role'),
   phone: z.string().optional(),
   address: z.string().optional()
 });
@@ -30,7 +30,9 @@ export const createDrivewaySchema = z.object({
   capacity: z.number().int().min(1, 'Capacity must be at least 1 vehicle').default(1),
   carSize: z.array(z.enum(['small', 'medium', 'large', 'extra-large'])).min(1, 'Please select at least one vehicle size'),
   amenities: z.array(z.enum(['covered', 'security', 'ev_charging', 'easy_access'])).default([]),
-  images: z.array(z.string().url()).default([])
+  images: z.array(z.string().url()).default([]),
+  /** Phase 1: self-declaration that user has the right to list this space */
+  rightToListConfirmed: z.literal(true, { errorMap: () => ({ message: 'You must confirm you have the right to list this space.' }) }),
 });
 
 export const updateDrivewaySchema = createDrivewaySchema.partial().extend({
@@ -78,7 +80,8 @@ export const drivewaySearchSchema = z.object({
   priceMin: z.string().transform(Number).pipe(z.number().min(0)).optional(),
   priceMax: z.string().transform(Number).pipe(z.number().min(0)).optional(),
   carSize: z.string().optional(),
-  amenities: z.string().optional()
+  amenities: z.string().optional(),
+  sort: z.string().optional().transform((v) => (v && ['price_asc', 'price_desc', 'rating_desc', 'distance_asc'].includes(v) ? v : undefined)),
 });
 
 export const bookingQuerySchema = z.object({
@@ -98,3 +101,13 @@ export type UpdateBookingInput = z.infer<typeof updateBookingSchema>;
 export type CreateReviewInput = z.infer<typeof createReviewSchema>;
 export type DrivewaySearchParams = z.infer<typeof drivewaySearchSchema>;
 export type BookingQueryParams = z.infer<typeof bookingQuerySchema>;
+
+// Contact form validation
+export const contactSchema = z.object({
+  name: z.string().min(2, 'Please enter your name (at least 2 characters)'),
+  email: z.string().email('Please enter a valid email address'),
+  type: z.enum(['general', 'support', 'sales', 'technical']),
+  subject: z.string().min(3, 'Please enter a subject (at least 3 characters)'),
+  message: z.string().min(10, 'Please enter your message (at least 10 characters)'),
+});
+export type ContactInput = z.infer<typeof contactSchema>;

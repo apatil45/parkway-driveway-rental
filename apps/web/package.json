@@ -36,6 +36,7 @@
     "has-symbols": "^1.0.3",
     "jsonwebtoken": "^9.0.2",
     "leaflet": "^1.9.4",
+    "mapbox-gl": "^3.6.0",
     "nodemailer": "^8.0.0",
     "prisma": "^5.22.0",
     "prop-types": "^15.8.1",

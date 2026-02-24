@@ -1,0 +1,49 @@
+# Run k6 load test against hosted URL on a schedule (and optionally on workflow_dispatch).
+# Set DEPLOY_URL in repo secrets to your hosted URL, e.g. https://parkwayai.vercel.app
+name: Load test (hosted)
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 6:00 UTC
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL to test (overrides DEPLOY_URL secret)'
+        required: false
+        type: string
+
+jobs:
+  k6-load:
+    name: k6 load test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Resolve BASE_URL
+        id: url
+        run: |
+          if [ -n "${{ inputs.base_url }}" ]; then
+            echo "base_url=${{ inputs.base_url }}" >> $GITHUB_OUTPUT
+            echo "skip=false" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.DEPLOY_URL }}" ]; then
+            echo "base_url=${{ secrets.DEPLOY_URL }}" >> $GITHUB_OUTPUT
+            echo "skip=false" >> $GITHUB_OUTPUT
+          else
+            echo "No DEPLOY_URL secret or input; skipping load test"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run k6 load test
+        if: steps.url.outputs.skip != 'true'
+        run: npx k6 run tests/load/stress.js
+        env:
+          BASE_URL: ${{ steps.url.outputs.base_url }}

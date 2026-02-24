@@ -78,45 +78,37 @@ export default function SearchBar() {
 
   return (
     <div ref={searchRef} className="relative w-full max-w-md">
-      <div className="relative">
+      <div
+        className={`relative flex items-center rounded-xl border bg-gray-50 transition-colors duration-150 ${
+          isFocused
+            ? 'border-primary-300 bg-white ring-2 ring-primary-500/20'
+            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/80'
+        }`}
+      >
+        <span className="pointer-events-none pl-3.5 text-gray-400" aria-hidden>
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </span>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Search for parking..."
-          className="w-full pl-10 pr-4 py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          placeholder="Search locations..."
+          aria-label="Search for parking locations"
+          className="w-full bg-transparent py-2.5 pl-2.5 pr-10 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none"
         />
-        <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
         {query && (
           <button
-            onClick={() => {
-              setQuery('');
-              setIsFocused(false);
-            }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            type="button"
+            onClick={() => { setQuery(''); setIsFocused(false); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1"
             aria-label="Clear search"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         )}
@@ -124,98 +116,68 @@ export default function SearchBar() {
 
       {/* Dropdown */}
       {isFocused && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-          {/* Recent Searches */}
+        <div className="absolute top-full left-0 right-0 z-50 mt-2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 max-h-[min(24rem,70vh)] overflow-y-auto">
           {recentSearches.length > 0 && (
-            <div className="p-2 border-b border-gray-200">
-              <div className="flex items-center justify-between px-2 py-1">
-                <span className="text-xs font-medium text-gray-500">Recent Searches</span>
+            <div className="border-b border-gray-100 py-2">
+              <div className="flex items-center justify-between px-3 py-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Recent</span>
                 <button
+                  type="button"
                   onClick={clearRecentSearches}
-                  className="text-xs text-primary-600 hover:text-primary-700"
+                  className="text-xs font-medium text-primary-600 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 rounded"
                 >
                   Clear
                 </button>
               </div>
-              <div className="mt-1">
+              <div className="px-1">
                 {recentSearches.map((recent, index) => (
                   <button
                     key={index}
+                    type="button"
                     onClick={() => handleRecentClick(recent)}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded flex items-center gap-2"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset"
                   >
-                    <svg
-                      className="w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    {recent}
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </span>
+                    <span className="truncate">{recent}</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Quick Actions */}
-          <div className="p-2">
-            <div className="px-2 py-1">
-              <span className="text-xs font-medium text-gray-500">Quick Actions</span>
+          <div className="py-2">
+            <div className="px-3 py-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Quick actions</span>
             </div>
-            <div className="mt-1 space-y-1">
+            <div className="px-1 space-y-0.5">
               <button
-                onClick={() => {
-                  setQuery('');
-                  router.push('/search');
-                  setIsFocused(false);
-                }}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded flex items-center gap-2"
+                type="button"
+                onClick={() => { setQuery(''); router.push('/search'); setIsFocused(false); }}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-primary-50 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset"
               >
-                <svg
-                  className="w-4 h-4 text-primary-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                Browse All Parking
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+                Browse all driveways
               </button>
               {isAuthenticated && (
                 <button
-                  onClick={() => {
-                    setQuery('');
-                    router.push('/driveways/new');
-                    setIsFocused(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded flex items-center gap-2"
+                  type="button"
+                  onClick={() => { setQuery(''); router.push('/driveways/new'); setIsFocused(false); }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-primary-50 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset"
                 >
-                  <svg
-                    className="w-4 h-4 text-primary-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  List Your Driveway
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </span>
+                  List driveway
                 </button>
               )}
             </div>

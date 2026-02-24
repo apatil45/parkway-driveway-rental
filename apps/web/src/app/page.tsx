@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout';
 import { Card, LoadingSpinner, AddressAutocomplete, ImageWithPlaceholder } from '@/components/ui';
@@ -41,6 +42,7 @@ export default function Home() {
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [testimonialsLoading, setTestimonialsLoading] = useState(true);
   const [searchLocation, setSearchLocation] = useState('');
+  const [searchCoords, setSearchCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   const isOwner = user?.roles.includes('OWNER');
   const isDriver = user?.roles.includes('DRIVER');
@@ -77,11 +79,20 @@ export default function Home() {
   }, []);
 
   const handleSearch = (lat: number, lon: number) => {
+    setSearchCoords({ lat, lon });
     router.push(`/search?latitude=${lat}&longitude=${lon}`);
   };
 
   const handleLocationInputChange = (value: string) => {
     setSearchLocation(value);
+  };
+
+  const handleSearchSubmit = () => {
+    if (searchCoords) {
+      router.push(`/search?latitude=${searchCoords.lat}&longitude=${searchCoords.lon}`);
+    } else {
+      router.push(searchLocation ? `/search?location=${encodeURIComponent(searchLocation)}` : '/search');
+    }
   };
 
   // Only wait for auth to load, not stats (stats can load in background)
@@ -114,44 +125,60 @@ export default function Home() {
     return (
       <AppLayout showFooter={false}>
         <main className="min-h-screen">
-          {/* Personalized Hero Section - Enhanced */}
-          <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              }}></div>
-            </div>
-            
-            <div className="container relative py-20 md:py-24">
-              <div className="max-w-5xl mx-auto">
-                <div className="text-center mb-10">
-                  <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                    Welcome back, {user.name?.split(' ')[0]}!
+          {/* Hero: clean strip with headline + search block + hero image */}
+          <section className="bg-white border-b border-gray-200">
+            <div className="container py-8 md:py-10">
+              <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+                <div className="max-w-md">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
+                    Welcome back, {user.name?.split(' ')[0]}
                   </h1>
-                  <p className="text-xl md:text-2xl mb-8 text-primary-100">
+                  <p className="text-gray-600 mb-6">
                     {isOwner && isDriver
                       ? 'Find parking or manage your driveways'
                       : isOwner
                       ? 'Manage your driveways and earnings'
-                      : 'Find the perfect parking spot near you'}
+                      : 'Find a driveway near you'}
                   </p>
-                </div>
-                
-                {/* Prominent Search */}
-                <div className="max-w-3xl mx-auto">
-                  <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-                      Where do you need parking?
-                    </h2>
+                  {/* Search block: location + CTA */}
+                  <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 md:p-5 shadow-sm">
+                    <p className="text-sm font-medium text-gray-700 mb-3">Where do you need parking?</p>
                     <AddressAutocomplete
                       value={searchLocation}
                       onChange={handleLocationInputChange}
                       onLocationSelect={handleSearch}
                       placeholder="Enter address, city, or landmark..."
                       className="w-full"
+                      variant="hero"
                     />
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={handleSearchSubmit}
+                        className="btn btn-primary min-h-[44px] flex-1 min-w-0 inline-flex items-center justify-center"
+                      >
+                        Search driveway
+                      </button>
+                      {isOwner && (
+                        <Link
+                          href="/driveways/new"
+                          className="btn btn-outline min-h-[44px] flex-1 min-w-0 inline-flex items-center justify-center"
+                        >
+                          List driveway
+                        </Link>
+                      )}
+                    </div>
                   </div>
+                </div>
+                <div className="relative hidden md:block aspect-[4/3] max-h-[280px] lg:max-h-[320px] rounded-xl overflow-hidden bg-gray-100">
+                  <Image
+                    src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80"
+                    alt="Car parked in a driveway — find or list parking near you"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 0px, 50vw"
+                    priority
+                  />
                 </div>
               </div>
             </div>
@@ -312,50 +339,62 @@ export default function Home() {
   return (
     <AppLayout showFooter={false}>
       <main className="min-h-screen">
-        {/* Hero Section - Enhanced with Search */}
-        <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}></div>
-          </div>
-          
-          <div className="container relative py-20 md:py-32">
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-12">
-                <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                  Park Smarter,<br />Earn Easier
+        {/* Hero: headline + search block + hero image */}
+        <section className="bg-white border-b border-gray-200">
+          <div className="container py-10 md:py-14">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="max-w-md order-2 md:order-1">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                  Driveway parking, made simple
                 </h1>
-                <p className="text-xl md:text-2xl mb-8 text-primary-100 max-w-3xl mx-auto">
-                  The leading platform connecting drivers with available parking spaces. 
-                  Find convenient parking or turn your driveway into passive income.
+                <p className="text-gray-600 mb-8">
+                  Find a spot near you or earn from your driveway. No hassle.
                 </p>
-              </div>
-              
-              {/* Prominent Search Bar */}
-              <div className="max-w-3xl mx-auto mb-8">
-                <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4 text-center">
-                    Find parking near your destination
-                  </h2>
+                {/* Search block */}
+                <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 md:p-5 shadow-sm">
+                  <p className="text-sm font-medium text-gray-700 mb-3">Where do you need parking?</p>
                   <AddressAutocomplete
                     value={searchLocation}
                     onChange={handleLocationInputChange}
                     onLocationSelect={handleSearch}
                     placeholder="Enter address, city, or landmark..."
                     className="w-full"
+                    variant="hero"
                   />
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSearchSubmit}
+                      className="btn btn-primary min-h-[44px] flex-1 min-w-0 inline-flex items-center justify-center"
+                    >
+                      Find driveways
+                    </button>
+                    <Link
+                      href="/search"
+                      className="btn btn-outline min-h-[44px] flex-1 min-w-0 inline-flex items-center justify-center"
+                    >
+                      Browse all
+                    </Link>
+                  </div>
+                </div>
+                <div className="mt-6 flex flex-wrap gap-3 justify-center">
+                  <Link href="/register" className="btn btn-primary min-h-[44px] px-6">
+                    Get started free
+                  </Link>
+                  <Link href="/pricing" className="btn btn-outline min-h-[44px] px-6 inline-flex items-center justify-center">
+                    View pricing
+                  </Link>
                 </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/register" className="inline-flex items-center justify-center rounded-lg text-base font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-primary-600 hover:bg-gray-50 px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                  Get Started Free
-                </Link>
-                <Link href="/pricing" className="inline-flex items-center justify-center rounded-lg text-base font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4">
-                  View Pricing
-                </Link>
+              <div className="relative hidden md:block aspect-[4/3] max-h-[280px] lg:max-h-[320px] rounded-xl overflow-hidden bg-gray-100 order-1 md:order-2">
+                <Image
+                  src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80"
+                  alt="Car parked in a driveway — find or list parking near you"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 0px, 50vw"
+                  priority
+                />
               </div>
             </div>
           </div>
@@ -400,7 +439,11 @@ export default function Home() {
                   <div className="text-gray-600 font-medium">Average Rating</div>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-500 text-sm">Platform stats will appear here soon.</p>
+              </div>
+            )}
           </div>
         </section>
 

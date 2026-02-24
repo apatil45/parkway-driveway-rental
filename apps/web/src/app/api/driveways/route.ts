@@ -26,8 +26,15 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const { page, limit, location, priceMin, priceMax, carSize, amenities } = validationResult.data as any;
+    const { page, limit, location, priceMin, priceMax, carSize, amenities, sort } = validationResult.data as any;
     const skip = (page - 1) * limit;
+
+    // orderBy: price_asc/price_desc server-side; rating_desc applied after aggregating ratings
+    const orderBy = (() => {
+      if (sort === 'price_asc') return { pricePerHour: 'asc' as const };
+      if (sort === 'price_desc') return { pricePerHour: 'desc' as const };
+      return { createdAt: 'desc' as const };
+    })();
 
     // Build where clause
     const where: any = {
@@ -98,26 +105,29 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: {
-          createdAt: 'desc'
-        }
+        orderBy,
       }),
       prisma.driveway.count({ where })
     ]);
 
-    // Calculate average ratings (using aggregation when possible)
+    // Calculate average ratings and shape public response (omit internal fields)
     let drivewaysWithRatings = driveways.map((driveway: any) => {
       const reviewCount = driveway.reviews.length;
       const averageRating = reviewCount > 0
         ? driveway.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / reviewCount
         : 0;
-      
+      const { rightToListConfirmedAt, ...rest } = driveway;
       return {
-        ...driveway,
+        ...rest,
         averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
         reviewCount
       };
     });
+
+    // Client-requested sort by rating (must run after we have averageRating)
+    if (sort === 'rating_desc') {
+      drivewaysWithRatings = drivewaysWithRatings.sort((a: any, b: any) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
+    }
 
     // Apply radius filter if provided (optimized calculation)
     if (lat && lon && rad) {
@@ -201,7 +211,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, description, address, pricePerHour, capacity, amenities, images, latitude, longitude, carSize }: CreateDrivewayInput = validationResult.data;
+    const { title, description, address, pricePerHour, capacity, amenities, images, latitude, longitude, carSize } = validationResult.data;
 
     // Validate minimum price per hour
     // To ensure 10-minute bookings meet $0.50 minimum, pricePerHour must be at least ~$3.00/hour
@@ -232,6 +242,7 @@ export async function POST(request: NextRequest) {
         isActive: true,
         isAvailable: true,
         ownerId: userId,
+        rightToListConfirmedAt: new Date(),
       },
       select: {
         id: true,

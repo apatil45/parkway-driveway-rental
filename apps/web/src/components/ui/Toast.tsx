@@ -58,12 +58,23 @@ export function useToast() {
 function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast: (id: string) => void }) {
   if (toasts.length === 0) return null;
 
+  const closeAll = () => {
+    toasts.forEach((t) => removeToast(t.id));
+  };
+
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md w-full">
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
-      ))}
-    </div>
+    <>
+      <div
+        className="fixed inset-0 z-40"
+        onClick={closeAll}
+        aria-hidden="true"
+      />
+      <div className="fixed top-4 right-4 z-50 space-y-2 w-fit max-w-[min(24rem,100vw-2rem)]">
+        {toasts.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -76,7 +87,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   }, []);
 
   const getToastStyles = () => {
-    const base = 'rounded-lg shadow-lg p-4 mb-2 transition-all duration-300 flex items-start gap-3';
+    const base = 'rounded-lg shadow-lg px-4 py-3 transition-all duration-300 flex items-start gap-3 w-fit';
     
     const typeStyles = {
       success: 'bg-green-50 border border-green-200 text-green-800',

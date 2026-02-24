@@ -643,12 +643,13 @@ export default function DrivewayDetailsPage() {
                   <p className="text-gray-600 mb-4">
                     Ready to book this driveway? Click below to start your reservation.
                   </p>
-                  <button
+                  <Button
                     onClick={() => setShowBookingForm(true)}
-                    className="btn btn-primary w-full min-h-[48px] text-base"
+                    className="w-full"
+                    size="lg"
                   >
                     Book Now
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <form onSubmit={handleBookingSubmit} className="space-y-4">
@@ -836,20 +837,24 @@ export default function DrivewayDetailsPage() {
                   </div>
 
                   <div className="flex space-x-2">
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
                       onClick={() => setShowBookingForm(false)}
-                      className="btn btn-secondary flex-1 min-h-[48px] text-base"
+                      className="flex-1"
+                      size="lg"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
                       disabled={bookingLoading || authLoading}
-                      className="btn btn-primary flex-1 min-h-[48px] text-base"
+                      loading={bookingLoading}
+                      className="flex-1"
+                      size="lg"
                     >
-                      {bookingLoading ? 'Booking...' : 'Confirm Booking'}
-                    </button>
+                      Confirm Booking
+                    </Button>
                   </div>
                 </form>
               )}

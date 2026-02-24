@@ -1,4 +1,5 @@
 import React from 'react';
+import Button from './Button';
 
 interface ErrorMessageProps {
   title?: string;
@@ -7,11 +8,11 @@ interface ErrorMessageProps {
   className?: string;
 }
 
-export default function ErrorMessage({ 
-  title = 'Error', 
-  message, 
-  onRetry, 
-  className = '' 
+export default function ErrorMessage({
+  title = 'Error',
+  message,
+  onRetry,
+  className = ''
 }: ErrorMessageProps) {
   return (
     <div className={`text-center ${className}`}>
@@ -31,14 +32,11 @@ export default function ErrorMessage({
         </svg>
       </div>
       <h2 className="mt-4 text-2xl font-bold text-red-600">{title}</h2>
-      <p className="mt-2 text-gray-600">{message}</p>
+      <p className="mt-2 text-gray-700">{message}</p>
       {onRetry && (
-        <button
-          onClick={onRetry}
-          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-        >
+        <Button variant="primary" onClick={onRetry} className="mt-4">
           Try Again
-        </button>
+        </Button>
       )}
     </div>
   );

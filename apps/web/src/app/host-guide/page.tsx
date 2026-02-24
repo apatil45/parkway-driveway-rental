@@ -38,7 +38,7 @@ export default function HostGuidePage() {
         </div>
         <div className="text-center">
           <Link href="/driveways/new">
-            <Button>List your driveway</Button>
+            <Button>List driveway</Button>
           </Link>
         </div>
       </div>

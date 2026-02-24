@@ -353,7 +353,11 @@ export default function BookingsPage() {
             <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p>{error}</p>
+            <div>
+              <p className="font-medium">Couldn&apos;t load bookings</p>
+              <p className="text-sm mt-1">{error}</p>
+              <p className="text-sm mt-2 text-red-700/90">Check your connection and try again, or refresh the page.</p>
+            </div>
           </div>
         )}
 
@@ -376,7 +380,7 @@ export default function BookingsPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {bookings.map((booking) => {
               const thumb = booking.driveway.images?.[0];
               const durationHours = Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / (1000 * 60 * 60));
@@ -403,7 +407,7 @@ export default function BookingsPage() {
                       )}
                     </div>
 
-                    <div className="flex-1 p-4 sm:p-5 flex flex-col gap-3">
+                    <div className="flex-1 p-3 sm:p-4 flex flex-col gap-2 sm:gap-3">
                       {/* Title, one-line date, price, status */}
                       <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start">
                         <div className="min-w-0">
@@ -599,7 +603,11 @@ export default function BookingsPage() {
 
         {/* Pagination: large touch targets on mobile */}
         {pagination.totalPages > 1 && (
-          <nav className="mt-8 flex flex-wrap justify-center gap-2" aria-label="Bookings pagination">
+          <nav className="mt-8" aria-label="Bookings pagination">
+            <p className="text-center text-sm text-gray-600 mb-2">
+              Page {pagination.page} of {pagination.totalPages}
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
             <button
               type="button"
               onClick={() => fetchBookings(pagination.page - 1)}
@@ -634,6 +642,7 @@ export default function BookingsPage() {
             >
               Next
             </button>
+            </div>
           </nav>
         )}
 

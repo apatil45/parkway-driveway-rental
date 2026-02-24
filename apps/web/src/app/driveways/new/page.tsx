@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, Input, Button, ImageUpload, AddressAutocomplete, ErrorDisplay } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
@@ -24,6 +25,7 @@ export default function NewDrivewayPage() {
     latitude: 0,
     longitude: 0
   });
+  const [rightToListConfirmed, setRightToListConfirmed] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +36,9 @@ export default function NewDrivewayPage() {
         throw new Error('Please select an address from the suggestions');
       }
       
+      if (!rightToListConfirmed) {
+        throw new Error('Please confirm you have the right to list this space.');
+      }
       await api.post('/driveways', {
         title: form.title,
         address: form.address,
@@ -44,6 +49,7 @@ export default function NewDrivewayPage() {
         images: form.images || [],
         amenities: form.amenities ? form.amenities.split(',').map(s => s.trim()) : [],
         carSize: ['small', 'medium', 'large', 'extra-large'], // Default to all sizes
+        rightToListConfirmed: true,
       });
       showToast('Driveway created successfully!', 'success');
       router.push('/driveways');
@@ -84,8 +90,26 @@ export default function NewDrivewayPage() {
               disabled={loading}
             />
             <Input label="Amenities (comma-separated)" value={form.amenities} onChange={(e) => setForm({ ...form, amenities: e.target.value })} />
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rightToListConfirmed}
+                  onChange={(e) => setRightToListConfirmed(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  disabled={loading}
+                />
+                <span className="text-sm text-gray-700">
+                  I have the right to list this space as the owner, tenant, or authorized manager. I have read and agree to the{' '}
+                  <Link href="/terms" className="text-primary-600 hover:text-primary-700 font-medium underline">
+                    terms of service
+                  </Link>
+                  .
+                </span>
+              </label>
+            </div>
             <div className="flex justify-end">
-              <Button type="submit" loading={loading}>Create</Button>
+              <Button type="submit" loading={loading} disabled={!rightToListConfirmed}>Create</Button>
             </div>
           </form>
         </Card>

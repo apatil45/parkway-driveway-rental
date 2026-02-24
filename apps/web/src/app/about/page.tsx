@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, LoadingSpinner } from '@/components/ui';
 import api from '@/lib/api-client';
+import { AppLayout } from '@/components/layout';
 
 interface PublicStats {
   totalUsers: number;
@@ -33,28 +34,8 @@ export default function AboutPage() {
     fetchStats();
   }, []);
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <a href="/" className="text-2xl font-bold text-primary-600">
-                Parkway
-              </a>
-            </div>
-            <div className="flex items-center space-x-4">
-              <a href="/login" className="text-gray-500 hover:text-gray-900">
-                Sign In
-              </a>
-              <a href="/register" className="btn btn-primary">
-                Sign Up
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <AppLayout>
+      <div className="bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
@@ -217,47 +198,7 @@ export default function AboutPage() {
           </div>
         </Card>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Parkway</h3>
-              <p className="text-gray-400">
-                The easiest way to find and rent driveways.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold mb-4">For Drivers</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="/search" className="hover:text-white">Find Parking</a></li>
-                <li><a href="/about" className="hover:text-white">How It Works</a></li>
-                <li><a href="/pricing" className="hover:text-white">Pricing</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold mb-4">For Owners</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="/register" className="hover:text-white">List Your Driveway</a></li>
-                <li><a href="/earnings" className="hover:text-white">Earnings</a></li>
-                <li><a href="/host-guide" className="hover:text-white">Host Guide</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="/help" className="hover:text-white">Help Center</a></li>
-                <li><a href="/contact" className="hover:text-white">Contact Us</a></li>
-                <li><a href="/privacy" className="hover:text-white">Privacy Policy</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Parkway. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

@@ -15,6 +15,8 @@
     "test": "cd apps/web && npm run test",
     "test:unit": "cd apps/web && npm run test",
     "test:e2e": "npx playwright test",
+    "test:load": "npx k6 run tests/load/stress.js",
+    "test:load:smoke": "npx k6 run tests/load/smoke.js",
     "test:api": "cd tests/api && node -r ts-node/register api-integration.test.ts || echo 'API tests require server running'",
     "test:all": "npm run test:unit && npm run test:e2e",
     "test:coverage": "cd apps/web && npm run test:coverage",
@@ -24,6 +26,7 @@
     "postinstall": "npm run db:generate",
     "db:generate": "cd packages/database && prisma generate",
     "db:migrate": "cd packages/database && prisma migrate dev",
+    "db:deploy": "cd packages/database && prisma migrate deploy",
     "db:seed": "cd packages/database && prisma db seed",
     "db:studio": "cd packages/database && prisma studio",
     "db:push": "cd packages/database && prisma db push",
@@ -31,6 +34,7 @@
     "fix:stripe-deps": "npm install es-errors es-object-atoms call-bind-apply-helpers get-intrinsic get-proto dunder-proto has-symbols call-bind side-channel side-channel-weakmap --ignore-scripts"
   },
   "devDependencies": {
+    "@babel/helper-string-parser": "^7.24.0",
     "@playwright/test": "^1.56.1",
     "@turbo/gen": "^1.10.12",
     "@types/node": "^20.8.0",

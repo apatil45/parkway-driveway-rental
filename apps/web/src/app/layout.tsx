@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ToastProvider } from '@/components/ui/Toast'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import Analytics from '@/components/Analytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased` }>
+        <Analytics />
         <ErrorBoundary>
           <ToastProvider>
             <div className="min-h-screen bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))]">

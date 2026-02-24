@@ -155,6 +155,11 @@ jobs:
         env:
           BASE_URL: http://localhost:3000
 
+      - name: Run k6 smoke test
+        run: npx k6 run tests/load/smoke.js
+        env:
+          BASE_URL: http://localhost:3000
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v3

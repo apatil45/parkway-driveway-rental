@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-/** Known path segments → friendly labels */
+
 const SEGMENT_LABELS: Record<string, string> = {
   bookings: 'Bookings',
   booking: 'Booking',
@@ -20,6 +20,12 @@ const SEGMENT_LABELS: Record<string, string> = {
   pricing: 'Pricing',
   about: 'About',
   contact: 'Contact',
+  help: 'Help',
+  earnings: 'Earnings',
+  privacy: 'Privacy',
+  'forgot-password': 'Forgot password',
+  'reset-password': 'Reset password',
+  'host-guide': 'Host guide',
 };
 
 /** Heuristic: segment looks like an ID (cuid/uuid style) */
@@ -50,25 +56,33 @@ export default function Breadcrumbs() {
   }
 
   const paths = pathname.split('/').filter(Boolean);
-  if (paths.length <= 1) return null;
+  if (paths.length === 0) return null;
 
-  const items: { href: string; label: string; isLast: boolean }[] = [
-    { href: '/', label: 'Home', isLast: false },
+  const items: { href: string; label: string; isLast: boolean; isLink: boolean }[] = [
+    { href: '/', label: 'Home', isLast: false, isLink: true },
   ];
 
   paths.forEach((segment, index) => {
     const href = '/' + paths.slice(0, index + 1).join('/');
     const parent = index > 0 ? paths[index - 1] : null;
     const label = getSegmentLabel(segment, parent);
+    const isLast = index === paths.length - 1;
+    const nextSegment = index + 1 < paths.length ? paths[index + 1] : null;
+    // Don't link ID segments when the next segment is a known child route with no detail page
+    const isIdWithNoDetailPage = looksLikeId(segment) && (nextSegment === 'navigate' || nextSegment === 'edit');
+    // Don't link "driveway" when next segment is an ID – /driveway has no page, only /driveway/[id]
+    const isDrivewayWithIdChild = segment.toLowerCase() === 'driveway' && nextSegment && looksLikeId(nextSegment);
+    const isLink = !isLast && !isIdWithNoDetailPage && !isDrivewayWithIdChild;
     items.push({
       href,
       label,
-      isLast: index === paths.length - 1,
+      isLast,
+      isLink,
     });
   });
 
   return (
-    <nav className="bg-gray-50 border-b border-gray-200" aria-label="Breadcrumb">
+    <nav className="relative z-10 bg-gray-50 border-b border-gray-200" aria-label="Breadcrumb">
       <div className="container mx-auto px-4 py-3">
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           {items.map((crumb, index) => (
@@ -87,8 +101,11 @@ export default function Breadcrumbs() {
                   />
                 </svg>
               )}
-              {crumb.isLast ? (
-                <span className="text-gray-900 font-medium" aria-current="page">
+              {crumb.isLast || !crumb.isLink ? (
+                <span
+                  className={crumb.isLast ? 'text-gray-900 font-medium' : 'text-gray-500'}
+                  aria-current={crumb.isLast ? 'page' : undefined}
+                >
                   {crumb.label}
                 </span>
               ) : (

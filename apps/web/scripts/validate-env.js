@@ -51,6 +51,8 @@ const requiredVars = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: 'Supabase anonymous key (optional)',
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'Stripe publishable key (optional)',
   NEXT_PUBLIC_SOCKET_URL: 'WebSocket URL (optional, for real-time)',
+  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: 'Mapbox access token (optional, for custom map style)',
+  NEXT_PUBLIC_GA_MEASUREMENT_ID: 'Google Analytics 4 measurement ID e.g. G-XXXXXXXXXX (optional, production only)',
   
   // Other
   FRONTEND_URL: 'Frontend URL for callbacks (optional)',

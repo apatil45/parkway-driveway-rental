@@ -38,7 +38,6 @@ import {
   ClockIcon, 
   StarIcon, 
   InformationCircleIcon,
-  XMarkIcon,
   BuildingOfficeIcon,
   HomeIcon,
   BriefcaseIcon,
@@ -220,18 +219,12 @@ function deleteFavoriteLocation(id: string) {
   }
 }
 
-// Get nearby places
+// Get nearby places via our API (avoids CORS / Nominatim 403 from browser)
 async function getNearbyPlaces(lat: number, lon: number): Promise<AddressSuggestion[]> {
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1&countrycodes=us`,
-      {
-        headers: {
-          'User-Agent': 'Parkway Driveway Rental Platform',
-        },
-      }
+      `/api/geocode/reverse?lat=${lat}&lon=${lon}`
     );
-    
     if (response.ok) {
       const data = await response.json();
       if (data.display_name) {
@@ -268,12 +261,7 @@ async function searchPOIs(query: string, userLocation: { lat: number; lon: numbe
     }
     
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&addressdetails=1&countrycodes=us`,
-      {
-        headers: {
-          'User-Agent': 'Parkway Driveway Rental Platform',
-        },
-      }
+      `/api/geocode/search?q=${encodeURIComponent(searchQuery)}&limit=5&bounded=0`
     );
     
     if (response.ok) {
@@ -472,6 +460,8 @@ interface AddressAutocompleteProps {
   disabled?: boolean;
   className?: string;
   minimal?: boolean;
+  /** Hero style: softer border, rounded-xl, more padding (e.g. homepage search block) */
+  variant?: 'default' | 'hero';
   userLocationProp?: { lat: number; lon: number };
 }
 
@@ -486,6 +476,7 @@ export default function AddressAutocomplete({
   disabled = false,
   className = '',
   minimal = false,
+  variant = 'default',
   userLocationProp,
 }: AddressAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -495,7 +486,6 @@ export default function AddressAutocomplete({
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [nearbyPlaces, setNearbyPlaces] = useState<AddressSuggestion[]>([]);
   const [favorites, setFavorites] = useState<FavoriteLocation[]>([]);
-  const [showTips, setShowTips] = useState(false);
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [cachedResults, setCachedResults] = useState<AddressSuggestion[]>([]);
@@ -815,14 +805,9 @@ export default function AddressAutocomplete({
       // Try POI search first if applicable
       const poiResults = await searchPOIs(query, userLocation);
       
-      // Regular address search
+      // Regular address search via our API (avoids CORS / Nominatim 403)
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1&bounded=1&countrycodes=us`,
-        {
-          headers: {
-            'User-Agent': 'Parkway Driveway Rental Platform',
-          },
-        }
+        `/api/geocode/search?q=${encodeURIComponent(query)}&limit=10&bounded=1`
       );
       
       if (response.ok) {
@@ -1215,11 +1200,15 @@ export default function AddressAutocomplete({
           placeholder={displayPlaceholder}
           required={required}
           disabled={disabled}
-          className={`w-full py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${minimal ? 'pl-10 pr-12' : 'pl-10 pr-24'}`}
+          className={`w-full text-sm bg-white text-gray-900 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed ${minimal ? 'pl-10 pr-12' : 'pl-10 pr-14'} ${
+            variant === 'hero'
+              ? 'py-2.5 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300'
+              : 'py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent'
+          }`}
         />
-        <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <MapPinIcon className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 ${variant === 'hero' ? 'left-3.5' : 'left-3'}`} />
         
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 ${variant === 'hero' ? 'right-3' : 'right-2'}`}>
           {loading && (
             <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
           )}
@@ -1234,37 +1223,27 @@ export default function AddressAutocomplete({
               <MagnifyingGlassIcon className="w-5 h-5" />
             </button>
           ) : !minimal && (
-            <>
-              <button
-                type="button"
-                onClick={handleVoiceSearch}
-                disabled={!voiceSupported}
-                className={`p-1 transition-colors ${
-                  isListening 
-                    ? 'text-red-600 animate-pulse' 
-                    : voiceSupported
-                    ? 'text-gray-400 hover:text-primary-600'
-                    : 'text-gray-300 cursor-not-allowed opacity-50'
-                }`}
-                title={
-                  isListening 
-                    ? 'Listening... Click to stop' 
-                    : voiceSupported 
-                    ? 'Voice search' 
-                    : 'Voice search not supported in this browser'
-                }
-              >
-                <MicrophoneIcon className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowTips(!showTips)}
-                className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
-                title="Search tips"
-              >
-                <InformationCircleIcon className="w-5 h-5" />
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleVoiceSearch}
+              disabled={!voiceSupported}
+              className={`p-1 transition-colors ${
+                isListening 
+                  ? 'text-red-600 animate-pulse' 
+                  : voiceSupported
+                  ? 'text-gray-400 hover:text-primary-600'
+                  : 'text-gray-300 cursor-not-allowed opacity-50'
+              }`}
+              title={
+                isListening 
+                  ? 'Listening... Click to stop' 
+                  : voiceSupported 
+                  ? 'Voice search' 
+                  : 'Voice search not supported in this browser'
+              }
+            >
+              <MicrophoneIcon className="w-5 h-5" />
+            </button>
           )}
         </div>
       </div>
@@ -1310,29 +1289,6 @@ export default function AddressAutocomplete({
           >
             {fuzzySuggestion}
           </button>
-        </div>
-      )}
-      
-      {/* Search Tips Tooltip */}
-      {showTips && (
-        <div className="absolute z-50 mt-1 p-3 bg-white border border-gray-200 rounded-md shadow-lg max-w-xs">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-900">Search Tips</h3>
-            <button
-              onClick={() => setShowTips(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <XMarkIcon className="w-4 h-4" />
-            </button>
-          </div>
-          <ul className="text-xs text-gray-600 space-y-1">
-            <li>• Search by address or landmark name</li>
-            <li>• Try "near [landmark]" for POI search</li>
-            <li>• Use favorites for quick access</li>
-            <li>• Click map icon to pick location visually</li>
-            {recognitionRef.current && <li>• Use microphone for voice search</li>}
-            <li>• Smart suggestions based on time of day</li>
-          </ul>
         </div>
       )}
       

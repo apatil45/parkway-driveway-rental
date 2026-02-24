@@ -6,7 +6,7 @@ import Link from 'next/link';
 import api from '@/lib/api-client';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
-import { ImageWithPlaceholder } from '@/components/ui';
+import { Button, ImageWithPlaceholder } from '@/components/ui';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import { HeartIcon } from '@heroicons/react/24/outline';
 
@@ -139,28 +139,31 @@ export default function FavoritesPage() {
 
           {!loading && error && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-700">
-              {error}
+              <p className="font-medium">Couldn&apos;t load favorites</p>
+              <p className="text-sm mt-1">{error}</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => window.location.reload()}>
+                Try again
+              </Button>
             </div>
           )}
 
           {!loading && !error && favorites.length === 0 && (
-            <div className="text-center py-12 rounded-lg border border-gray-200 bg-gray-50">
-              <HeartIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">No favorites yet</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Save driveways from the search or driveway page to see them here!
+            <div className="text-center py-12 rounded-xl border border-[color:rgb(var(--color-border))] bg-[color:rgb(var(--color-surface))] shadow-sm">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <HeartIcon className="w-7 h-7 text-gray-500" aria-hidden />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No favorites yet</h3>
+              <p className="text-gray-600 text-sm mb-6 max-w-sm mx-auto">
+                Save driveways from search or a listing page to see them here.
               </p>
-              <Link
-                href="/search"
-                className="inline-block mt-4 text-primary-600 hover:text-primary-700 font-medium"
-              >
-                Browse driveways →
+              <Link href="/search" className="btn btn-primary inline-flex items-center justify-center min-h-[44px] px-6">
+                Browse driveways
               </Link>
             </div>
           )}
 
           {!loading && !error && favorites.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {favorites.map((fav) => {
                 const d = fav.driveway;
                 const rating = averageRating(d.reviews);
@@ -171,15 +174,15 @@ export default function FavoritesPage() {
                     className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                   >
                     <div className="flex">
-                      <Link href={`/driveway/${d.id}`} className="w-32 sm:w-40 flex-shrink-0 block">
+                      <Link href={`/driveway/${d.id}`} className="w-28 sm:w-36 flex-shrink-0 block">
                         <ImageWithPlaceholder
                           src={d.images?.length ? d.images[0] : ''}
                           alt={d.title}
-                          className="w-full h-28 sm:h-32 object-cover"
+                          className="w-full h-24 sm:h-28 object-cover"
                           fallbackText={(d.title?.charAt(0) ?? '?').toUpperCase()}
                         />
                       </Link>
-                      <div className="flex-1 p-4 flex flex-col">
+                      <div className="flex-1 p-3 sm:p-4 flex flex-col">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <Link
@@ -198,7 +201,7 @@ export default function FavoritesPage() {
                             }}
                           />
                         </div>
-                        <div className="mt-2 flex items-center gap-3 text-sm">
+                        <div className="mt-1.5 flex items-center gap-3 text-sm">
                           <span className="font-semibold text-primary-600">
                             {formatPrice(d.pricePerHour)}/hr
                           </span>
@@ -210,7 +213,7 @@ export default function FavoritesPage() {
                           )}
                         </div>
                         {d.amenities?.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
+                          <div className="mt-1.5 flex flex-wrap gap-1">
                             {d.amenities.slice(0, 3).map((a) => (
                               <span
                                 key={a}

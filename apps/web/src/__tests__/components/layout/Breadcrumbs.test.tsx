@@ -91,12 +91,13 @@ describe('Breadcrumbs Component', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('does not render on single-segment paths', () => {
+  it('renders on single-segment paths (e.g. Home > Search)', () => {
     mockUsePathname.mockReturnValue('/search');
     
-    const { container } = render(<Breadcrumbs />);
+    render(<Breadcrumbs />);
     
-    expect(container.firstChild).toBeNull();
+    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByText('Search')).toBeInTheDocument();
   });
 
   it('formats unknown path segments with title case', () => {

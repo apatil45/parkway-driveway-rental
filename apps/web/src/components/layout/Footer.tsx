@@ -8,7 +8,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Parkway</h3>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-300 text-sm">
               The easiest way to find and rent driveways.
             </p>
           </div>
@@ -16,7 +16,7 @@ export default function Footer() {
           {/* For Drivers */}
           <div>
             <h4 className="font-semibold mb-4">For Drivers</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
+            <ul className="space-y-2 text-gray-300 text-sm">
               <li>
                 <Link href="/search" className="hover:text-white transition-colors">
                   Find Parking
@@ -38,7 +38,7 @@ export default function Footer() {
           {/* For Owners */}
           <div>
             <h4 className="font-semibold mb-4">For Owners</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
+            <ul className="space-y-2 text-gray-300 text-sm">
               <li>
                 <Link href="/driveways/new" className="hover:text-white transition-colors">
                   List Your Driveway
@@ -60,7 +60,7 @@ export default function Footer() {
           {/* Support */}
           <div>
             <h4 className="font-semibold mb-4">Support</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
+            <ul className="space-y-2 text-gray-300 text-sm">
               <li>
                 <Link href="/help" className="hover:text-white transition-colors">
                   Help Center
@@ -76,12 +76,17 @@ export default function Footer() {
                   Pricing
                 </Link>
               </li>
+              <li>
+                <Link href="/privacy" className="hover:text-white transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
 
         {/* Copyright */}
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
+        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-300 text-sm">
           <p>&copy; {new Date().getFullYear()} Parkway. All rights reserved.</p>
         </div>
       </div>

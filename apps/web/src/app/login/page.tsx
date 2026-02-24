@@ -76,6 +76,11 @@ function LoginForm() {
             error={errors.password?.message}
             {...register('password')}
           />
+          <div className="flex justify-end">
+            <Link href="/forgot-password" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+              Forgot password?
+            </Link>
+          </div>
         </div>
 
         <Button
