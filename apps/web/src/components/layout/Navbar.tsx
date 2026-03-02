@@ -7,11 +7,12 @@ import { useAuth } from '@/hooks';
 import UserMenu from './UserMenu';
 import MobileMenu from './MobileMenu';
 import SearchBar from './SearchBar';
-import { NotificationCenter } from '@/components/ui';
+import { NotificationCenter, Logo } from '@/components/ui';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const isAdmin = Boolean(user?.roles?.includes('ADMIN'));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Don't show navbar on login/register pages (they have their own headers)
@@ -35,13 +36,11 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-5">
-          <div className="flex items-center justify-between h-16">
+      <header className="sticky top-0 z-navbar bg-[rgb(var(--color-surface))] border-b border-[rgb(var(--color-border))] shadow-sm safe-top">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14 md:h-16 min-h-[3.5rem]">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <span className="text-2xl font-bold text-primary-600">Parkway</span>
-            </Link>
+            <Logo variant="full" size="md" href="/" className="flex items-center" />
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-6 flex-1 mx-6">
@@ -79,6 +78,14 @@ export default function Navbar() {
                          >
                            Dashboard
                          </Link>
+                         {isAdmin && (
+                           <Link
+                             href="/admin/verifications"
+                             className="text-sm font-medium text-amber-700 hover:text-amber-800"
+                           >
+                             Verifications
+                           </Link>
+                         )}
                          <Link
                            href="/profile"
                            className="text-sm font-medium text-gray-600 hover:text-gray-900"
@@ -98,7 +105,7 @@ export default function Navbar() {
                     </Link>
                     <Link
                       href="/register"
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 px-4 py-2"
+                      className="inline-flex items-center justify-center rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-500 px-4 py-2.5"
                     >
                       Sign Up
                     </Link>

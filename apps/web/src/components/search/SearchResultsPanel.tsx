@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, LoadingSpinner, Skeleton, Select } from '@/components/ui';
+import { Button, LoadingSpinner, Skeleton, Select, VerifiedBadge } from '@/components/ui';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 import type { SearchDriveway, DrivewayPagination } from '@/types/driveway';
 
@@ -36,6 +36,12 @@ export interface SearchResultsPanelProps {
   sort?: string;
   /** Called when user changes sort in list header */
   onSortChange?: (value: string) => void;
+  /** Radius in km when location-based search; for "X spots within Y km" */
+  radiusKm?: string;
+  /** Whether search has lat/lon (for "X spots nearby" vs "X spots found") */
+  hasLocation?: boolean;
+  /** Short location name for "X spots near Jersey City" (e.g. first part of display_name) */
+  searchLocationName?: string;
   formatPrice: (price: number) => string;
   renderStars: (rating: number) => React.ReactNode;
   calculateDistanceKm: (d: SearchDriveway) => number | null;
@@ -79,6 +85,9 @@ export default function SearchResultsPanel({
   onShowFilters,
   sort = '',
   onSortChange,
+  radiusKm,
+  hasLocation,
+  searchLocationName,
   formatPrice,
   renderStars,
   calculateDistanceKm,
@@ -100,7 +109,7 @@ export default function SearchResultsPanel({
     <>
       {!stacked && open && (
         <div
-          className="fixed inset-0 bg-black/15 z-10 lg:hidden"
+          className="fixed inset-0 bg-black/15 z-backdrop lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -115,7 +124,7 @@ export default function SearchResultsPanel({
           stacked
             ? 'relative w-full bg-white border-b border-gray-200 overflow-hidden overflow-y-auto'
             : `
-          fixed right-0 z-[25]
+          fixed right-0 z-overlay-content
           w-full sm:w-96 max-w-[calc(100vw-2rem)]
           h-auto
           bg-white shadow-xl overflow-hidden overflow-y-auto
@@ -150,7 +159,14 @@ export default function SearchResultsPanel({
             <>
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3" aria-live="polite" aria-atomic="true">
                 <p className="text-sm text-gray-600">
-                  {loading ? 'Searching...' : `${pagination.total} driveways found`}
+                  {loading ? 'Searching...' : (() => {
+                    const n = pagination.total;
+                    const spots = n === 1 ? 'spot' : 'spots';
+                    if (radiusKm && Number(radiusKm) > 0) return `${n} ${spots} within ${radiusKm} km`;
+                    if (hasLocation && searchLocationName) return `${n} ${spots} near ${searchLocationName}`;
+                    if (hasLocation) return `${n} ${spots} nearby`;
+                    return `${n} ${spots} found`;
+                  })()}
                 </p>
                 {onSortChange && (
                   <Select
@@ -163,7 +179,7 @@ export default function SearchResultsPanel({
                 )}
               </div>
               {loading && driveways.length > 0 && (
-                <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
+                <div className="absolute inset-0 bg-white/60 z-content-overlay flex items-center justify-center">
                   <LoadingSpinner size="md" text="" />
                 </div>
               )}
@@ -187,13 +203,19 @@ export default function SearchResultsPanel({
                     >
                       <div className="flex items-center justify-between gap-3 p-3 sm:p-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-[15px] font-semibold text-[#111827] truncate">
-                            {driveway.title}
-                          </h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-[15px] font-semibold text-[#111827] truncate">
+                              {driveway.title}
+                            </h3>
+                            {driveway.verificationStatus === 'VERIFIED' && <VerifiedBadge className="shrink-0" />}
+                          </div>
                           <p className="text-[12px] font-normal text-[#6B7280] truncate mt-0.5">
                             {driveway.address}
                           </p>
                           <div className="flex items-center gap-2 text-xs text-[#9CA3AF] flex-wrap mt-1">
+                            {driveway.isAvailable && (
+                              <span className="px-1.5 py-0.5 text-xs font-medium text-green-700 bg-green-50 rounded">Available</span>
+                            )}
                             {distanceStr !== null && (
                               <span className="flex items-center gap-0.5">
                                 <MapPinIcon className="w-3.5 h-3.5" />

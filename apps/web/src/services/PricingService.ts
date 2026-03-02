@@ -31,6 +31,9 @@ export interface PricingBreakdown {
   meetsMinimum: boolean;
 }
 
+/** Platform commission rate (15% for free tier; 10% for premium hosts) */
+export const PLATFORM_FEE_RATE = 0.15;
+
 export class PricingService {
   // Minimum booking duration: 10 minutes
   static readonly MIN_DURATION_MINUTES = 10;
@@ -218,6 +221,20 @@ export class PricingService {
     return {
       valid: true,
     };
+  }
+
+  /**
+   * Add platform fee to subtotal. Returns { subtotal, platformFee, totalPrice }.
+   * User pays totalPrice; host receives subtotal.
+   */
+  static addPlatformFee(subtotal: number, rate: number = PLATFORM_FEE_RATE): {
+    subtotal: number;
+    platformFee: number;
+    totalPrice: number;
+  } {
+    const platformFee = Math.round(subtotal * rate * 100) / 100;
+    const totalPrice = Math.round((subtotal + platformFee) * 100) / 100;
+    return { subtotal, platformFee, totalPrice };
   }
 
   /**

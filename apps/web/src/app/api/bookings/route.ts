@@ -7,7 +7,7 @@ import { createApiResponse, createApiError } from '@parkway/shared';
 import { createBookingSchema, bookingQuerySchema, type CreateBookingInput, type BookingQueryParams } from '@/lib/validations';
 import { sendEmail, emailTemplates } from '@/lib/email';
 import { requireAuth } from '@/lib/auth-middleware';
-import { PricingService } from '@/services/PricingService';
+import { PricingService, PLATFORM_FEE_RATE } from '@/services/PricingService';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
       demandMultiplier,
     });
 
-    // Validate final price meets minimum
+    // Validate final price meets minimum (before platform fee)
     const priceValidation = PricingService.validatePrice(pricingBreakdown.finalPrice);
     if (!priceValidation.valid) {
       return NextResponse.json(
@@ -260,7 +260,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const totalPrice = pricingBreakdown.finalPrice;
+    // Add platform commission (15%): user pays totalPrice, host receives subtotal
+    const { totalPrice } = PricingService.addPlatformFee(
+      pricingBreakdown.finalPrice,
+      PLATFORM_FEE_RATE
+    );
 
     // Use transaction to prevent race conditions
     const booking = await prisma.$transaction(async (tx: TransactionClient) => {

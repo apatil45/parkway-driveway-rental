@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, Button, SkeletonList } from '@/components/ui';
+import { useRouter } from 'next/navigation';
+import { Card, Button, ButtonLink, SkeletonList, VerifiedBadge } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
+import { useAuth } from '@/hooks';
 import api from '@/lib/api-client';
 
 interface DrivewayItem {
@@ -12,12 +14,21 @@ interface DrivewayItem {
   address: string;
   pricePerHour: number;
   isActive: boolean;
+  verificationStatus?: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 }
 
 export default function OwnerDrivewaysPage() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [items, setItems] = useState<DrivewayItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent('/driveways')}`);
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const load = async () => {
     setLoading(true);
@@ -37,20 +48,34 @@ export default function OwnerDrivewaysPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (isAuthenticated) load();
+  }, [isAuthenticated]);
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[40vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Driveways</h1>
-        <Link
+        <ButtonLink
           href="/driveways/new"
-          className="btn btn-primary inline-flex items-center justify-center w-12 h-12 min-w-[3rem] min-h-[3rem] p-0 rounded-xl text-xl font-medium leading-none shrink-0"
-          aria-label="New Driveway"
+          className="w-12 h-12 min-w-[3rem] min-h-[3rem] p-0 rounded-xl text-xl font-medium leading-none shrink-0"
+          size="md"
         >
           +
-        </Link>
+        </ButtonLink>
       </div>
 
       {error && (
@@ -74,9 +99,9 @@ export default function OwnerDrivewaysPage() {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No driveways yet</h3>
           <p className="text-gray-600 text-sm mb-6 max-w-sm mx-auto">List your first driveway to start earning. It only takes a few minutes.</p>
-          <Link href="/driveways/new" className="btn btn-primary inline-flex items-center justify-center min-h-[44px] px-6">
+          <ButtonLink href="/driveways/new" size="lg">
             List driveway
-          </Link>
+          </ButtonLink>
         </Card>
       ) : !error ? (
         <div className="space-y-3">
@@ -84,14 +109,28 @@ export default function OwnerDrivewaysPage() {
             <Card key={d.id} clickable padding="sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold">{d.title}</h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg font-semibold">{d.title}</h3>
+                    {d.verificationStatus === 'VERIFIED' && <VerifiedBadge />}
+                    {d.verificationStatus === 'PENDING' && (
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                        Pending review
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-600 text-sm">{d.address}</p>
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-primary-600">${d.pricePerHour.toFixed(2)}/hr</div>
                   <div className="text-sm text-gray-500">{d.isActive ? 'Active' : 'Inactive'}</div>
-                  <div className="mt-2">
+                  <div className="mt-2 flex gap-2 justify-end">
                     <Link href={`/driveways/${d.id}/edit`} className="text-primary-600 hover:text-primary-800 text-sm">Edit</Link>
+                    {d.verificationStatus !== 'VERIFIED' && (
+                      <Link href={`/driveways/${d.id}/verify`} className="text-primary-600 hover:text-primary-800 text-sm">Verify</Link>
+                    )}
+                    {d.verificationStatus === 'VERIFIED' && (
+                      <Link href={`/driveways/${d.id}/verify`} className="text-gray-500 hover:text-gray-700 text-sm">Details</Link>
+                    )}
                   </div>
                 </div>
               </div>

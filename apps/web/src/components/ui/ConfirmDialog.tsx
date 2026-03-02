@@ -84,7 +84,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto"
+      className="fixed inset-0 z-modal overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialog-title"

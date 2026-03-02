@@ -116,11 +116,12 @@ export async function GET(request: NextRequest) {
       const averageRating = reviewCount > 0
         ? driveway.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / reviewCount
         : 0;
-      const { rightToListConfirmedAt, ...rest } = driveway;
+      const { rightToListConfirmedAt, verificationDocumentUrls, verificationRejectionReason, verificationExtractedAddress, verificationExtractedName, ...rest } = driveway;
       return {
         ...rest,
         averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
-        reviewCount
+        reviewCount,
+        verificationStatus: driveway.verificationStatus ?? 'NONE',
       };
     });
 
@@ -178,10 +179,12 @@ export async function GET(request: NextRequest) {
     );
     
     return response;
-  } catch (error) {
-    logger.error('Get driveways error', {}, error instanceof Error ? error : undefined);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Get driveways error', {}, err);
+    const message = process.env.NODE_ENV === 'development' ? err.message : 'Unable to load parking spaces. Please try again in a moment.';
     return NextResponse.json(
-      createApiError('Unable to load parking spaces. Please try again in a moment.', 500, 'INTERNAL_ERROR'),
+      createApiError(message, 500, 'INTERNAL_ERROR'),
       { status: 500 }
     );
   }

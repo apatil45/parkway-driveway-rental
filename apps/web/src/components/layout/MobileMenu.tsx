@@ -33,6 +33,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     };
   }, [isOpen]);
 
+  const isAdmin = Boolean(user?.roles?.includes('ADMIN'));
   const navLinks = isAuthenticated
     ? [
         { href: '/search', label: 'Search Parking' },
@@ -40,6 +41,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         { href: '/bookings', label: 'My Bookings' },
         { href: '/favorites', label: 'Favorites' },
         { href: '/dashboard', label: 'Dashboard' },
+        ...(isAdmin ? [{ href: '/admin/verifications', label: 'Verifications' }] : []),
         { href: '/profile', label: 'Profile' },
       ]
     : [
@@ -54,7 +56,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-40 z-backdrop lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -62,7 +64,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-xl z-overlay-content transform transition-transform duration-300 ease-in-out lg:hidden safe-top ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

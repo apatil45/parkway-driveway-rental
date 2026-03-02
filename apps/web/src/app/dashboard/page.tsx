@@ -106,7 +106,7 @@ export default function DashboardPage() {
   // Redirect unauthenticated users away from dashboard
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent('/dashboard')}`);
     }
   }, [authLoading, isAuthenticated, router]);
 
@@ -144,6 +144,7 @@ export default function DashboardPage() {
 
   const isOwner = user?.roles.includes('OWNER');
   const isDriver = user?.roles.includes('DRIVER');
+  const isAdmin = user?.roles.includes('ADMIN');
 
   const handleRefreshStats = async () => {
     setRefreshingStats(true);
@@ -169,14 +170,14 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+      <div className="container mx-auto px-4 py-5 sm:py-6 md:py-8">
+        {/* Welcome Section — compact on mobile so stats/actions appear sooner */}
+        <div className="mb-5 sm:mb-6 md:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-0.5 md:mb-1">
               Welcome back, {user?.name}!
             </h1>
-            <p className="text-gray-600 text-sm sm:text-base">
+            <p className="text-gray-600 text-xs sm:text-sm md:text-base">
               Manage your {isOwner ? 'driveways and bookings' : 'bookings'} from your dashboard.
             </p>
           </div>
@@ -194,24 +195,24 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         {statsLoading && !stats ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 md:mb-8">
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <div className="h-28"></div>
+              <Card key={i} className="animate-pulse p-4 md:p-6">
+                <div className="h-20 md:h-28"></div>
               </Card>
             ))}
           </div>
         ) : stats ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 md:mb-8">
             <Link href="/bookings" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl">
-              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary-100 rounded-xl shrink-0">
-                    <CalendarIcon className="w-6 h-6 text-primary-600" />
+              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full p-4 md:p-6">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="p-2 md:p-3 bg-primary-100 rounded-xl shrink-0">
+                    <CalendarIcon className="w-5 h-5 md:w-6 md:h-6 text-primary-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                    <p className="text-2xl font-bold">{stats.totalBookings}</p>
+                    <p className="text-xs md:text-sm font-medium text-gray-600">Total Bookings</p>
+                    <p className="text-xl md:text-2xl font-bold">{stats.totalBookings}</p>
                     {typeof stats.completedOrConfirmedBookings === 'number' && (
                       <p className="text-xs text-gray-500 mt-0.5">{stats.completedOrConfirmedBookings} completed</p>
                     )}
@@ -221,14 +222,14 @@ export default function DashboardPage() {
             </Link>
 
             <Link href="/bookings?status=CONFIRMED" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl">
-              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-100 rounded-xl shrink-0">
-                    <CheckCircleIcon className="w-6 h-6 text-green-700" />
+              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full p-4 md:p-6">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="p-2 md:p-3 bg-green-100 rounded-xl shrink-0">
+                    <CheckCircleIcon className="w-5 h-5 md:w-6 md:h-6 text-green-700" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-600">Active Bookings</p>
-                    <p className="text-2xl font-bold">{stats.activeBookings}</p>
+                    <p className="text-xs md:text-sm font-medium text-gray-600">Active Bookings</p>
+                    <p className="text-xl md:text-2xl font-bold">{stats.activeBookings}</p>
                   </div>
                 </div>
               </Card>
@@ -236,14 +237,14 @@ export default function DashboardPage() {
 
             {isOwner && (
               <Link href="/bookings?status=COMPLETED" className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl">
-                <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-amber-100 rounded-xl shrink-0">
-                      <CurrencyDollarIcon className="w-6 h-6 text-amber-700" />
+                <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full p-4 md:p-6">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="p-2 md:p-3 bg-amber-100 rounded-xl shrink-0">
+                      <CurrencyDollarIcon className="w-5 h-5 md:w-6 md:h-6 text-amber-700" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-                      <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
+                      <p className="text-xs md:text-sm font-medium text-gray-600">Total Earnings</p>
+                      <p className="text-xl md:text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
                       {stats.totalEarningsScope === 'owner' && (
                         <p className="text-xs text-gray-500 mt-0.5">From completed payments</p>
                       )}
@@ -254,16 +255,16 @@ export default function DashboardPage() {
             )}
 
             <Link href={isOwner ? '/driveways' : '/bookings'} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl">
-              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 rounded-xl shrink-0">
-                    <StarIcon className="w-6 h-6 text-blue-700" />
+              <Card className="shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 cursor-pointer h-full p-4 md:p-6">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="p-2 md:p-3 bg-blue-100 rounded-xl shrink-0">
+                    <StarIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-700" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-600">
-                      {isOwner ? 'Average Rating' : 'Avg. rating (booked driveways)'}
+                    <p className="text-xs md:text-sm font-medium text-gray-600">
+                      {isOwner ? 'Average Rating' : 'Avg. rating'}
                     </p>
-                    <p className="text-2xl font-bold">
+                    <p className="text-xl md:text-2xl font-bold">
                       {stats.averageRating != null ? stats.averageRating.toFixed(1) : '—'}
                     </p>
                     {stats.averageRating == null && (
@@ -287,16 +288,16 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* Quick Actions: primary next steps. 2 cols on mobile to reduce scroll. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 md:mb-8">
           {isOwner && (
-            <Card className="shadow-sm transition-all duration-200 hover:shadow-md">
+            <Card className="shadow-sm transition-all duration-200 hover:shadow-md p-4 md:p-6">
               <div className="text-center">
-                <div className="p-4 bg-primary-100 rounded-xl w-14 h-14 mx-auto mb-4 flex items-center justify-center">
-                  <HomeIcon className="w-7 h-7 text-primary-700" />
+                <div className="p-3 md:p-4 bg-primary-100 rounded-xl w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 flex items-center justify-center">
+                  <HomeIcon className="w-6 h-6 md:w-7 md:h-7 text-primary-700" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Driveways</h3>
-                <p className="text-gray-600 text-sm mb-4">Add, edit, or remove your driveway listings</p>
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">Manage Driveways</h3>
+                <p className="text-gray-600 text-xs md:text-sm mb-3 md:mb-4">Add, edit, or remove your driveway listings</p>
                 <Link href="/driveways">
                   <Button variant="primary" className="w-full" size="md">
                     View Driveways
@@ -307,13 +308,13 @@ export default function DashboardPage() {
           )}
 
           {isDriver && (
-            <Card className="shadow-sm transition-all duration-200 hover:shadow-md">
+            <Card className="shadow-sm transition-all duration-200 hover:shadow-md p-4 md:p-6">
               <div className="text-center">
-                <div className="p-4 bg-green-100 rounded-xl w-14 h-14 mx-auto mb-4 flex items-center justify-center">
-                  <MagnifyingGlassIcon className="w-7 h-7 text-green-700" />
+                <div className="p-3 md:p-4 bg-green-100 rounded-xl w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 flex items-center justify-center">
+                  <MagnifyingGlassIcon className="w-6 h-6 md:w-7 md:h-7 text-green-700" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Find Parking</h3>
-                <p className="text-gray-600 text-sm mb-4">Search for available parking spots</p>
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">Find Parking</h3>
+                <p className="text-gray-600 text-xs md:text-sm mb-3 md:mb-4">Search for available parking spots</p>
                 <Link href="/search">
                   <Button variant="primary" className="w-full" size="md">
                     Search Now
@@ -323,13 +324,13 @@ export default function DashboardPage() {
             </Card>
           )}
 
-          <Card className="shadow-sm transition-all duration-200 hover:shadow-md">
+          <Card className="shadow-sm transition-all duration-200 hover:shadow-md p-4 md:p-6">
             <div className="text-center">
-              <div className="p-4 bg-blue-100 rounded-xl w-14 h-14 mx-auto mb-4 flex items-center justify-center">
-                <BookOpenIcon className="w-7 h-7 text-blue-700" />
+              <div className="p-3 md:p-4 bg-blue-100 rounded-xl w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 flex items-center justify-center">
+                <BookOpenIcon className="w-6 h-6 md:w-7 md:h-7 text-blue-700" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">My Bookings</h3>
-              <p className="text-gray-600 text-sm mb-4">View and manage your bookings</p>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">My Bookings</h3>
+              <p className="text-gray-600 text-xs md:text-sm mb-3 md:mb-4">View and manage your bookings</p>
               <Link href="/bookings">
                 <Button variant="primary" className="w-full" size="md">
                   View Bookings
@@ -337,6 +338,23 @@ export default function DashboardPage() {
               </Link>
             </div>
           </Card>
+
+          {isAdmin && (
+            <Card className="shadow-sm transition-all duration-200 hover:shadow-md p-4 md:p-6">
+              <div className="text-center">
+                <div className="p-3 md:p-4 bg-amber-100 rounded-xl w-12 h-12 md:w-14 md:h-14 mx-auto mb-3 md:mb-4 flex items-center justify-center">
+                  <CheckCircleIcon className="w-6 h-6 md:w-7 md:h-7 text-amber-700" />
+                </div>
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">Verification queue</h3>
+                <p className="text-gray-600 text-xs md:text-sm mb-3 md:mb-4">Review pending address-proof submissions</p>
+                <Link href="/admin/verifications">
+                  <Button variant="outline" className="w-full" size="md">
+                    Open queue
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* Recent Activity */}

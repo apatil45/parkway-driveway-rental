@@ -2,7 +2,7 @@ import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'subtle';
+  variant?: 'primary' | 'secondary' | 'destructive' | 'outline' | 'subtle' | 'accent';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   fullWidth?: boolean;
@@ -14,7 +14,8 @@ const variantClasses = {
   secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
   destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
   outline: 'border border-[color:rgb(var(--color-border))] bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] hover:bg-gray-50 focus:ring-primary-500',
-  subtle: 'bg-transparent text-[color:rgb(var(--color-surface-foreground))] hover:bg-gray-100 focus:ring-primary-500'
+  subtle: 'bg-transparent text-[color:rgb(var(--color-surface-foreground))] hover:bg-gray-100 focus:ring-primary-500',
+  accent: 'bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-500',
 } as const;
 
 const sizeClasses = {

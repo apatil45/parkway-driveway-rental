@@ -7,7 +7,7 @@ import api from '@/lib/api-client';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/Toast';
-import { ReviewForm, ConfirmDialog, ImageWithPlaceholder } from '@/components/ui';
+import { ReviewForm, ConfirmDialog, ImageWithPlaceholder, ButtonLink } from '@/components/ui';
 
 interface Booking {
   id: string;
@@ -172,7 +172,7 @@ export default function BookingsPage() {
       if (err.response?.status === 401) {
         // Auth is handled by cookies and useAuth hook
         // The API interceptor will handle token refresh or redirect
-        router.push('/login');
+        router.push(`/login?redirect=${encodeURIComponent('/bookings')}`);
       } else {
         setError('Unable to load your bookings. Please try again.');
       }
@@ -375,9 +375,9 @@ export default function BookingsPage() {
                 : `No bookings with status "${statusFilter.toLowerCase()}". Try another filter.`
               }
             </p>
-            <Link href="/search" className="btn btn-primary inline-flex items-center justify-center min-h-[44px] px-6">
+            <ButtonLink href="/search" size="lg">
               Find Driveways
-            </Link>
+            </ButtonLink>
           </div>
         ) : (
           <div className="space-y-4">
@@ -446,12 +446,12 @@ export default function BookingsPage() {
                       {booking.status === 'PENDING' && booking.paymentStatus === 'PENDING' && (
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <p className="text-sm text-yellow-800 flex-1">Payment required — booking expires in 15 min.</p>
-                          <Link
+                          <ButtonLink
                             href={`/checkout?bookingId=${booking.id}`}
-                            className="btn btn-primary w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center"
+                            className="w-full sm:w-auto"
                           >
                             Complete payment
-                          </Link>
+                          </ButtonLink>
                         </div>
                       )}
                       {booking.status === 'PENDING' && booking.paymentStatus === 'COMPLETED' && (
@@ -555,32 +555,33 @@ export default function BookingsPage() {
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                           {/* Primary: Pay or Get directions */}
                           {booking.status === 'PENDING' && booking.paymentStatus === 'PENDING' && (
-                            <Link
+                            <ButtonLink
                               href={`/checkout?bookingId=${booking.id}`}
-                              className="btn btn-primary w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center"
+                              className="w-full sm:w-auto"
                             >
                               Pay now
-                            </Link>
+                            </ButtonLink>
                           )}
                           {user && booking.driveway.owner.id !== user.id &&
                             (booking.status === 'CONFIRMED' || (booking.status === 'PENDING' && booking.paymentStatus === 'COMPLETED')) && (
-                            <Link
+                            <ButtonLink
                               href={`/bookings/${booking.id}/navigate`}
-                              className="btn btn-primary w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2"
+                              className="w-full sm:w-auto gap-2"
                               aria-label={`Get directions to ${booking.driveway.title}`}
                             >
                               <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                               </svg>
                               Get directions
-                            </Link>
+                            </ButtonLink>
                           )}
-                          <Link
+                          <ButtonLink
                             href={`/driveway/${booking.driveway.id}`}
-                            className="btn btn-secondary w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center"
+                            variant="secondary"
+                            className="w-full sm:w-auto"
                           >
                             View driveway
-                          </Link>
+                          </ButtonLink>
                           {booking.status === 'PENDING' && (
                             <button
                               type="button"

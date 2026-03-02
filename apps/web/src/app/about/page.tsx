@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, LoadingSpinner } from '@/components/ui';
+import { Card, LoadingSpinner, ButtonLink } from '@/components/ui';
 import api from '@/lib/api-client';
 import { AppLayout } from '@/components/layout';
 
@@ -40,7 +40,7 @@ export default function AboutPage() {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            About Parkway
+            About ParkwayAi
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             The easiest way to find parking or earn money from your driveway. 
@@ -62,7 +62,7 @@ export default function AboutPage() {
 
         {/* How It Works */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">How Parkway Works</h2>
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">How ParkwayAi Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="text-center">
               <div className="p-4 bg-primary-100 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -101,7 +101,7 @@ export default function AboutPage() {
 
         {/* Features */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Why Choose Parkway?</h2>
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Why Choose ParkwayAi?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Easy to Use</h3>
@@ -122,7 +122,7 @@ export default function AboutPage() {
             <Card>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Mobile Friendly</h3>
               <p className="text-gray-600">
-                Access Parkway from any device. Our responsive design works perfectly 
+                Access ParkwayAi from any device. Our responsive design works perfectly 
                 on smartphones, tablets, and desktop computers.
               </p>
             </Card>
@@ -185,16 +185,16 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to Get Started?</h2>
           <p className="text-lg text-gray-600 mb-8">
             {stats?.totalUsers != null && stats.totalUsers > 0
-              ? `Join ${stats.totalUsers.toLocaleString()} users already using Parkway to find parking or earn money.`
-              : 'Join drivers and property owners using Parkway to find parking or earn money.'}
+              ? `Join ${stats.totalUsers.toLocaleString()} users already using ParkwayAi to find parking or earn money.`
+              : 'Join drivers and property owners using ParkwayAi to find parking or earn money.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/register" className="btn btn-primary">
-              Start Now - It's Free
-            </a>
-            <a href="/search" className="btn btn-outline">
+            <ButtonLink href="/register">
+              Start Now - It&apos;s Free
+            </ButtonLink>
+            <ButtonLink href="/search" variant="outline">
               Browse Driveways
-            </a>
+            </ButtonLink>
           </div>
         </Card>
       </div>

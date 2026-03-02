@@ -51,7 +51,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const updateData: any = {};
     if (validationResult.data.title !== undefined) updateData.title = validationResult.data.title;
     if (validationResult.data.description !== undefined) updateData.description = validationResult.data.description;
-    if (validationResult.data.address !== undefined) updateData.address = validationResult.data.address;
+    if (validationResult.data.address !== undefined) {
+      updateData.address = validationResult.data.address;
+      // Reset verification when address changes so it applies to current address
+      updateData.verificationStatus = 'NONE';
+      updateData.verificationSubmittedAt = null;
+      updateData.verifiedAt = null;
+      updateData.verificationRejectedAt = null;
+      updateData.verificationRejectionReason = null;
+      updateData.verificationDocumentUrls = [];
+      updateData.verificationConfidence = null;
+      updateData.verificationAutoResult = null;
+      updateData.verificationExtractedAddress = null;
+      updateData.verificationExtractedName = null;
+    }
     if (validationResult.data.pricePerHour !== undefined) {
       // Validate minimum price per hour
       const minimumPricePerHour = PricingService.calculateMinimumPricePerHour();
@@ -148,17 +161,21 @@ export async function GET(
       ? driveway.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / driveway.reviews.length
       : 0;
 
+    const { verificationRejectionReason, verificationExtractedAddress, verificationExtractedName, ...publicDriveway } = driveway as any;
     const drivewayWithRating = {
-      ...driveway,
+      ...publicDriveway,
       averageRating,
-      reviewCount: driveway.reviews.length
+      reviewCount: driveway.reviews.length,
+      verificationStatus: driveway.verificationStatus ?? 'NONE',
     };
 
     return NextResponse.json(createApiResponse(drivewayWithRating, 'Driveway retrieved successfully'));
-  } catch (error) {
-    logger.error('Get driveway error', {}, error instanceof Error ? error : undefined);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Get driveway error', {}, err);
+    const message = process.env.NODE_ENV === 'development' ? err.message : 'Failed to retrieve driveway';
     return NextResponse.json(
-      createApiError('Failed to retrieve driveway', 500, 'INTERNAL_ERROR'),
+      createApiError(message, 500, 'INTERNAL_ERROR'),
       { status: 500 }
     );
   }

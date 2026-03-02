@@ -6,7 +6,7 @@ import Link from 'next/link';
 import api from '@/lib/api-client';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
-import { Button, ImageWithPlaceholder } from '@/components/ui';
+import { Button, ButtonLink, ImageWithPlaceholder } from '@/components/ui';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import { HeartIcon } from '@heroicons/react/24/outline';
 
@@ -43,7 +43,7 @@ export default function FavoritesPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent('/favorites')}`);
       return;
     }
   }, [isAuthenticated, authLoading, router]);
@@ -156,9 +156,9 @@ export default function FavoritesPage() {
               <p className="text-gray-600 text-sm mb-6 max-w-sm mx-auto">
                 Save driveways from search or a listing page to see them here.
               </p>
-              <Link href="/search" className="btn btn-primary inline-flex items-center justify-center min-h-[44px] px-6">
+              <ButtonLink href="/search" size="lg">
                 Browse driveways
-              </Link>
+              </ButtonLink>
             </div>
           )}
 

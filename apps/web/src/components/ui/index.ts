@@ -1,4 +1,5 @@
 export { default as Button } from './Button';
+export { default as ButtonLink } from './ButtonLink';
 export { default as Input } from './Input';
 export { default as Textarea } from './Textarea';
 export { default as Select } from './Select';
@@ -16,3 +17,5 @@ export { default as NotificationCenter } from './NotificationCenter';
 export { default as PasswordStrengthMeter } from './PasswordStrengthMeter';
 export { default as ConfirmDialog } from './ConfirmDialog';
 export { default as ImageWithPlaceholder } from './ImageWithPlaceholder';
+export { default as VerifiedBadge } from './VerifiedBadge';
+export { default as Logo } from './Logo';

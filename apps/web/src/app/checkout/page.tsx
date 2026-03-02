@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card } from '@/components/ui';
+import { Card, ButtonLink } from '@/components/ui';
 import StripeCheckout from '@/components/ui/StripeCheckout';
 import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
@@ -127,9 +127,7 @@ function CheckoutContent() {
             <div className="text-center py-8">
               <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
               <p className="text-gray-600 mb-4">{error || 'Booking not found'}</p>
-              <Link href="/search" className="btn btn-primary">
-                Back to Search
-              </Link>
+              <ButtonLink href="/search">Back to Search</ButtonLink>
             </div>
           </Card>
         </div>
@@ -176,11 +174,15 @@ function CheckoutContent() {
                 </span>
               </div>
               <div className="pt-2 border-t">
-                <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">${booking.totalPrice.toFixed(2)}</span>
+                <div className="flex justify-between mb-1 text-sm">
+                  <span className="text-gray-600">Parking:</span>
+                  <span className="font-medium">${(booking.totalPrice / 1.15).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between mb-2 text-sm">
+                  <span className="text-gray-600">Platform fee (15%):</span>
+                  <span className="font-medium">${(booking.totalPrice - booking.totalPrice / 1.15).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-gray-200">
                   <span className="text-lg font-semibold">Total:</span>
                   <span className="text-lg font-bold text-primary-600">
                     ${booking.totalPrice.toFixed(2)}
@@ -197,10 +199,9 @@ function CheckoutContent() {
               amount={amountInCents} 
               bookingId={booking.id}
               onSuccess={async () => {
-                // Wait a moment for webhook to process, then redirect
-                // The bookings page will auto-refresh if webhook hasn't processed yet
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                router.push(`/bookings`);
+                // Redirect to confirmation page for celebration moment
+                await new Promise(resolve => setTimeout(resolve, 800));
+                router.push(`/bookings/${booking.id}/confirmation`);
               }}
             />
           </Card>

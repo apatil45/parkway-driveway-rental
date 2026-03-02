@@ -5,11 +5,11 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/components/ui/Toast';
-import { Button, ImageWithPlaceholder } from '@/components/ui';
+import { Button, ButtonLink, ImageWithPlaceholder, VerifiedBadge } from '@/components/ui';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api-client';
-import { PricingService } from '@/services/PricingService';
+import { PricingService, PLATFORM_FEE_RATE } from '@/services/PricingService';
 import { createAppError } from '@/lib/errors';
 
 interface Driveway {
@@ -28,6 +28,7 @@ interface Driveway {
   isAvailable: boolean;
   averageRating: number;
   reviewCount: number;
+  verificationStatus?: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
   owner: {
     id: string;
     name: string;
@@ -91,8 +92,11 @@ export default function DrivewayDetailsPage() {
   const [pricingBreakdown, setPricingBreakdown] = useState<any>(null);
   const [durationError, setDurationError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [showVehicleSection, setShowVehicleSection] = useState(false);
   const isSubmittingRef = useRef(false);
   const isMountedRef = useRef(true);
+
+  const SAVED_VEHICLE_KEY = 'parkway-saved-vehicle';
 
   const router = useRouter();
   const { showToast } = useToast();
@@ -146,6 +150,42 @@ export default function DrivewayDetailsPage() {
 
     fetchDriveway();
   }, [drivewayId]);
+
+  // Load saved vehicle from localStorage (for returning users)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SAVED_VEHICLE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.make && parsed?.model) {
+          setBookingForm(prev => ({
+            ...prev,
+            vehicleInfo: {
+              make: parsed.make || '',
+              model: parsed.model || '',
+              color: parsed.color || '',
+              licensePlate: parsed.licensePlate || ''
+            }
+          }));
+        }
+      }
+    } catch (_) {}
+  }, []);
+
+  // Save vehicle to localStorage when user fills it
+  useEffect(() => {
+    const v = bookingForm.vehicleInfo;
+    if (v.make?.trim() && v.model?.trim()) {
+      try {
+        localStorage.setItem(SAVED_VEHICLE_KEY, JSON.stringify({
+          make: v.make.trim(),
+          model: v.model.trim(),
+          color: v.color?.trim() || '',
+          licensePlate: v.licensePlate?.trim() || ''
+        }));
+      } catch (_) {}
+    }
+  }, [bookingForm.vehicleInfo]);
 
   // Restore form data after login return
   useEffect(() => {
@@ -247,8 +287,9 @@ export default function DrivewayDetailsPage() {
           demandMultiplier: 1.0, // Frontend doesn't know demand, backend will adjust
         });
         
+        const { totalPrice } = PricingService.addPlatformFee(breakdown.finalPrice, PLATFORM_FEE_RATE);
         setCalculatedHours(breakdown.hours);
-        setCalculatedPrice(breakdown.finalPrice);
+        setCalculatedPrice(totalPrice); // User pays total (includes 15% platform fee)
         setPricingBreakdown(breakdown);
       } else {
         setCalculatedPrice(null);
@@ -493,9 +534,7 @@ export default function DrivewayDetailsPage() {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
             <p className="text-gray-600 mb-4">{error || 'Driveway not found'}</p>
-            <Link href="/search" className="btn btn-primary">
-              Back to Search
-            </Link>
+            <ButtonLink href="/search">Back to Search</ButtonLink>
           </div>
         </div>
       </AppLayout>
@@ -534,8 +573,9 @@ export default function DrivewayDetailsPage() {
             {/* Basic Info */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
               <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-3xl font-bold text-gray-900">{driveway.title}</h1>
+                  {driveway.verificationStatus === 'VERIFIED' && <VerifiedBadge />}
                   {isAuthenticated && (
                     <FavoriteButton
                       drivewayId={drivewayId}
@@ -544,7 +584,15 @@ export default function DrivewayDetailsPage() {
                     />
                   )}
                   {isOwner && (
-                       <Link href={`/driveways/${drivewayId}/edit`} className="btn btn-primary">Edit</Link>
+                    <>
+                      <ButtonLink href={`/driveways/${drivewayId}/edit`}>Edit</ButtonLink>
+                      {driveway.verificationStatus !== 'VERIFIED' && (
+                        <ButtonLink href={`/driveways/${drivewayId}/verify`} variant="secondary">Verify listing</ButtonLink>
+                      )}
+                      {driveway.verificationStatus === 'VERIFIED' && (
+                        <Link href={`/driveways/${drivewayId}/verify`} className="text-sm text-gray-600 hover:text-gray-900">Verification details</Link>
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="text-right">
@@ -720,7 +768,7 @@ export default function DrivewayDetailsPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">Total Price</p>
+                          <p className="text-sm text-gray-600">Total (incl. 15% fee)</p>
                           <p className="text-2xl font-bold text-primary-600">
                             ${calculatedPrice.toFixed(2)}
                           </p>
@@ -759,6 +807,14 @@ export default function DrivewayDetailsPage() {
                             <span>${PricingService.MIN_PRICE_DOLLARS.toFixed(2)}</span>
                           </div>
                         )}
+                        <div className="flex justify-between text-sm pt-1">
+                          <span className="text-gray-600">Platform fee (15%):</span>
+                          <span className="text-gray-900">${(pricingBreakdown.finalPrice * PLATFORM_FEE_RATE).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-semibold pt-1 border-t border-primary-200">
+                          <span className="text-gray-900">Total:</span>
+                          <span className="text-primary-600">${(pricingBreakdown.finalPrice * (1 + PLATFORM_FEE_RATE)).toFixed(2)}</span>
+                        </div>
                       </div>
                       
                       {calculatedPrice < PricingService.MIN_PRICE_DOLLARS && (
@@ -784,56 +840,70 @@ export default function DrivewayDetailsPage() {
                     />
                   </div>
 
+                  {/* Vehicle info: collapsible, optional, pre-filled from saved */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vehicle Information
-                    </label>
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        placeholder="Make (e.g., Toyota)"
-                        value={bookingForm.vehicleInfo.make}
-                        onChange={(e) => setBookingForm(prev => ({
-                          ...prev,
-                          vehicleInfo: { ...prev.vehicleInfo, make: e.target.value }
-                        }))}
-                        className="input text-base min-h-[44px]"
-                        style={{ fontSize: '16px' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Model (e.g., Camry)"
-                        value={bookingForm.vehicleInfo.model}
-                        onChange={(e) => setBookingForm(prev => ({
-                          ...prev,
-                          vehicleInfo: { ...prev.vehicleInfo, model: e.target.value }
-                        }))}
-                        className="input text-base min-h-[44px]"
-                        style={{ fontSize: '16px' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Color"
-                        value={bookingForm.vehicleInfo.color}
-                        onChange={(e) => setBookingForm(prev => ({
-                          ...prev,
-                          vehicleInfo: { ...prev.vehicleInfo, color: e.target.value }
-                        }))}
-                        className="input text-base min-h-[44px]"
-                        style={{ fontSize: '16px' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="License Plate"
-                        value={bookingForm.vehicleInfo.licensePlate}
-                        onChange={(e) => setBookingForm(prev => ({
-                          ...prev,
-                          vehicleInfo: { ...prev.vehicleInfo, licensePlate: e.target.value }
-                        }))}
-                        className="input text-base min-h-[44px]"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowVehicleSection(!showVehicleSection)}
+                      className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 mb-1"
+                    >
+                      <span>Vehicle details (optional)</span>
+                      <span className="text-gray-400">{showVehicleSection ? '−' : '+'}</span>
+                    </button>
+                    {bookingForm.vehicleInfo.make && bookingForm.vehicleInfo.model && !showVehicleSection && (
+                      <p className="text-xs text-gray-500 mb-2">
+                        {bookingForm.vehicleInfo.make} {bookingForm.vehicleInfo.model}
+                        {bookingForm.vehicleInfo.color && ` · ${bookingForm.vehicleInfo.color}`}
+                      </p>
+                    )}
+                    {showVehicleSection && (
+                      <div className="space-y-2 mt-2">
+                        <input
+                          type="text"
+                          placeholder="Make (e.g., Toyota)"
+                          value={bookingForm.vehicleInfo.make}
+                          onChange={(e) => setBookingForm(prev => ({
+                            ...prev,
+                            vehicleInfo: { ...prev.vehicleInfo, make: e.target.value }
+                          }))}
+                          className="input text-base min-h-[44px]"
+                          style={{ fontSize: '16px' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Model (e.g., Camry)"
+                          value={bookingForm.vehicleInfo.model}
+                          onChange={(e) => setBookingForm(prev => ({
+                            ...prev,
+                            vehicleInfo: { ...prev.vehicleInfo, model: e.target.value }
+                          }))}
+                          className="input text-base min-h-[44px]"
+                          style={{ fontSize: '16px' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Color"
+                          value={bookingForm.vehicleInfo.color}
+                          onChange={(e) => setBookingForm(prev => ({
+                            ...prev,
+                            vehicleInfo: { ...prev.vehicleInfo, color: e.target.value }
+                          }))}
+                          className="input text-base min-h-[44px]"
+                          style={{ fontSize: '16px' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="License Plate"
+                          value={bookingForm.vehicleInfo.licensePlate}
+                          onChange={(e) => setBookingForm(prev => ({
+                            ...prev,
+                            vehicleInfo: { ...prev.vehicleInfo, licensePlate: e.target.value }
+                          }))}
+                          className="input text-base min-h-[44px]"
+                          style={{ fontSize: '16px' }}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex space-x-2">

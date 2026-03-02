@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest) {
     const userId = authResult.userId!;
 
     const body = await request.json();
-    const { name, phone, address, avatar } = body;
+    const { name, phone, address, avatar, roles: rolesBody } = body;
 
     // Validate name if provided
     if (name !== undefined && (typeof name !== 'string' || name.trim().length < 2)) {
@@ -74,6 +74,23 @@ export async function PATCH(request: NextRequest) {
     if (phone !== undefined) updateData.phone = phone?.trim() || null;
     if (address !== undefined) updateData.address = address?.trim() || null;
     if (avatar !== undefined) updateData.avatar = avatar?.trim() || null;
+
+    // Roles: allow only DRIVER and OWNER (never ADMIN via self-service). At least one role required.
+    if (rolesBody !== undefined) {
+      const allowed = ['DRIVER', 'OWNER'];
+      const raw = Array.isArray(rolesBody) ? rolesBody : [rolesBody];
+      const roles = raw.filter((r: string) => allowed.includes(r));
+      if (roles.length === 0) {
+        return NextResponse.json(
+          createApiError('Select at least one role (Driver or Owner)', 400, 'VALIDATION_ERROR'),
+          { status: 400 }
+        );
+      }
+      const existing = await prisma.user.findUnique({ where: { id: userId }, select: { roles: true } });
+      const existingRoles = (existing?.roles as string[]) ?? [];
+      const hasAdmin = existingRoles.includes('ADMIN');
+      updateData.roles = hasAdmin ? Array.from(new Set([...roles, 'ADMIN'])) : Array.from(new Set(roles));
+    }
 
     const user = await prisma.user.update({
       where: { id: userId },

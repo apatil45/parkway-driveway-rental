@@ -119,3 +119,29 @@ export async function optionalAuth(request: NextRequest): Promise<{ userId?: str
   return {};
 }
 
+/**
+ * Require admin role (use after verifyAuth/requireAuth to ensure user has ADMIN in roles)
+ */
+export async function requireAdmin(request: NextRequest): Promise<AuthResult & { userId: string }> {
+  const authResult = await requireAuth(request);
+  if (!authResult.success) {
+    return authResult as AuthResult & { userId: string };
+  }
+  const { prisma } = await import('@parkway/database');
+  const user = await prisma.user.findUnique({
+    where: { id: authResult.userId! },
+    select: { id: true, roles: true },
+  });
+  const isAdmin = user?.roles?.includes('ADMIN');
+  if (!user || !isAdmin) {
+    return {
+      success: false,
+      error: NextResponse.json(
+        createApiError('Admin access required.', 403, 'FORBIDDEN'),
+        { status: 403 }
+      ),
+    } as AuthResult & { userId: string };
+  }
+  return { ...authResult, userId: authResult.userId! };
+}
+

@@ -111,3 +111,16 @@ export const contactSchema = z.object({
   message: z.string().min(10, 'Please enter your message (at least 10 characters)'),
 });
 export type ContactInput = z.infer<typeof contactSchema>;
+
+// Verification (address proof) submission: 1–2 document URLs from upload API
+export const submitVerificationSchema = z.object({
+  documentUrls: z.array(z.string().url()).min(1, 'At least one document is required').max(2, 'Maximum 2 documents'),
+});
+export type SubmitVerificationInput = z.infer<typeof submitVerificationSchema>;
+
+// Admin review: approve or reject with optional reason
+export const adminVerificationReviewSchema = z.object({
+  action: z.enum(['approve', 'reject']),
+  rejectionReason: z.string().max(500).optional(),
+});
+export type AdminVerificationReviewInput = z.infer<typeof adminVerificationReviewSchema>;

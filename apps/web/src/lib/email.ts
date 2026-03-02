@@ -82,7 +82,7 @@ export const emailTemplates = {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(to right, #2563eb, #1e40af); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <div style="background: linear-gradient(to right, #1e3a8a, #0f172a); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
             <h1 style="color: white; margin: 0;">Parkway</h1>
           </div>
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">

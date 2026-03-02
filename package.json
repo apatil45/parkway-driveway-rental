@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "cd apps/web && npm run dev",
-    "build": "npm run build:packages && npm run db:generate && cd apps/web && npm run build",
+    "build": "npm run db:generate && npm run build:packages && cd apps/web && npm run build",
     "build:packages": "cd packages/database && npm run build && cd ../shared && npm run build",
     "start": "cd apps/web && npm run start",
     "test": "cd apps/web && npm run test",
@@ -24,17 +24,17 @@
     "type-check": "cd apps/web && npm run type-check",
     "clean": "cd apps/web && npm run clean",
     "postinstall": "npm run db:generate",
-    "db:generate": "cd packages/database && prisma generate",
+    "db:generate": "cd packages/database && npm run db:generate",
     "db:migrate": "cd packages/database && prisma migrate dev",
     "db:deploy": "cd packages/database && prisma migrate deploy",
     "db:seed": "cd packages/database && prisma db seed",
     "db:studio": "cd packages/database && prisma studio",
     "db:push": "cd packages/database && prisma db push",
     "validate-env": "cd apps/web && node scripts/validate-env.js",
+    "admin:promote": "node scripts/run-promote-admin.js",
     "fix:stripe-deps": "npm install es-errors es-object-atoms call-bind-apply-helpers get-intrinsic get-proto dunder-proto has-symbols call-bind side-channel side-channel-weakmap --ignore-scripts"
   },
   "devDependencies": {
-    "@babel/helper-string-parser": "^7.24.0",
     "@playwright/test": "^1.56.1",
     "@turbo/gen": "^1.10.12",
     "@types/node": "^20.8.0",

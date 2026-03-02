@@ -3,6 +3,7 @@ import { prisma } from '@parkway/database';
 import { createApiResponse, createApiError } from '@parkway/shared';
 import { requireAuth } from '@/lib/auth-middleware';
 import { logger } from '@/lib/logger';
+import { PLATFORM_FEE_RATE } from '@/services/PricingService';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -70,7 +71,11 @@ export async function GET(request: NextRequest) {
               paymentStatus: 'COMPLETED'
             },
             _sum: { totalPrice: true }
-          }).then((r) => (r._sum?.totalPrice ?? 0) as number)
+          }).then((r) => {
+            const totalPaid = (r._sum?.totalPrice ?? 0) as number;
+            // Host receives totalPrice - 15% platform fee = totalPrice / 1.15
+            return totalPaid > 0 ? Math.round((totalPaid / (1 + PLATFORM_FEE_RATE)) * 100) / 100 : 0;
+          })
         : Promise.resolve(0),
 
       isOwner

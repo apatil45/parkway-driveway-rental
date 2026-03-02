@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useId, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { getPrimaryMarket, getMarketBySlug } from '@/lib/market-config';
 
 // Type declarations for Web Speech API
 interface SpeechRecognition extends EventTarget {
@@ -51,6 +53,12 @@ interface AddressSuggestion {
   lon: string;
   place_id: number;
   distance?: number;
+  /** For recent: "5m ago", "2h ago" (SpotHero-style clarity) */
+  lastUsedAgo?: string;
+  /** Nominatim type (city, town, road, etc.) — for "City" / "Address" label in dropdown */
+  placeType?: string;
+  /** Nominatim importance (0–1) — prominence-style ranking; cities/landmarks score higher */
+  importance?: number;
   isRecent?: boolean;
   isNearby?: boolean;
   isFavorite?: boolean;
@@ -83,25 +91,9 @@ const SEARCH_ANALYTICS_KEY = 'parkway_search_analytics';
 const MAX_HISTORY_ITEMS = 10;
 const MAX_FAVORITES = 5;
 
-// Popular search suggestions
-const POPULAR_SEARCHES = [
-  'Airport parking',
-  'Downtown parking',
-  'Event parking',
-  'Stadium parking',
-  'Shopping mall parking',
-  'Hospital parking',
-  'University parking',
-];
-
-// Dynamic placeholder texts
-const PLACEHOLDER_TEXTS = [
-  'Search for parking near...',
-  'Try "airport parking" or "downtown"',
-  'Enter an address or landmark',
-  'Search by location name',
-  'Find parking near your destination',
-];
+// Fallback when no market config (should not happen if market-config is set up)
+const FALLBACK_POPULAR_SEARCHES = ['Downtown', 'Near me', 'Address or landmark'];
+const FALLBACK_PLACEHOLDER_TEXTS = ['Search for parking near...', 'Enter an address or landmark'];
 
 // Debounce function
 function debounce<T extends (...args: any[]) => void>(
@@ -113,6 +105,30 @@ function debounce<T extends (...args: any[]) => void>(
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
+}
+
+// Human-readable label from Nominatim type (city, town, road, etc.)
+function getPlaceTypeLabel(type?: string): string {
+  if (!type) return 'Address';
+  const t = type.toLowerCase();
+  if (['city', 'town', 'municipality', 'city_block'].includes(t)) return 'City';
+  if (['village', 'suburb', 'neighbourhood', 'quarter', 'hamlet'].includes(t)) return 'Area';
+  if (['state', 'county', 'region'].includes(t)) return 'Region';
+  if (['road', 'street', 'house', 'building', 'residential'].includes(t)) return 'Address';
+  return 'Address';
+}
+
+// Format "Xm ago" / "Xh ago" for recent items (SpotHero-style)
+function formatLastUsedAgo(timestamp: number): string {
+  const diffMs = Date.now() - timestamp;
+  const diffM = Math.floor(diffMs / 60000);
+  const diffH = Math.floor(diffMs / 3600000);
+  const diffD = Math.floor(diffMs / 86400000);
+  if (diffM < 1) return 'Just now';
+  if (diffM < 60) return `${diffM}m ago`;
+  if (diffH < 24) return `${diffH}h ago`;
+  if (diffD < 7) return `${diffD}d ago`;
+  return 'Recently';
 }
 
 // Calculate distance (Haversine formula)
@@ -244,33 +260,28 @@ async function getNearbyPlaces(lat: number, lon: number): Promise<AddressSuggest
   return [];
 }
 
-// Search POIs (Points of Interest)
-async function searchPOIs(query: string, userLocation: { lat: number; lon: number } | null): Promise<AddressSuggestion[]> {
+// Search POIs (Points of Interest). viewboxParam: market slug or raw bbox for scoped results.
+async function searchPOIs(
+  query: string,
+  userLocation: { lat: number; lon: number } | null,
+  viewboxParam?: string
+): Promise<AddressSuggestion[]> {
   try {
-    // Check if query looks like a POI search
     const poiKeywords = ['near', 'airport', 'stadium', 'mall', 'hospital', 'university', 'park', 'beach'];
     const isPOISearch = poiKeywords.some(keyword => query.toLowerCase().includes(keyword));
-    
-    if (!isPOISearch && !query.toLowerCase().includes('near')) {
-      return [];
-    }
-    
+    if (!isPOISearch && !query.toLowerCase().includes('near')) return [];
     let searchQuery = query;
-    if (query.toLowerCase().startsWith('near ')) {
-      searchQuery = query.substring(5);
-    }
-    
-    const response = await fetch(
-      `/api/geocode/search?q=${encodeURIComponent(searchQuery)}&limit=5&bounded=0`
-    );
-    
+    if (query.toLowerCase().startsWith('near ')) searchQuery = query.substring(5);
+    const params = new URLSearchParams({ q: searchQuery, limit: '5', bounded: '0' });
+    if (viewboxParam) params.set('viewbox', viewboxParam);
+    const response = await fetch(`/api/geocode/search?${params.toString()}`);
     if (response.ok) {
       const data: AddressSuggestion[] = await response.json();
       return data.map(item => ({
         ...item,
         isPOI: true,
         category: 'poi' as const,
-        distance: userLocation 
+        distance: userLocation
           ? calculateDistance(userLocation.lat, userLocation.lon, parseFloat(item.lat), parseFloat(item.lon))
           : undefined,
       }));
@@ -281,11 +292,20 @@ async function searchPOIs(query: string, userLocation: { lat: number; lon: numbe
   return [];
 }
 
+// Escape special regex characters in query for safe highlighting
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Highlight matching text
 function highlightMatch(text: string, query: string): string {
   if (!query) return text;
-  const regex = new RegExp(`(${query})`, 'gi');
-  return text.replace(regex, '<mark class="bg-yellow-200 font-semibold">$1</mark>');
+  try {
+    const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-200 font-semibold">$1</mark>');
+  } catch {
+    return text;
+  }
 }
 
 // Levenshtein distance for fuzzy matching
@@ -463,6 +483,8 @@ interface AddressAutocompleteProps {
   /** Hero style: softer border, rounded-xl, more padding (e.g. homepage search block) */
   variant?: 'default' | 'hero';
   userLocationProp?: { lat: number; lon: number };
+  /** Market slug from market-config (e.g. "jersey"). Defaults to primary market. Scopes search and copy to that market. */
+  marketSlug?: string;
 }
 
 export default function AddressAutocomplete({
@@ -478,7 +500,17 @@ export default function AddressAutocomplete({
   minimal = false,
   variant = 'default',
   userLocationProp,
+  marketSlug,
 }: AddressAutocompleteProps) {
+  const listboxId = useId();
+  const statusId = useId();
+  const market = useMemo(
+    () => getMarketBySlug(marketSlug ?? getPrimaryMarket().slug) ?? getPrimaryMarket(),
+    [marketSlug]
+  );
+  const viewboxParam = market?.slug ?? undefined;
+  const popularSearches = market?.popularSearches ?? FALLBACK_POPULAR_SEARCHES;
+  const placeholderTexts = market?.placeholderHints ?? FALLBACK_PLACEHOLDER_TEXTS;
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -489,25 +521,71 @@ export default function AddressAutocomplete({
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [cachedResults, setCachedResults] = useState<AddressSuggestion[]>([]);
+  const cachedResultsRef = useRef<AddressSuggestion[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [listeningStartTime, setListeningStartTime] = useState<number | null>(null);
-  const listeningStartTimeRef = useRef<number | null>(null); // Use ref to persist across closures
+  const listeningStartTimeRef = useRef<number | null>(null);
   const [fuzzySuggestion, setFuzzySuggestion] = useState<string | null>(null);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const retryCountRef = useRef<number>(0); // Track retry attempts
+  const retryCountRef = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  /** Dropdown position when rendered in portal (so it escapes parent z-index and appears above navbar) */
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   
+  // Position dropdown for portal (above navbar / other sticky UI). Update on open, scroll, resize.
+  const updateDropdownPosition = useCallback(() => {
+    if (!inputRef.current || typeof document === 'undefined') return;
+    const rect = inputRef.current.getBoundingClientRect();
+    setDropdownPosition({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
+  // Keep dropdown anchored to input on scroll/resize (SpotHero-style: dropdown tracks the field, does not close)
+  useLayoutEffect(() => {
+    if (!showSuggestions) {
+      setDropdownPosition(null);
+      return;
+    }
+    updateDropdownPosition();
+    let rafId: number | null = null;
+    const scheduleUpdate = (e?: Event) => {
+      if (e?.type === 'scroll') {
+        const target = e.target as Node;
+        const dropdownEl = typeof document !== 'undefined' ? document.getElementById(listboxId) : null;
+        if (dropdownEl?.contains(target)) return;
+      }
+      if (rafId != null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        updateDropdownPosition();
+      });
+    };
+    window.addEventListener('scroll', scheduleUpdate as EventListener, true);
+    document.addEventListener('scroll', scheduleUpdate as EventListener, true);
+    window.addEventListener('resize', scheduleUpdate as EventListener);
+    return () => {
+      if (rafId != null) cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', scheduleUpdate as EventListener, true);
+      document.removeEventListener('scroll', scheduleUpdate as EventListener, true);
+      window.removeEventListener('resize', scheduleUpdate as EventListener);
+    };
+  }, [showSuggestions, updateDropdownPosition, listboxId]);
+
   // Rotate placeholder text
   useEffect(() => {
     if (!placeholder) {
       const interval = setInterval(() => {
-        setCurrentPlaceholder((prev) => (prev + 1) % PLACEHOLDER_TEXTS.length);
+        setCurrentPlaceholder((prev) => (prev + 1) % placeholderTexts.length);
       }, 3000);
       return () => clearInterval(interval);
     }
-  }, [placeholder]);
+  }, [placeholder, placeholderTexts.length]);
   
   // Load favorites
   useEffect(() => {
@@ -743,12 +821,10 @@ export default function AddressAutocomplete({
     }
   }, [userLocationProp]);
   
-  // Fetch suggestions with error handling and caching
+  // Fetch suggestions with abort support, viewbox, and clear error handling
   const fetchSuggestions = useCallback(async (query: string) => {
-    // Track search in analytics
     saveSearchToAnalytics(query, false);
-    
-    // Show favorites, recent, nearby, and time-based suggestions when query is short
+
     if (!query || query.length < 2) {
       const recentAddresses = getSavedAddresses()
         .slice(0, 3)
@@ -758,12 +834,12 @@ export default function AddressAutocomplete({
           lon: String(addr.lon),
           place_id: addr.timestamp,
           isRecent: true,
+          lastUsedAgo: formatLastUsedAgo(addr.timestamp),
           category: 'recent' as const,
           distance: userLocation
             ? calculateDistance(userLocation.lat, userLocation.lon, addr.lat, addr.lon)
             : undefined,
         }));
-      
       const favoriteSuggestions = favorites.map(fav => ({
         display_name: fav.address,
         lat: String(fav.lat),
@@ -775,17 +851,7 @@ export default function AddressAutocomplete({
           ? calculateDistance(userLocation.lat, userLocation.lon, fav.lat, fav.lon)
           : undefined,
       }));
-      
-      // Add time-based smart suggestions
       const timeBasedSuggestions = getTimeBasedSuggestions(favorites);
-      
-      // Add common locations from analytics
-      const analytics = getSearchAnalytics();
-      const commonLocationSuggestions: AddressSuggestion[] = [];
-      if (analytics.preferences.commonLocations && analytics.preferences.commonLocations.length > 0) {
-        // These would need to be geocoded, but for now we'll just show them as text suggestions
-      }
-      
       const allSuggestions: AddressSuggestion[] = [...timeBasedSuggestions, ...favoriteSuggestions, ...recentAddresses, ...nearbyPlaces];
       if (allSuggestions.length > 0) {
         setSuggestions(allSuggestions);
@@ -797,125 +863,109 @@ export default function AddressAutocomplete({
       }
       return;
     }
-    
+
+    abortControllerRef.current?.abort();
+    const ac = new AbortController();
+    abortControllerRef.current = ac;
+    const signal = ac.signal;
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Try POI search first if applicable
-      const poiResults = await searchPOIs(query, userLocation);
-      
-      // Regular address search via our API (avoids CORS / Nominatim 403)
-      const response = await fetch(
-        `/api/geocode/search?q=${encodeURIComponent(query)}&limit=10&bounded=1`
-      );
-      
+      const poiResults = await searchPOIs(query, userLocation, viewboxParam);
+      const params = new URLSearchParams({ q: query, limit: '10', bounded: '1' });
+      if (viewboxParam) params.set('viewbox', viewboxParam);
+      const response = await fetch(`/api/geocode/search?${params.toString()}`, { signal });
+
       if (response.ok) {
         const data: AddressSuggestion[] = await response.json();
-        
-        // Cache results for fallback
+        cachedResultsRef.current = data;
         setCachedResults(data);
-        
+
         const savedAddresses = getSavedAddresses();
         const favoriteAddresses = favorites;
-        
-        // Enhance suggestions
-        const enhancedSuggestions = data.map(suggestion => {
+        const marketName = market.displayName.toLowerCase();
+        const enhancedSuggestions = data.map((suggestion: AddressSuggestion & { type?: string; importance?: number }) => {
           const lat = parseFloat(suggestion.lat);
           const lon = parseFloat(suggestion.lon);
-          
-          const savedMatch = savedAddresses.find(
-            saved => Math.abs(saved.lat - lat) < 0.001 && Math.abs(saved.lon - lon) < 0.001
-          );
-          
-          const favoriteMatch = favoriteAddresses.find(
-            fav => Math.abs(fav.lat - lat) < 0.001 && Math.abs(fav.lon - lon) < 0.001
-          );
-          
+          const savedMatch = savedAddresses.find(s => Math.abs(s.lat - lat) < 0.001 && Math.abs(s.lon - lon) < 0.001);
+          const favoriteMatch = favoriteAddresses.find(f => Math.abs(f.lat - lat) < 0.001 && Math.abs(f.lon - lon) < 0.001);
           let distance: number | undefined;
-          if (userLocation) {
-            distance = calculateDistance(userLocation.lat, userLocation.lon, lat, lon);
-          }
-          
+          if (userLocation) distance = calculateDistance(userLocation.lat, userLocation.lon, lat, lon);
+          const raw = suggestion as unknown as { type?: string; importance?: number };
           return {
             ...suggestion,
+            placeType: raw.type ?? suggestion.placeType,
+            importance: typeof raw.importance === 'number' ? raw.importance : suggestion.importance,
             distance,
             isRecent: !!savedMatch,
             isFavorite: !!favoriteMatch,
             category: (favoriteMatch ? 'favorite' : savedMatch ? 'recent' : 'address') as 'favorite' | 'recent' | 'address',
           };
         });
-        
-        // Combine POI and address results
         const allResults: AddressSuggestion[] = [...poiResults, ...enhancedSuggestions];
-        
-        // Smart ranking - prioritize proximity to user's current location
         const rankedSuggestions = allResults.sort((a, b) => {
-          let scoreA = 0;
-          let scoreB = 0;
-          
-          // Proximity is most important: max 100 points
-          // Within 5km gets strong bonus, degrades with distance
+          let scoreA = 0, scoreB = 0;
           if (a.distance !== undefined && b.distance !== undefined) {
             scoreA += Math.max(0, 100 - a.distance * 15);
             scoreB += Math.max(0, 100 - b.distance * 15);
           } else if (a.distance !== undefined) scoreA += 100;
           else if (b.distance !== undefined) scoreB += 100;
-          
-          // Then user preferences
           if (a.isFavorite) scoreA += 120;
           if (b.isFavorite) scoreB += 120;
           if (a.isRecent) scoreA += 80;
           if (b.isRecent) scoreB += 80;
           if (a.isPOI) scoreA += 30;
           if (b.isPOI) scoreB += 30;
-          
-          const queryLower = query.toLowerCase();
-          if (a.display_name.toLowerCase().startsWith(queryLower)) scoreA += 10;
-          if (b.display_name.toLowerCase().startsWith(queryLower)) scoreB += 10;
-          
+          if (a.display_name.toLowerCase().includes(marketName)) scoreA += 50;
+          if (b.display_name.toLowerCase().includes(marketName)) scoreB += 50;
+          const ql = query.toLowerCase();
+          if (a.display_name.toLowerCase().startsWith(ql)) scoreA += 10;
+          if (b.display_name.toLowerCase().startsWith(ql)) scoreB += 10;
+          if (typeof a.importance === 'number') scoreA += Math.round(a.importance * 40);
+          if (typeof b.importance === 'number') scoreB += Math.round(b.importance * 40);
           return scoreB - scoreA;
         });
-        
         const topSuggestions = rankedSuggestions.slice(0, 8);
         setSuggestions(topSuggestions);
         setShowSuggestions(topSuggestions.length > 0);
-        
-        // Check for fuzzy matches if no exact results
+        const cache = cachedResultsRef.current;
         if (topSuggestions.length === 0 || (topSuggestions.length < 3 && query.length >= 3)) {
-          const fuzzyMatch = findFuzzyMatch(query, cachedResults.length > 0 ? cachedResults : topSuggestions);
-          setFuzzySuggestion(fuzzyMatch);
+          setFuzzySuggestion(findFuzzyMatch(query, cache.length > 0 ? cache : topSuggestions));
         } else {
           setFuzzySuggestion(null);
         }
       } else {
-        // Use cached results on error
-        if (cachedResults.length > 0) {
-          setSuggestions(cachedResults.slice(0, 5));
+        const body = await response.json().catch(() => ({}));
+        const message = typeof body?.error === 'string' ? body.error : 'Search failed. Please try again.';
+        const cached = cachedResultsRef.current;
+        if (cached.length > 0) {
+          setSuggestions(cached.slice(0, 5));
           setShowSuggestions(true);
-          setError('Showing cached results. Check your connection.');
+          setError('Showing cached results. ' + message);
         } else {
           setSuggestions([]);
           setShowSuggestions(false);
-          setError('Unable to search. Please check your connection.');
+          setError(message);
         }
       }
-    } catch (error) {
-      console.error('Address autocomplete error:', error);
-      // Use cached results on error
-      if (cachedResults.length > 0) {
-        setSuggestions(cachedResults.slice(0, 5));
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      console.error('Address autocomplete error:', err);
+      const cached = cachedResultsRef.current;
+      if (cached.length > 0) {
+        setSuggestions(cached.slice(0, 5));
         setShowSuggestions(true);
         setError('Showing cached results. Check your connection.');
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
-          setError('Search is temporarily unavailable. Please check your connection and try again.');
+        setError('Search is temporarily unavailable. Please try again.');
       }
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
-  }, [userLocation, nearbyPlaces, favorites, cachedResults]);
+  }, [userLocation, nearbyPlaces, favorites, viewboxParam, market]);
   
   // Update ref with latest fetchSuggestions
   useEffect(() => {
@@ -925,7 +975,7 @@ export default function AddressAutocomplete({
   const debouncedFetch = useRef(
     debounce((query: string) => {
       fetchSuggestions(query);
-    }, 300)
+    }, 500)
   ).current;
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1096,10 +1146,10 @@ export default function AddressAutocomplete({
   
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+      const inContainer = containerRef.current?.contains(target);
+      const inDropdown = document.getElementById(listboxId)?.contains(target);
+      if (!inContainer && !inDropdown) {
         setShowSuggestions(false);
         setSelectedIndex(-1);
       }
@@ -1107,20 +1157,21 @@ export default function AddressAutocomplete({
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [listboxId]);
   
   useEffect(() => {
     if (selectedIndex >= 0 && showSuggestions) {
-      const selectedElement = containerRef.current?.querySelector(
+      const listbox = document.getElementById(listboxId);
+      const selectedElement = listbox?.querySelector(
         `[data-suggestion-index="${selectedIndex}"]`
       ) as HTMLElement;
       if (selectedElement) {
         selectedElement.scrollIntoView({ block: 'nearest' });
       }
     }
-  }, [selectedIndex, showSuggestions]);
+  }, [selectedIndex, showSuggestions, listboxId]);
   
-  const displayPlaceholder = placeholder || PLACEHOLDER_TEXTS[currentPlaceholder];
+  const displayPlaceholder = placeholder || placeholderTexts[currentPlaceholder];
   
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -1151,6 +1202,17 @@ export default function AddressAutocomplete({
         </div>
       )}
       
+      {/* Screen reader status for loading and result count */}
+      <div
+        id={statusId}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {loading && 'Searching…'}
+        {!loading && showSuggestions && suggestions.length > 0 && `${suggestions.length} suggestion${suggestions.length !== 1 ? 's' : ''}`}
+      </div>
       <div className="relative">
         <input
           ref={inputRef}
@@ -1158,6 +1220,16 @@ export default function AddressAutocomplete({
           value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          role="combobox"
+          aria-expanded={showSuggestions}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-describedby={label ? undefined : statusId}
+          aria-activedescendant={
+            showSuggestions && suggestions.length > 0 && selectedIndex >= 0 && selectedIndex < suggestions.length
+              ? `${listboxId}-option-${selectedIndex}`
+              : undefined
+          }
           onFocus={() => {
             if (value.length < 2) {
               const recentAddresses = getSavedAddresses()
@@ -1168,6 +1240,7 @@ export default function AddressAutocomplete({
                   lon: String(addr.lon),
                   place_id: addr.timestamp,
                   isRecent: true,
+                  lastUsedAgo: formatLastUsedAgo(addr.timestamp),
                   category: 'recent' as const,
                   distance: userLocation
                     ? calculateDistance(userLocation.lat, userLocation.lon, addr.lat, addr.lon)
@@ -1292,39 +1365,46 @@ export default function AddressAutocomplete({
         </div>
       )}
       
-      {/* Suggestions Dropdown */}
-      {showSuggestions && (suggestions.length > 0 || (!value && POPULAR_SEARCHES.length > 0)) && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {/* Popular Searches (when input is empty) */}
-          {!value && POPULAR_SEARCHES.length > 0 && (
-            <div className="p-2 border-b border-gray-100">
-              <div className="px-2 py-1 mb-1">
-                <span className="text-xs font-medium text-gray-500">Popular Searches</span>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {POPULAR_SEARCHES.slice(0, 4).map((search, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      onChange(search);
-                      debouncedFetch(search);
-                    }}
-                    className="px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
-                  >
-                    {search}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* Suggestions Dropdown: portaled so z-index is above navbar (sticky z-20/z-30) */}
+      {showSuggestions && (suggestions.length > 0 || (!value && popularSearches.length > 0)) && dropdownPosition && typeof document !== 'undefined' && createPortal(
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Address suggestions"
+          className="w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+          style={{
+            position: 'fixed',
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width,
+            zIndex: 55, // z-dropdown: above navbar (50), below backdrops
+          }}
+        >
+          {/* Use current location — SpotHero-style, at top when we have user location */}
+          {userLocation && onLocationSelect && (
+            <button
+              type="button"
+              role="option"
+              onClick={() => {
+                const displayName = nearbyPlaces[0]?.display_name ?? 'Current location';
+                onChange(displayName);
+                onLocationSelect(userLocation.lat, userLocation.lon);
+                setShowSuggestions(false);
+                setSuggestions([]);
+                saveAddressToHistory(displayName, userLocation.lat, userLocation.lon);
+              }}
+              className="w-full text-left px-4 py-3 hover:bg-primary-50 focus:bg-primary-50 focus:outline-none transition-colors flex items-center gap-2 border-b border-gray-100"
+            >
+              <MapPinIcon className="w-4 h-4 text-primary-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-primary-700">Use current location</span>
+            </button>
           )}
-          
-          {/* Grouped Suggestions */}
+          {/* Recent / Favorites / Landmarks / Addresses — clear section hierarchy */}
           {Object.entries(groupedSuggestions).map(([category, categorySuggestions]) => (
             <div key={category}>
               {Object.keys(groupedSuggestions).length > 1 && (
                 <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                  <span className="text-xs font-medium text-gray-500 uppercase">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                     {category === 'favorite' ? 'Favorites' : 
                      category === 'recent' ? 'Recent' : 
                      category === 'poi' ? 'Landmarks' : 'Addresses'}
@@ -1338,12 +1418,17 @@ export default function AddressAutocomplete({
                 const isFavorite = suggestion.isFavorite;
                 const isPOI = suggestion.isPOI;
                 const distance = suggestion.distance;
+                const lastUsedAgo = suggestion.lastUsedAgo;
+                const placeTypeLabel = getPlaceTypeLabel(suggestion.placeType);
                 const highlightedName = highlightMatch(suggestion.display_name, value);
                 
                 return (
                   <button
                     key={`${suggestion.place_id}-${index}`}
                     type="button"
+                    role="option"
+                    id={`${listboxId}-option-${globalIndex}`}
+                    aria-selected={globalIndex === selectedIndex}
                     data-suggestion-index={globalIndex}
                     onClick={() => handleSelectSuggestion(suggestion)}
                     className={`w-full text-left px-4 py-3 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors ${
@@ -1365,12 +1450,15 @@ export default function AddressAutocomplete({
                           className="text-sm text-gray-900 block truncate"
                           dangerouslySetInnerHTML={{ __html: highlightedName }}
                         />
-                        {(isRecent || isNearby || isFavorite || isPOI || distance !== undefined) && (
-                          <div className="flex items-center gap-2 mt-0.5">
+                        {(isRecent || isNearby || isFavorite || isPOI || distance !== undefined || lastUsedAgo || placeTypeLabel !== 'Address') && (
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             {isFavorite && (
                               <span className="text-xs text-yellow-600 font-medium">Favorite</span>
                             )}
-                            {isRecent && (
+                            {isRecent && lastUsedAgo && (
+                              <span className="text-xs text-orange-600 font-medium">{lastUsedAgo}</span>
+                            )}
+                            {isRecent && !lastUsedAgo && (
                               <span className="text-xs text-orange-600 font-medium">Recent</span>
                             )}
                             {isPOI && (
@@ -1379,11 +1467,14 @@ export default function AddressAutocomplete({
                             {isNearby && (
                               <span className="text-xs text-blue-600 font-medium">Nearby</span>
                             )}
-                            {distance !== undefined && distance < 50 && (
+                            {!isFavorite && !isRecent && !isPOI && placeTypeLabel !== 'Address' && (
+                              <span className="text-xs text-gray-500 font-medium">{placeTypeLabel}</span>
+                            )}
+                            {!isRecent && distance !== undefined && distance < 50 && (
                               <span className="text-xs text-gray-500">
                                 {distance < 1 
-                                  ? `${Math.round(distance * 1000)}m away` 
-                                  : `${distance.toFixed(1)}km away`}
+                                  ? `~${Math.round(distance * 1000)}m from you` 
+                                  : `~${distance.toFixed(1)}km from you`}
                               </span>
                             )}
                           </div>
@@ -1395,7 +1486,32 @@ export default function AddressAutocomplete({
               })}
             </div>
           ))}
-        </div>
+          {/* Park near [venue] — SpotHero-style landmark shortcuts when input is empty */}
+          {!value && (market.popularVenues ?? popularSearches).length > 0 && (
+            <div className="p-2 border-t border-gray-100">
+              <div className="px-2 py-1 mb-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Park near</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {(market.popularVenues ?? popularSearches).slice(0, 5).map((venue, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    role="option"
+                    onClick={() => {
+                      onChange(venue);
+                      debouncedFetch(venue);
+                    }}
+                    className="px-2.5 py-1.5 text-xs font-medium bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg border border-primary-200 transition-colors"
+                  >
+                    {venue}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>,
+        document.body
       )}
       
     </div>

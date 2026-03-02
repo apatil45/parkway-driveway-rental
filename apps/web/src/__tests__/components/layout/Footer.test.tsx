@@ -16,7 +16,7 @@ describe('Footer Component', () => {
   it('renders footer content', () => {
     render(<Footer />);
     
-    expect(screen.getByText('Parkway')).toBeInTheDocument();
+    expect(screen.getByText(/parkway/i)).toBeInTheDocument();
   });
 
   it('renders links for drivers', () => {
@@ -60,14 +60,14 @@ describe('Footer Component', () => {
     render(<Footer />);
     
     const currentYear = new Date().getFullYear();
-    expect(screen.getByText(new RegExp(`© ${currentYear} Parkway`))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`© ${currentYear} ParkwayAi`))).toBeInTheDocument();
   });
 
   it('has proper styling classes', () => {
     const { container } = render(<Footer />);
     
     const footer = container.querySelector('footer');
-    expect(footer).toHaveClass('bg-gray-900', 'text-white', 'mt-auto');
+    expect(footer).toHaveClass('bg-primary-900', 'text-white', 'mt-auto');
   });
 
   it('has correct grid layout', () => {

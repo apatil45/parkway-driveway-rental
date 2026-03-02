@@ -60,7 +60,7 @@ export default function FloatingActions({ className = '' }: FloatingActionsProps
 
   return (
     <>
-      <div className={`fixed bottom-6 right-1 z-0 floating-actions ${className}`}>
+      <div className={`fixed bottom-6 right-1 z-overlay-content floating-actions ${className}`}>
         {/* Action Buttons */}
         <div
           className={`flex flex-col-reverse gap-3 mb-3 transition-all duration-300 ${
@@ -186,7 +186,7 @@ export default function FloatingActions({ className = '' }: FloatingActionsProps
       {/* Backdrop (for mobile) */}
       {isExpanded && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-20 z-40 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-20 z-backdrop md:hidden"
           onClick={() => setIsExpanded(false)}
           aria-hidden="true"
         />

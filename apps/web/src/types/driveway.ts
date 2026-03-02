@@ -18,6 +18,7 @@ export interface SearchDriveway {
   isAvailable: boolean;
   averageRating: number;
   reviewCount: number;
+  verificationStatus?: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
   owner: {
     id: string;
     name: string;

@@ -7,7 +7,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 import BookingsPage from '@/app/bookings/page';
-import api from '@/lib/api';
+import api from '@/lib/api-client';
 
 // Mock Next.js hooks
 const mockPush = jest.fn();
@@ -19,12 +19,13 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
-// Mock API
-jest.mock('@/lib/api', () => ({
+// Mock API client (page uses api-client, not api)
+jest.mock('@/lib/api-client', () => ({
   __esModule: true,
   default: {
     get: jest.fn(),
     patch: jest.fn(),
+    post: jest.fn(),
   },
 }));
 
@@ -47,11 +48,23 @@ jest.mock('@/components/layout', () => ({
   AppLayout: ({ children }: any) => <div>{children}</div>,
 }));
 
-// Mock ReviewForm
+// Mock UI components used by BookingsPage (mock must provide all imports)
 jest.mock('@/components/ui', () => ({
   ReviewForm: ({ onSuccess }: any) => (
     <button onClick={onSuccess}>Submit Review</button>
   ),
+  ConfirmDialog: (props: any) => (
+    <div data-testid="confirm-dialog">
+      {props.open && (
+        <>
+          <button onClick={props.onConfirm}>Confirm</button>
+          <button onClick={props.onCancel}>Cancel</button>
+        </>
+      )}
+    </div>
+  ),
+  ImageWithPlaceholder: ({ src, alt }: any) => <img src={src} alt={alt || ''} />,
+  ButtonLink: ({ href, children }: any) => <a href={href}>{children}</a>,
 }));
 
 describe('BookingsPage', () => {
@@ -171,25 +184,26 @@ describe('BookingsPage', () => {
     render(<BookingsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/payment required/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/payment required/i).length).toBeGreaterThan(0);
     });
   });
 
   it('allows cancelling pending bookings', async () => {
-    // Mock window.confirm
-    window.confirm = jest.fn(() => true);
-
     render(<BookingsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Test Driveway')).toBeInTheDocument();
     });
 
-    const cancelButton = screen.getByText(/cancel booking/i);
+    const cancelButton = screen.getByRole('button', { name: /cancel booking/i });
     fireEvent.click(cancelButton);
 
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled();
+      expect(screen.getByText('Confirm')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Confirm'));
+
+    await waitFor(() => {
       expect(api.patch).toHaveBeenCalledWith(
         '/bookings/booking-1',
         { status: 'CANCELLED' }
@@ -198,21 +212,23 @@ describe('BookingsPage', () => {
   });
 
   it('does not cancel if user declines confirmation', async () => {
-    window.confirm = jest.fn(() => false);
-
     render(<BookingsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Test Driveway')).toBeInTheDocument();
     });
 
-    const cancelButton = screen.getByText(/cancel booking/i);
+    const cancelButton = screen.getByRole('button', { name: /cancel booking/i });
     fireEvent.click(cancelButton);
 
     await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled();
-      expect(api.patch).not.toHaveBeenCalled();
+      expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
     });
+    const dialog = screen.getByTestId('confirm-dialog');
+    const cancelBtn = dialog.querySelectorAll('button')[1]; // Confirm=0, Cancel=1
+    fireEvent.click(cancelBtn!);
+
+    expect(api.patch).not.toHaveBeenCalled();
   });
 
   it('auto-refreshes when payment is completed but booking is pending', async () => {
@@ -270,7 +286,7 @@ describe('BookingsPage', () => {
     render(<BookingsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/failed to load bookings/i)).toBeInTheDocument();
+      expect(screen.getByText(/couldn't load bookings/i)).toBeInTheDocument();
     });
   });
 
@@ -284,7 +300,7 @@ describe('BookingsPage', () => {
     render(<BookingsPage />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/login');
+      expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('/login'));
     });
   });
 

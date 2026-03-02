@@ -42,6 +42,7 @@ export type {
   UserRole,
   BookingStatus,
   PaymentStatus,
+  VerificationStatus,
 } from '@prisma/client';
 
 // Database connection helper

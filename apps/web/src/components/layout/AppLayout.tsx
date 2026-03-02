@@ -10,12 +10,15 @@ interface AppLayoutProps {
   children: ReactNode;
   showBreadcrumbs?: boolean;
   showFooter?: boolean;
+  /** When "marketing", footer uses gray-900 and guest-oriented links (e.g. Sign Up, Host Guide). */
+  footerVariant?: 'default' | 'marketing';
 }
 
 export default function AppLayout({
   children,
   showBreadcrumbs = true,
   showFooter = true,
+  footerVariant = 'default',
 }: AppLayoutProps) {
   // Detect offline status (shows toast automatically)
   useOffline();
@@ -29,7 +32,7 @@ export default function AppLayout({
       <Navbar />
       {showBreadcrumbs && <Breadcrumbs />}
       <main id="main-content" className="flex-1" tabIndex={-1}>{children}</main>
-      {showFooter && <Footer />}
+      {showFooter && <Footer variant={footerVariant} />}
     </div>
   );
 }

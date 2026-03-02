@@ -65,11 +65,11 @@ function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast:
   return (
     <>
       <div
-        className="fixed inset-0 z-40"
+        className="fixed inset-0 z-backdrop"
         onClick={closeAll}
         aria-hidden="true"
       />
-      <div className="fixed top-4 right-4 z-50 space-y-2 w-fit max-w-[min(24rem,100vw-2rem)]">
+      <div className="fixed top-4 right-4 z-overlay-content space-y-2 w-fit max-w-[min(24rem,100vw-2rem)]">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
         ))}

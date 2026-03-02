@@ -2,7 +2,7 @@
 const nextConfig = {
   transpilePackages: ['@parkway/database', '@parkway/shared'],
   // Don't bundle Stripe Node SDK in API routes; load from node_modules at runtime (avoids bundling its deep dependency tree)
-  serverExternalPackages: ['stripe'],
+  serverExternalPackages: ['stripe', 'pdf-parse'],
   experimental: {
     externalDir: true,
   },
@@ -29,7 +29,7 @@ const nextConfig = {
               "img-src 'self' data: https: blob:",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com",
               "style-src 'self' 'unsafe-inline'",
-              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://res.cloudinary.com",
             ].join('; '),
           },
         ],

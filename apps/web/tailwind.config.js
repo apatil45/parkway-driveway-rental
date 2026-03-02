@@ -36,6 +36,12 @@ module.exports = {
           800: 'rgb(var(--color-primary-800))',
           900: 'rgb(var(--color-primary-900))',
         },
+        accent: {
+          400: 'rgb(var(--color-accent-400))',
+          500: 'rgb(var(--color-accent-500))',
+          600: 'rgb(var(--color-accent-600))',
+          700: 'rgb(var(--color-accent-700))',
+        },
         surface: {
           DEFAULT: 'rgb(var(--color-surface))',
           foreground: 'rgb(var(--color-surface-foreground))',
@@ -53,7 +59,19 @@ module.exports = {
         lg: '0 8px 24px rgba(0,0,0,0.1)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', 'Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      // Shared z-index scale: navbar highest of layout; dropdown just above it so menus stay visible
+      // base(0) < content-overlay(10) < sticky-bar(20) < navbar(50) < dropdown(55) < backdrop(60) < overlay-content(70) < modal(80) < a11y(90)
+      zIndex: {
+        'content-overlay': 10,
+        'sticky-bar': 20,
+        navbar: 50,
+        dropdown: 55,
+        backdrop: 60,
+        'overlay-content': 70,
+        modal: 80,
+        a11y: 90,
       },
     },
   },

@@ -10,10 +10,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 function LoginForm() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();

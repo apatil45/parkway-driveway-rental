@@ -31,6 +31,14 @@ enum PaymentStatus {
   REFUNDED
 }
 
+// Owner address-proof verification: none | pending (submitted or manual review) | verified | rejected
+enum VerificationStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -73,6 +81,20 @@ model Driveway {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Address-proof verification (hybrid: auto + manual; future: third-party via verificationProvider)
+  verificationStatus         VerificationStatus @default(NONE)
+  verificationSubmittedAt    DateTime?
+  verifiedAt                  DateTime?
+  verificationRejectedAt      DateTime?
+  verificationRejectionReason String?
+  verificationDocumentUrls    String[]          // Cloudinary URLs (1–2)
+  verificationConfidence      Float?             // 0–1 from auto pipeline
+  verificationAutoResult      String?            // "verified" | "rejected" | "manual_review"
+  verificationExtractedAddress String?
+  verificationExtractedName    String?
+  verificationProvider        String?           // "in_house" | "third_party" (future)
+  verificationExternalId       String?           // external ref for third-party (future)
+
   // Relations
   owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   bookings Booking[]
@@ -80,6 +102,7 @@ model Driveway {
   favorites Favorite[]
 
   @@index([ownerId])
+  @@index([verificationStatus])
   @@map("driveways")
 }
 

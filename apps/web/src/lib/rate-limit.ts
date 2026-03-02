@@ -120,6 +120,13 @@ export const rateLimiters = {
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 20,
     message: 'Too many booking attempts, please try again later'
+  }),
+
+  // Geocode (Nominatim): stay under 1 req/sec - 20 per minute per IP
+  geocode: rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 20,
+    message: 'Too many searches. Please wait a moment and try again.'
   })
 };
 
