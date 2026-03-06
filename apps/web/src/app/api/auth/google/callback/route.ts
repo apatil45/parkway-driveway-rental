@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     const token = generateToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
 
-    const redirectPath = state && state.startsWith('/') ? state : '/dashboard';
+    const redirectPath = state && state.startsWith('/') ? state : '/search';
     const res = NextResponse.redirect(new URL(redirectPath, baseUrl));
     setAuthCookies(res, token, refreshToken, request);
     return res;

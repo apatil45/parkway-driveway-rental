@@ -221,8 +221,9 @@ function SearchPageContent() {
 
   const [canRenderMap, setCanRenderMap] = useState(true);
   const isMountedRef = useRef(true);
-  const locationDetectedRef = useRef(false);
   const urlSyncedRef = useRef(false);
+
+  const LOCATION_TOAST_SESSION_KEY = 'parkway-search-location-toast-shown';
 
   // Start with list open so results are visible
   useEffect(() => {
@@ -251,8 +252,12 @@ function SearchPageContent() {
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
 
-  // Auto-detect user location on mount
+  // Auto-detect user location on mount (skip if URL already has lat/lon)
   useEffect(() => {
+    const latFromUrl = searchParams.get('latitude');
+    const lonFromUrl = searchParams.get('longitude');
+    if (latFromUrl && lonFromUrl) return; // URL has location, skip geolocation
+
     if (navigator.geolocation && !filters.latitude && !filters.longitude) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -262,10 +267,12 @@ function SearchPageContent() {
             latitude: String(latitude),
             longitude: String(longitude),
           }));
-          if (!locationDetectedRef.current) {
-            locationDetectedRef.current = true;
-            showToast('Location detected! You can now search nearby driveways.', 'success');
-          }
+          try {
+            if (!sessionStorage.getItem(LOCATION_TOAST_SESSION_KEY)) {
+              sessionStorage.setItem(LOCATION_TOAST_SESSION_KEY, '1');
+              showToast('Location detected! You can now search nearby driveways.', 'success');
+            }
+          } catch (_) {}
         },
         (error) => {
           // Silently fail - user can manually set location
@@ -278,7 +285,8 @@ function SearchPageContent() {
         }
       );
     }
-  }, []); // Only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount; URL check uses initial searchParams
 
 
   // URL sync: on mount read query params, set filters, run search once with those params

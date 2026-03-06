@@ -52,13 +52,13 @@ function LoginForm() {
     const result = await login(data.email, data.password);
     
     if (result.success) {
-      let redirectPath = '/dashboard';
+      let redirectPath = '/search';
       if (redirect) {
         try {
           redirectPath = decodeURIComponent(redirect);
-          if (!redirectPath.startsWith('/')) redirectPath = '/dashboard';
+          if (!redirectPath.startsWith('/')) redirectPath = '/search';
         } catch {
-          redirectPath = '/dashboard';
+          redirectPath = '/search';
         }
       }
       router.push(redirectPath);
