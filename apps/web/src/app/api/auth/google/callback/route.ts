@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
           name: name || email.split('@')[0],
           googleId,
           password: null,
-          roles: DEFAULT_OAUTH_ROLE,
+          roles: [...DEFAULT_OAUTH_ROLE],
         },
       });
       logger.info('[AUTH] Google OAuth: Created new user', { userId: user.id, email });
