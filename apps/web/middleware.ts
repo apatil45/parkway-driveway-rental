@@ -50,12 +50,6 @@ export const config = {
 
 // ci/cd pipelines
 
-// ui finishes
-
-// breadcrumps
-
-//monitor user behaviour and traffic
-
 // React native
 
 
@@ -63,3 +57,11 @@ export const config = {
 
 
 // pseg and all confirmation
+
+
+
+// after login should land to search page
+
+//on success login set local or session storage to value
+
+// inlogo inner rect like car front bonet

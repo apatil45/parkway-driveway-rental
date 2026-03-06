@@ -15,16 +15,15 @@ const sizeMap = {
 const wordmarkDisplay = 'ParkwayAi';
 const wordmarkA11y = 'ParkwayAi';
 
-/** ParkwayAi brand: primary (navy) and accent (teal) — from CSS vars */
+/** ParkwayAi brand: primary (navy) — from CSS vars */
 const BRAND = {
   primary: 'rgb(var(--color-primary-600))',
   primaryDark: '#ffffff',
-  accent: 'rgb(var(--color-accent-500))',
   foreground: 'rgb(var(--color-surface-foreground))',
 } as const;
 
 /**
- * ParkwayAi logo: driveway (arch) + parking spot (rect inside) = "book a spot on a driveway."
+ * ParkwayAi logo: driveway boundary + car parked inside (top view) = "book a spot on a driveway."
  * Use dark=true on dark backgrounds.
  */
 export default function Logo({
@@ -65,14 +64,17 @@ export default function Logo({
         </filter>
       </defs>
       <g filter={dark ? undefined : `url(#${filterId})`}>
-        {/* Arch = driveway / structure */}
+        {/* Driveway lane (top view: curved path) */}
         <path
           fill={fillColor}
           fillRule="evenodd"
           d="M11 6L29 6Q32 6 32 9L32 31Q32 34 29 34L11 34Q8 34 8 31L8 9Q8 6 11 6ZM12 10L28 10L28 34L12 34Z"
         />
-        {/* Spot inside arch = the parking space you book (aligns to driveway rental) */}
-        <rect x="14" y="22" width="12" height="8" rx="3" fill={fillColor} />
+        {/* Car (top view: hood, cabin, trunk) — same color as frame for cohesion */}
+        <path
+          fill={fillColor}
+          d="M16 16 Q20 14 24 16 L25 18 L25 28 Q20 30 15 28 L15 18 Z"
+        />
       </g>
     </svg>
   );

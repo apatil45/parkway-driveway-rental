@@ -1,44 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcryptjs from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { prisma } from '@parkway/database';
-import { 
-  AuthResponse, 
-  createApiResponse, 
-  createApiError
-} from '@parkway/shared';
+import { createApiResponse, createApiError } from '@parkway/shared';
 import { registerSchema, type RegisterInput } from '@/lib/validations';
 import { setAuthCookies } from '@/lib/cookie-utils';
+import { generateToken, generateRefreshToken } from '@/lib/jwt';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-// Generate JWT token
-const generateToken = (userId: string): string => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET environment variable is not set');
-  }
-  return jwt.sign(
-    { id: userId },
-    secret,
-    { expiresIn: '7d' }
-  );
-};
-
-// Generate refresh token
-const generateRefreshToken = (userId: string): string => {
-  const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET or JWT_REFRESH_SECRET environment variable is not set');
-  }
-  return jwt.sign(
-    { id: userId, type: 'refresh' },
-    secret,
-    { expiresIn: '30d' }
-  );
-};
 
 export async function OPTIONS() {
   return new NextResponse(null, {

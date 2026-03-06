@@ -1,13 +1,24 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Input, Card, ErrorMessage } from '@/components/ui';
+import { Button, Input, Card, ErrorMessage, GoogleSignInButton } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { loginSchema, type LoginInput } from '@/lib/validations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  access_denied: 'You cancelled the sign-in. Please try again.',
+  google_oauth_not_configured: 'Google sign-in is not configured. Please use email and password.',
+  token_exchange_failed: 'Google sign-in failed. Please try again.',
+  userinfo_failed: 'Could not get your profile from Google. Please try again.',
+  no_email: 'Your Google account has no email. Please use a different account.',
+  account_disabled: 'Your account has been disabled. Please contact support.',
+  oauth_failed: 'Something went wrong. Please try again.',
+  missing_code: 'Invalid sign-in attempt. Please try again.',
+};
 
 function LoginForm() {
   const [loading, setLoading] = useState(false);
@@ -15,7 +26,16 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
+  const errorParam = searchParams.get('error');
   const { login } = useAuth();
+
+  useEffect(() => {
+    if (errorParam) {
+      const hint = searchParams.get('hint');
+      const msg = GOOGLE_ERROR_MESSAGES[errorParam] || 'Sign-in failed. Please try again.';
+      setError(hint ? `${msg} (${hint})` : msg);
+    }
+  }, [errorParam, searchParams]);
 
   const {
     register,
@@ -27,7 +47,7 @@ function LoginForm() {
 
   const onSubmit = async (data: LoginInput) => {
     setLoading(true);
-    setError('');
+    setError(''); // Clear any Google error
 
     const result = await login(data.email, data.password);
     
@@ -79,13 +99,26 @@ function LoginForm() {
           </div>
         </div>
 
-        <Button
-          type="submit"
-          loading={loading}
-          fullWidth
-        >
-          Sign in
-        </Button>
+        <div className="space-y-4">
+          <Button
+            type="submit"
+            loading={loading}
+            fullWidth
+          >
+            Sign in
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <GoogleSignInButton fullWidth redirect={redirect || undefined} />
+        </div>
       </form>
     </Card>
   );

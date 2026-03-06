@@ -19,3 +19,4 @@ export { default as ConfirmDialog } from './ConfirmDialog';
 export { default as ImageWithPlaceholder } from './ImageWithPlaceholder';
 export { default as VerifiedBadge } from './VerifiedBadge';
 export { default as Logo } from './Logo';
+export { default as GoogleSignInButton } from './GoogleSignInButton';

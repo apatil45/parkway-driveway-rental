@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Select, Card, ErrorMessage } from '@/components/ui';
+import { Button, Input, Select, Card, ErrorMessage, GoogleSignInButton } from '@/components/ui';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 import { useAuth } from '@/hooks';
 import { registerSchema, type RegisterInput } from '@/lib/validations';
@@ -164,6 +164,17 @@ export default function RegisterPage() {
             >
               Create account
             </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton fullWidth />
           </form>
         </Card>
       </div>
