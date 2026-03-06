@@ -14,14 +14,22 @@ const DEFAULT_OAUTH_ROLE = ['DRIVER'] as const;
  * GET /api/auth/google/callback
  * Handles Google OAuth callback: exchanges code for tokens, finds/creates user, sets auth cookies.
  */
+function getAppUrl(): string | undefined {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  const v = process.env.VERCEL_URL;
+  if (v) return `https://${v}`;
+  return undefined;
+}
+
 export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = getAppUrl();
 
   if (!clientId || !clientSecret || !appUrl) {
     logger.error('[AUTH] Google OAuth: Missing GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, or NEXT_PUBLIC_APP_URL');
-    return NextResponse.redirect(new URL('/login?error=google_oauth_not_configured', appUrl));
+    const base = appUrl || new URL(request.url).origin;
+    return NextResponse.redirect(new URL('/login?error=google_oauth_not_configured', base));
   }
 
   const code = request.nextUrl.searchParams.get('code');

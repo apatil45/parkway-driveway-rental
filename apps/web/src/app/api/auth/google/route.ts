@@ -7,9 +7,17 @@ export const runtime = 'nodejs';
  * GET /api/auth/google
  * Redirects to Google OAuth consent screen.
  */
+function getAppUrl(): string | undefined {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  // Vercel sets VERCEL_URL automatically (e.g. "your-app.vercel.app")
+  const v = process.env.VERCEL_URL;
+  if (v) return `https://${v}`;
+  return undefined;
+}
+
 export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = getAppUrl();
 
   if (!clientId || !appUrl) {
     return NextResponse.redirect(
