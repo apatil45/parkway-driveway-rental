@@ -223,7 +223,6 @@ function SearchPageContent() {
   const isMountedRef = useRef(true);
   const urlSyncedRef = useRef(false);
 
-  const LOCATION_TOAST_SESSION_KEY = 'parkway-search-location-toast-shown';
 
   // Start with list open so results are visible
   useEffect(() => {
@@ -251,43 +250,6 @@ function SearchPageContent() {
   }, []);
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
-
-  // Auto-detect user location on mount (skip if URL already has lat/lon)
-  useEffect(() => {
-    const latFromUrl = searchParams.get('latitude');
-    const lonFromUrl = searchParams.get('longitude');
-    if (latFromUrl && lonFromUrl) return; // URL has location, skip geolocation
-
-    if (navigator.geolocation && !filters.latitude && !filters.longitude) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setFilters(prev => ({
-            ...prev,
-            latitude: String(latitude),
-            longitude: String(longitude),
-          }));
-          try {
-            if (!sessionStorage.getItem(LOCATION_TOAST_SESSION_KEY)) {
-              sessionStorage.setItem(LOCATION_TOAST_SESSION_KEY, '1');
-              showToast('Location detected! You can now search nearby driveways.', 'success');
-            }
-          } catch (_) {}
-        },
-        (error) => {
-          // Silently fail - user can manually set location
-          console.log('Location detection failed:', error);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0
-        }
-      );
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount; URL check uses initial searchParams
-
 
   // URL sync: on mount read query params, set filters, run search once with those params
   useEffect(() => {
@@ -421,6 +383,29 @@ function SearchPageContent() {
     performSearch(page);
     updateSearchUrl(page);
   };
+
+  const handleUseMyLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      showToast('Geolocation is not supported by your browser', 'error');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const nextFilters = {
+          ...filters,
+          latitude: String(latitude),
+          longitude: String(longitude),
+        };
+        setFilters(nextFilters);
+        performSearch(1, nextFilters);
+        updateSearchUrl(1, nextFilters);
+        showToast('Location set. Searching nearby driveways.', 'success');
+      },
+      () => showToast('Unable to get your location. Check permissions or try an address.', 'error'),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }, [filters, performSearch, updateSearchUrl, showToast]);
 
   const closeListAndReturnFocus = useCallback(() => {
     setSidebarOpen(false);
@@ -559,6 +544,9 @@ function SearchPageContent() {
                 className="text-base"
               />
             </div>
+            <Button type="button" variant="outline" size="sm" onClick={handleUseMyLocation} className="shrink-0" aria-label="Use my location">
+              <MapPinIcon className="w-4 h-4" aria-hidden />
+            </Button>
             <button type="button" onClick={() => setMobileSearchExpanded(false)} aria-label="Close search" className="shrink-0 flex items-center justify-center w-11 h-11 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2">
               <XMarkIcon className="w-5 h-5" aria-hidden />
             </button>
@@ -577,6 +565,9 @@ function SearchPageContent() {
                   placeholder="Where are you going? Address, landmark, or transit..."
                 />
               </div>
+              <Button type="button" variant="outline" size="sm" onClick={handleUseMyLocation} className="shrink-0" aria-label="Use my location">
+                <MapPinIcon className="w-4 h-4 mr-1" aria-hidden /> Use my location
+              </Button>
               <Button onClick={handleSearchSubmit} size="sm" className="w-full sm:w-auto shrink-0">Search</Button>
             </div>
             <Button type="button" variant="secondary" size="sm" onClick={() => setShowFilters(!showFilters)} aria-label={showFilters ? 'Hide filters' : 'Show filters'} className="shrink-0 inline-flex items-center gap-2">
@@ -903,26 +894,7 @@ function SearchPageContent() {
                   ]}
                 />
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!navigator.geolocation) {
-                    showToast('Geolocation is not supported by your browser', 'error');
-                    return;
-                  }
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                      handleFilterChange('latitude', String(pos.coords.latitude));
-                      handleFilterChange('longitude', String(pos.coords.longitude));
-                      showToast('Location updated successfully', 'success');
-                    },
-                    (err) => showToast('Unable to get your location. Please check your browser permissions.', 'error')
-                  );
-                }}
-                className="shrink-0"
-              >
+              <Button type="button" variant="outline" size="sm" onClick={handleUseMyLocation} className="shrink-0">
                 <MapPinIcon className="w-4 h-4 mr-1" /> Use my location
               </Button>
               <Button

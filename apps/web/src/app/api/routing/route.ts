@@ -1,11 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiResponse, createApiError } from '@parkway/shared';
+import { rateLimiters } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const MAX_ROUTE_DISTANCE_KM = 200;
+
+/** Haversine distance in km */
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitResult = await rateLimiters.routing(request as unknown as Request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        createApiError(rateLimitResult.error || 'Too many routing requests', 429, 'RATE_LIMIT'),
+        { status: 429 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
@@ -52,7 +75,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const osrmUrl =`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+    const distanceKm = haversineKm(fromLat, fromLng, toLat, toLng);
+    if (distanceKm > MAX_ROUTE_DISTANCE_KM) {
+      return NextResponse.json(
+        createApiError(`Route distance exceeds ${MAX_ROUTE_DISTANCE_KM} km limit`, 400, 'VALIDATION_ERROR'),
+        { status: 400 }
+      );
+    }
+
+    const osrmBase = process.env.OSRM_URL || 'https://router.project-osrm.org';
+    const osrmUrl = `${osrmBase}/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
 
     const osrmResponse = await fetch(osrmUrl);
     const osrmData = await osrmResponse.json();
