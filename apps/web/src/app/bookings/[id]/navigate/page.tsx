@@ -39,6 +39,7 @@ export default function NavigatePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [geoError, setGeoError] = useState('');
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const lastRouteFromRef = useRef<[number, number] | null>(null);
   const routeDataRef = useRef<RouteData | null>(null);
@@ -290,6 +291,21 @@ export default function NavigatePage() {
     init();
   }, [booking, driverPosition, manualStartPosition, routeData]);
 
+  // When toggling full-screen, tell Leaflet to recalc size so the map fills the new container
+  useEffect(() => {
+    const map = mapRef.current as { invalidateSize?: () => void } | null;
+    if (!map?.invalidateSize) return;
+    requestAnimationFrame(() => {
+      map.invalidateSize?.();
+    });
+  }, [isFullScreen]);
+
+  useEffect(() => {
+    if (!isFullScreen || !driverPosition || !mapRef.current) return;
+    const map = mapRef.current as { panTo: (latlng: [number, number]) => void };
+    if (map.panTo) map.panTo(driverPosition);
+  }, [isFullScreen, driverPosition]);
+
   if (authLoading || (loading && !error)) {
     return (
       <AppLayout>
@@ -322,21 +338,28 @@ export default function NavigatePage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Directions to {booking?.driveway?.title}</h1>
-            <p className="text-sm text-gray-600 truncate">{booking?.driveway?.address}</p>
-            {routeData && (
-              <p className="text-xs text-gray-500 mt-1">
-                ~{(routeData.distance / 1000).toFixed(1)} km · ~{Math.round(routeData.duration / 60)} min
-              </p>
-            )}
-          </div>
-          <Link href="/bookings">
-            <Button variant="secondary" size="sm">Back to bookings</Button>
-          </Link>
-        </div>
+      <div className={isFullScreen ? 'fixed inset-0 z-50 flex flex-col bg-gray-900' : 'container mx-auto px-4 py-4'}>
+        {!isFullScreen && (
+          <>
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Directions to {booking?.driveway?.title}</h1>
+                <p className="text-sm text-gray-600 truncate">{booking?.driveway?.address}</p>
+                {routeData && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    ~{(routeData.distance / 1000).toFixed(1)} km · ~{Math.round(routeData.duration / 60)} min
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="primary" size="sm" onClick={() => setIsFullScreen(true)}>
+                  Full screen
+                </Button>
+                <Link href="/bookings">
+                  <Button variant="secondary" size="sm">Back to bookings</Button>
+                </Link>
+              </div>
+            </div>
 
         {geoError && (
           <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm space-y-2">
@@ -387,16 +410,33 @@ export default function NavigatePage() {
           </div>
         </div>
 
-        <p className="text-xs text-gray-500 mb-2">
-          We use your location only for directions and nearby search. We do not store or share it.
-        </p>
+            <p className="text-xs text-gray-500 mb-2">
+              We use your location only for directions and nearby search. We do not store or share it.
+            </p>
+          </>
+        )}
 
         <div
           ref={mapContainerRef}
-          className="w-full rounded-lg border border-gray-200 overflow-hidden"
-          style={{ height: 'calc(100vh - 12rem)', minHeight: 320 }}
+          className={isFullScreen ? 'flex-1 w-full min-h-0' : 'w-full rounded-lg border border-gray-200 overflow-hidden'}
+          style={isFullScreen ? {} : { height: 'calc(100vh - 12rem)', minHeight: 320 }}
           aria-label="Map with route to driveway"
         />
+
+        {isFullScreen && (
+          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center pointer-events-none">
+            <div className="pointer-events-auto">
+              <Button variant="secondary" size="sm" onClick={() => setIsFullScreen(false)}>
+                Exit full screen
+              </Button>
+            </div>
+            {routeData && (
+              <div className="pointer-events-auto bg-black/70 text-white rounded-lg px-4 py-2 text-sm font-medium">
+                ~{(routeData.distance / 1000).toFixed(1)} km · ~{Math.round(routeData.duration / 60)} min
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
