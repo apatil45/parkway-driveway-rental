@@ -101,7 +101,7 @@ export default function BookingConfirmationPage() {
   const calendarUrl = (() => {
     const format = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const title = encodeURIComponent(`Parking: ${booking.driveway.title}`);
-    const details = encodeURIComponent(`${booking.driveway.address}\n\nBooked via ParkwayAi`);
+    const details = encodeURIComponent(`${booking.driveway.address}\n\nBooked via Parkway Spot`);
     const location = encodeURIComponent(booking.driveway.address);
     const start = format(startDate);
     const end = format(endDate);

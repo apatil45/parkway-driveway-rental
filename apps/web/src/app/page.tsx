@@ -8,7 +8,6 @@ import { AppLayout } from '@/components/layout';
 import { Card, Button, LoadingSpinner, AddressAutocomplete, ImageWithPlaceholder } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api-client';
-import { getPrimaryMarket } from '@/lib/market-config';
 import {
   MagnifyingGlassIcon,
   CurrencyDollarIcon,
@@ -35,7 +34,6 @@ interface PublicStats {
 }
 
 export default function Home() {
-  const primaryMarket = getPrimaryMarket();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<PublicStats | null>(null);
@@ -47,6 +45,19 @@ export default function Home() {
 
   const isOwner = user?.roles.includes('OWNER');
   const isDriver = user?.roles.includes('DRIVER');
+
+  // Default address search bar to user's current location (home page)
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setSearchCoords({ lat: position.coords.latitude, lon: position.coords.longitude });
+        setSearchLocation('Current location');
+      },
+      () => {},
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+  }, []);
 
   useEffect(() => {
     // Fetch public stats (non-blocking - page can render without stats)
@@ -305,7 +316,7 @@ export default function Home() {
           {/* Benefits: trust copy. Logged-in users already chose; keep compact on mobile. */}
           <section className="py-6 sm:py-8 md:py-12 bg-gray-50">
             <div className="container">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Why Choose ParkwayAi?</h2>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Why Choose Parkway Spot?</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                 <Card className="p-4 md:p-6">
                   <ShieldCheckIcon className="w-8 h-8 md:w-10 md:h-10 text-primary-600 mb-2 md:mb-4" />
@@ -349,27 +360,12 @@ export default function Home() {
                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[rgb(var(--color-surface-foreground))] tracking-tight mb-3 md:mb-4" style={{ letterSpacing: '-0.02em', lineHeight: 1.15 }}>
                   Find parking in minutes. Or earn from your driveway.
                 </h1>
-                <p className="text-base sm:text-lg text-gray-600 mb-4 md:mb-6 max-w-md">
-                  Secure, verified driveway rentals in {primaryMarket.displayName}. Book instantly or list your space for free.
+                <p className="text-base sm:text-lg text-gray-600 mb-5 md:mb-6 max-w-md">
+                  Secure, verified driveway rentals near you. Book instantly or list your space for free.
                 </p>
-                {/* Persona toggle: anchor to relevant section */}
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <a
-                    href="#for-drivers"
-                    className="min-h-[48px] inline-flex items-center justify-center rounded-xl font-semibold px-6 bg-primary-600 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
-                  >
-                    I Need Parking
-                  </a>
-                  <a
-                    href="#for-owners"
-                    className="min-h-[48px] inline-flex items-center justify-center rounded-xl font-semibold px-6 border-2 border-[rgb(var(--color-border))] text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
-                  >
-                    I Want To Earn
-                  </a>
-                </div>
-                {/* Search block — primary conversion for guests */}
-                <div className="rounded-xl md:rounded-2xl border border-[rgb(var(--color-border))] bg-white p-4 sm:p-5 md:p-6 shadow-lg shadow-primary-900/5">
-                  <p className="text-sm font-semibold text-gray-800 mb-2 md:mb-3">Where are you going?</p>
+                {/* Search block — primary conversion, prominent */}
+                <div className="rounded-2xl border-2 border-[rgb(var(--color-border))] bg-white p-5 sm:p-6 md:p-7 shadow-xl shadow-primary-900/10 ring-1 ring-black/5">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Where are you going?</p>
                   <AddressAutocomplete
                     value={searchLocation}
                     onChange={handleLocationInputChange}
@@ -378,13 +374,13 @@ export default function Home() {
                     className="w-full"
                     variant="hero"
                   />
-                  <div className="mt-4 flex flex-wrap gap-3">
+                  <div className="mt-4 sm:mt-5 flex flex-wrap gap-3">
                     <Button
                       type="button"
                       onClick={handleSearchSubmit}
                       variant="accent"
                       size="lg"
-                      className="flex-1 min-w-0 rounded-xl px-5"
+                      className="flex-1 min-w-0 rounded-xl px-5 min-h-[48px] text-base font-semibold"
                     >
                       Search
                     </Button>
@@ -403,7 +399,7 @@ export default function Home() {
               <div className="relative hidden md:block aspect-[4/3] max-h-[320px] lg:max-h-[380px] rounded-2xl overflow-hidden bg-primary-100/50 order-1 md:order-2 ring-1 ring-black/5">
                 <Image
                   src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80"
-                  alt="Park your car in a driveway — find or list on ParkwayAi"
+                  alt="Park your car in a driveway — find or list on Parkway Spot"
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 0px, 50vw"
@@ -418,7 +414,7 @@ export default function Home() {
         <section className="py-6 sm:py-10 md:py-16 bg-white border-b">
           <div className="container text-center">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">
-              Now live in {primaryMarket.displayName}
+              Find parking near you
             </h2>
             <p className="text-gray-600 max-w-xl mx-auto text-sm sm:text-base">
               Be among the first to find better parking or start earning from your driveway.
@@ -431,7 +427,7 @@ export default function Home() {
           <div className="container">
             <div className="text-center mb-6 sm:mb-10 md:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 mb-2 md:mb-4">
-                How ParkwayAi Works
+                How Parkway Spot Works
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
                 Simple, secure, and profitable for everyone. Get started in minutes.
@@ -554,10 +550,10 @@ export default function Home() {
           <div className="container">
             <div className="text-center mb-6 sm:mb-10 md:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">
-                Why Choose ParkwayAi?
+                Why Choose Parkway Spot?
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-                Built for trust and simplicity in {primaryMarket.displayName}.
+                Built for trust and simplicity, wherever you are.
               </p>
             </div>
 
@@ -667,8 +663,7 @@ export default function Home() {
                               {displayName.includes(' ')
                                 ? `${displayName.split(' ')[0]} ${(displayName.split(' ').pop() ?? '')[0]}.`
                                 : displayName}
-                              , {primaryMarket.displayName}
-                            </div>
+                                                          </div>
                             <div className="text-sm text-gray-600">Verified User</div>
                           </div>
                         </div>

@@ -4,7 +4,7 @@ import { ShieldCheckIcon } from '@heroicons/react/24/solid';
 
 interface VerifiedBadgeProps {
   className?: string;
-  /** Optional tooltip text (e.g. "Address verified by ParkwayAi") */
+  /** Optional tooltip text (e.g. "Address verified by Parkway Spot") */
   title?: string;
 }
 

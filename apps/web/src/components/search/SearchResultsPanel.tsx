@@ -1,9 +1,10 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, LoadingSpinner, Skeleton, Select, VerifiedBadge } from '@/components/ui';
-import { MapPinIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
 import type { SearchDriveway, DrivewayPagination } from '@/types/driveway';
 
 const SORT_OPTIONS = [
@@ -93,6 +94,17 @@ export default function SearchResultsPanel({
   calculateDistanceKm,
 }: SearchResultsPanelProps) {
   const router = useRouter();
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!sortMenuOpen) return;
+    const close = (e: MouseEvent) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) setSortMenuOpen(false);
+    };
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [sortMenuOpen]);
 
   const formatDistance = (d: SearchDriveway) => {
     const km = calculateDistanceKm(d);
@@ -134,7 +146,7 @@ export default function SearchResultsPanel({
         }
         style={stacked ? undefined : { top: contentTopOffset, maxHeight: `calc(100vh - ${contentTopOffset})` }}
       >
-        <div className="relative p-3 sm:p-4 pt-3 lg:pt-4">
+        <div className={`relative ${stacked ? 'px-3 pt-1.5 pb-0.5' : 'p-3 sm:p-4 pt-3 lg:pt-4'}`}>
           {emptyResults ? (
             <div className="text-center py-12 px-4">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No spots match your search</h3>
@@ -157,8 +169,8 @@ export default function SearchResultsPanel({
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-3" aria-live="polite" aria-atomic="true">
-                <p className="text-sm text-gray-600">
+              <div className={`flex flex-wrap items-center justify-between ${stacked ? 'gap-1.5 mb-1.5' : 'gap-2 mb-3'}`} aria-live="polite" aria-atomic="true">
+                <p className={stacked ? 'text-xs text-gray-600' : 'text-sm text-gray-600'}>
                   {loading ? 'Searching...' : (() => {
                     const n = pagination.total;
                     const spots = n === 1 ? 'spot' : 'spots';
@@ -169,13 +181,42 @@ export default function SearchResultsPanel({
                   })()}
                 </p>
                 {onSortChange && (
-                  <Select
-                    value={sort}
-                    onChange={(e) => onSortChange(e.target.value)}
-                    options={[...SORT_OPTIONS]}
-                    className="min-w-[140px] text-sm"
-                    aria-label="Sort results"
-                  />
+                  stacked ? (
+                    <div className="relative shrink-0" ref={sortMenuRef}>
+                      <button
+                        type="button"
+                        onClick={() => setSortMenuOpen((o) => !o)}
+                        className="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                        aria-label="Sort results"
+                        aria-expanded={sortMenuOpen}
+                        aria-haspopup="true"
+                      >
+                        <ArrowsUpDownIcon className="w-4 h-4" aria-hidden />
+                      </button>
+                      {sortMenuOpen && (
+                        <div className="absolute right-0 top-full mt-0.5 z-[200] min-w-[160px] py-0.5 bg-white rounded-lg shadow-lg border border-gray-200">
+                          {SORT_OPTIONS.map((opt) => (
+                            <button
+                              key={opt.value || 'relevance'}
+                              type="button"
+                              onClick={() => { onSortChange(opt.value); setSortMenuOpen(false); }}
+                              className={`block w-full text-left px-3 py-1.5 text-sm ${sort === opt.value ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Select
+                      value={sort}
+                      onChange={(e) => onSortChange(e.target.value)}
+                      options={[...SORT_OPTIONS]}
+                      className="min-w-[140px] text-sm"
+                      aria-label="Sort results"
+                    />
+                  )
                 )}
               </div>
               {loading && driveways.length > 0 && (
@@ -237,15 +278,15 @@ export default function SearchResultsPanel({
                         </div>
                         <div className="flex flex-col items-end justify-center gap-1.5 flex-shrink-0">
                           <div className="text-right">
-                            <span className="text-sm font-bold text-primary-600">{formatPrice(driveway.pricePerHour)}</span>
-                            <span className="text-xs text-[#9CA3AF] align-baseline">/hr</span>
+                            <span className="text-base font-bold text-primary-600">{formatPrice(driveway.pricePerHour)}</span>
+                            <span className="text-sm font-bold text-[#9CA3AF] align-baseline">/hr</span>
                           </div>
                           <Link
                             href={`/driveway/${driveway.id}`}
                             onClick={() => onDrivewaySelect(driveway.id)}
-                            className="inline-flex items-center justify-center rounded-lg bg-primary-600 text-white font-semibold text-xs sm:text-sm py-1.5 px-4 hover:bg-primary-700 hover:shadow-md transition-colors w-full md:w-auto md:min-w-0"
+                            className="inline-flex items-center justify-center rounded-lg bg-primary-600 text-white font-bold text-sm py-1.5 px-4 hover:bg-primary-700 hover:shadow-md transition-colors w-full md:w-auto md:min-w-0"
                           >
-                            Reserve
+                            Book →
                           </Link>
                         </div>
                       </div>

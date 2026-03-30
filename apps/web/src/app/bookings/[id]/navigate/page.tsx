@@ -238,7 +238,7 @@ export default function NavigatePage() {
       map = L.map(container, {
         center,
         zoom: 14,
-        zoomControl: true,
+        zoomControl: false,
       });
       mapRef.current = map;
 
