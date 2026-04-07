@@ -8,6 +8,7 @@ import { useOffline } from '@/hooks';
 
 interface AppLayoutProps {
   children: ReactNode;
+  showNavbar?: boolean;
   showBreadcrumbs?: boolean;
   showFooter?: boolean;
   /** When "marketing", footer uses gray-900 and guest-oriented links (e.g. Sign Up, Host Guide). */
@@ -16,6 +17,7 @@ interface AppLayoutProps {
 
 export default function AppLayout({
   children,
+  showNavbar = true,
   showBreadcrumbs = true,
   showFooter = true,
   footerVariant = 'default',
@@ -29,7 +31,7 @@ export default function AppLayout({
       <a href="#main-content" className="skip-nav">
         Skip to main content
       </a>
-      <Navbar />
+      {showNavbar && <Navbar />}
       {showBreadcrumbs && <Breadcrumbs />}
       <main id="main-content" className="flex-1" tabIndex={-1}>{children}</main>
       {showFooter && <Footer variant={footerVariant} />}

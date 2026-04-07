@@ -127,6 +127,13 @@ export const rateLimiters = {
     windowMs: 60 * 1000, // 1 minute
     max: 20,
     message: 'Too many searches. Please wait a moment and try again.'
+  }),
+
+  // Routing: 30 per minute per IP (directions)
+  routing: rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30,
+    message: 'Too many routing requests. Please try again in a minute.'
   })
 };
 

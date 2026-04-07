@@ -15,10 +15,15 @@ const DEFAULT_OAUTH_ROLE = ['DRIVER'] as const;
  * Handles Google OAuth callback: exchanges code for tokens, finds/creates user, sets auth cookies.
  */
 function getAppUrl(): string | undefined {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  const v = process.env.VERCEL_URL;
-  if (v) return `https://${v}`;
-  return undefined;
+  let url: string | undefined;
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    url = process.env.NEXT_PUBLIC_APP_URL;
+  } else if (process.env.VERCEL_URL) {
+    url = `https://${process.env.VERCEL_URL}`;
+  } else {
+    return undefined;
+  }
+  return url.replace(/\/+$/, ''); // no trailing slash (Google redirect_uri must match exactly)
 }
 
 export async function GET(request: NextRequest) {

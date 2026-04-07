@@ -1,4 +1,4 @@
-# Mobile UI/UX Guide — ParkwayAi Web App
+# Mobile UI/UX Guide — Parkway Spot Web App
 
 This doc summarizes the current mobile behavior and recommends dimensions, breakpoints, and UX patterns for a professional mobile experience.
 
@@ -57,7 +57,7 @@ Use these as single source of truth (constants or CSS vars) so mobile layout sta
 
 ### 4.2 Navbar
 
-- **&lt; 400px**: Consider slightly smaller logo or icon-only logo so “ParkwayAi” + hamburger don’t feel cramped.
+- **&lt; 400px**: Consider slightly smaller logo or icon-only logo so “Parkway Spot” + hamburger don’t feel cramped.
 - **Height**: Keep 56px (mobile) / 64px (desktop); avoid making the bar taller on small screens so content isn’t pushed down.
 
 ### 4.3 Mobile menu (drawer)

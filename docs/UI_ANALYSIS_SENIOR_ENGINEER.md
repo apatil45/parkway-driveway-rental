@@ -1,6 +1,6 @@
 # UI Analysis — Senior Engineer Review
 
-Critical review of the ParkwayAi web app UI: architecture, consistency, accessibility, performance, and maintainability.
+Critical review of the Parkway Spot web app UI: architecture, consistency, accessibility, performance, and maintainability.
 
 ---
 
@@ -78,7 +78,7 @@ Either (a) use `Card`’s `padding`/`shadow` and add a responsive option (e.g. `
 **Footers**
 
 - **AppLayout Footer:** `bg-primary-900`, “For Drivers / For Owners / Support” columns, `container`, single shared implementation.
-- **Guest home:** Inline `<footer className="bg-gray-900">` with its own grid and copy (“ParkwayAi”, “For Drivers”, “For Owners”, “Support”).
+- **Guest home:** Inline `<footer className="bg-gray-900">` with its own grid and copy (“Parkway Spot”, “For Drivers”, “For Owners”, “Support”).
 
 Two different footer designs and two sources of truth. Link lists and structure differ (e.g. “My Bookings” vs “Sign Up”).
 

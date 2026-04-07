@@ -226,7 +226,7 @@ const LeafletMap = dynamic(async () => {
             style={{ height, width: '100%', zIndex: 0 }}
             scrollWheelZoom={true}
             className="rounded-lg overflow-hidden"
-            zoomControl={true}
+            zoomControl={false}
             ref={(map) => {
               const logPrefix = `[MapView.MapContainer.ref] containerId: ${containerId}`;
               

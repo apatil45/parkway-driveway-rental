@@ -1,13 +1,13 @@
-# SpotHero-Inspired Search UX for ParkwayAi
+# SpotHero-Inspired Search UX for Parkway Spot
 
 **Reference:** SpotHero (parking app) — used for inspiration only, not copied.  
-**Goal:** Apply proven parking-search patterns to ParkwayAi’s driveway rental flow.
+**Goal:** Apply proven parking-search patterns to Parkway Spot’s driveway rental flow.
 
 ---
 
 ## SpotHero Patterns (Reference)
 
-| Pattern | SpotHero | ParkwayAi Adaptation |
+| Pattern | SpotHero | Parkway Spot Adaptation |
 |--------|----------|----------------------|
 | **Primary question** | "Where are you going?" | Same — destination-focused |
 | **Search params** | Location + Start time + End time | Location + optional When (date/time) |
@@ -44,7 +44,7 @@
 
 ## Future: Date/Time in Search (Phase 2)
 
-SpotHero uses **Start time** and **End time** in the search bar. For ParkwayAi:
+SpotHero uses **Start time** and **End time** in the search bar. For Parkway Spot:
 
 - **Option A:** Add optional date/time to search; pass to booking page as prefilled values
 - **Option B:** Add date/time + filter driveways by availability (requires API support)

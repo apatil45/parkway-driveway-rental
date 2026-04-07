@@ -1,4 +1,4 @@
-# Senior Engineer Recommendations — ParkwayAi
+# Senior Engineer Recommendations — Parkway Spot
 
 Prioritized, feasible changes across the codebase. **Weight** = impact vs effort (P0 = do first, P1 = next, P2 = when capacity allows).
 

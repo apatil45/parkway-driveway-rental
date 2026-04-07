@@ -18,11 +18,18 @@
   border: none !important;
 }
 
-/* Price pins: match app primary, soft shadow, clear shape */
+/* Price pins: badge + pin point (indicates general area, not exact lat/long) */
+.price-pin .price-pin-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
 .price-pin .price-pin-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
 }
 .price-pin .price-pin-value {
   padding: 5px 9px;
@@ -38,6 +45,17 @@
     0 0 0 1px rgba(0, 0, 0, 0.06),
     0 2px 8px rgba(0, 0, 0, 0.12),
     0 4px 12px rgba(0, 0, 0, 0.08);
+}
+/* Pin point: short triangle below badge so marker suggests general area */
+.price-pin .price-pin-point {
+  width: 0;
+  height: 0;
+  margin-top: -1px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #fff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  pointer-events: none;
 }
 
 .price-pin-highlighted .price-pin-value {
@@ -59,6 +77,10 @@
     0 2px 10px rgba(0, 0, 0, 0.15),
     0 4px 14px rgba(0, 0, 0, 0.1);
 }
+.mapbox-price-pin .price-pin-point {
+  border-top-color: #fff;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
+}
 
 .custom-cluster {
   background: transparent !important;
@@ -67,7 +89,7 @@
 
 @layer base {
   :root {
-    /* ParkwayAi brand: Deep Blue / Navy primary — premium, trustworthy */
+    /* Parkway Spot brand: Deep Blue / Navy primary — premium, trustworthy */
     --color-primary-50: 240, 245, 253;
     --color-primary-100: 224, 232, 250;
     --color-primary-200: 199, 210, 254;

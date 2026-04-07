@@ -8,11 +8,15 @@ export const runtime = 'nodejs';
  * Redirects to Google OAuth consent screen.
  */
 function getAppUrl(): string | undefined {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  // Vercel sets VERCEL_URL automatically (e.g. "your-app.vercel.app")
-  const v = process.env.VERCEL_URL;
-  if (v) return `https://${v}`;
-  return undefined;
+  let url: string | undefined;
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    url = process.env.NEXT_PUBLIC_APP_URL;
+  } else if (process.env.VERCEL_URL) {
+    url = `https://${process.env.VERCEL_URL}`;
+  } else {
+    return undefined;
+  }
+  return url.replace(/\/+$/, ''); // no trailing slash (Google redirect_uri must match exactly)
 }
 
 export async function GET(request: NextRequest) {
