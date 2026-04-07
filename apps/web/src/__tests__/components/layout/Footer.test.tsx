@@ -60,7 +60,7 @@ describe('Footer Component', () => {
     render(<Footer />);
     
     const currentYear = new Date().getFullYear();
-    expect(screen.getByText(new RegExp(`© ${currentYear} Parkway Spot`))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`© ${currentYear} ParkwayAi`))).toBeInTheDocument();
   });
 
   it('has proper styling classes', () => {

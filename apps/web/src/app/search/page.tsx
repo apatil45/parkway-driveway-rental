@@ -8,14 +8,31 @@ import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import MapViewDirect from '@/components/ui/MapViewDirect';
 import { useDriveways } from '@/hooks';
-import { MapPinIcon, XMarkIcon, FunnelIcon, ArrowLeftIcon, MagnifyingGlassIcon, ListBulletIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, MagnifyingGlassIcon, XMarkIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import type { SearchDriveway } from '@/types/driveway';
 import { formatPrice as formatPriceUtil, distanceKm } from '@/lib/format';
-import SearchResultsHorizontalStrip from '@/components/search/SearchResultsHorizontalStrip';
 import SearchResultsPanel from '@/components/search/SearchResultsPanel';
-import QuickSearchBar from '@/components/search/QuickSearchBar';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { getDefaultStartEnd, clampStartTimeToNow } from '@/lib/date-utils';
+
+// Layout constants: navbar + breadcrumbs + search bar so map/list start below the search bar stripe
+const NAVBAR_HEIGHT_REM = 4;
+const BREADCRUMBS_HEIGHT_REM = 3;   // py-3 + one line (~2.25rem), so list starts below search bar
+const SEARCH_BAR_HEIGHT_REM = 4.25;
+const CONTENT_TOP_OFFSET_REM = NAVBAR_HEIGHT_REM + BREADCRUMBS_HEIGHT_REM + SEARCH_BAR_HEIGHT_REM;
+const CONTENT_TOP_OFFSET = `${CONTENT_TOP_OFFSET_REM}rem`;
+
+const LIST_WIDTH_STORAGE_KEY = 'parkway-search-list-width';
+const LIST_WIDTH_MIN = 20;
+const LIST_WIDTH_MAX = 50;
+const LIST_WIDTH_DEFAULT = 30;
+
+// Mobile: Airbnb-style bottom sheet over full-screen map (peek vs expanded)
+const MOBILE_SHEET_STORAGE_KEY = 'parkway-search-mobile-sheet';
+const MOBILE_SHEET_PEEK_PERCENT = 40;
+const MOBILE_SHEET_EXPANDED_PERCENT = 90;
+const MOBILE_SHEET_MIN_PERCENT = 35;
+const MOBILE_SHEET_MAX_PERCENT = 95;
+const MOBILE_SHEET_SNAP_THRESHOLD = 65; // below = snap to peek, above = snap to expanded
 
 interface SearchFilters {
   location: string;
@@ -27,8 +44,6 @@ interface SearchFilters {
   longitude?: string;
   radius?: string;
   sort?: 'price_asc' | 'price_desc' | 'rating_desc' | 'distance_asc';
-  start?: string;  // datetime-local string for UI
-  end?: string;    // datetime-local string for UI
 }
 
 function SearchPageContent() {
@@ -51,21 +66,169 @@ function SearchPageContent() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
-  const [listViewExpanded, setListViewExpanded] = useState(false);
-  const [searchFormOpen, setSearchFormOpen] = useState(false);
-  const [searchQuery, setSearch] = useState('');
+  const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
+  const [searchQuery, setSearch] =useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedDriveway, setSelectedDriveway] = useState<string | null>(null);
   const [hoveredDrivewayId, setHoveredDrivewayId] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const [isMobileView, setIsMobileView] = useState(false);
   const listPanelRef = useRef<HTMLElement>(null);
+  const splitContainerRef = useRef<HTMLDivElement>(null);
+  const mobileSplitContainerRef = useRef<HTMLDivElement>(null);
+  const [isMobileView, setIsMobileView] = useState(false);
+
+  // Desktop: resizable list width (percentage), persisted
+  const [listWidthPercent, setListWidthPercent] = useState(LIST_WIDTH_DEFAULT);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Mobile: bottom sheet height (% of content area). Peek ~40%, expanded ~90%. Draggable with snap.
+  const [mobileSheetHeightPercent, setMobileSheetHeightPercent] = useState(MOBILE_SHEET_PEEK_PERCENT);
+  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
+  const sheetDragStartY = useRef(0);
+  const sheetDragStartPercent = useRef(MOBILE_SHEET_PEEK_PERCENT);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LIST_WIDTH_STORAGE_KEY);
+      if (stored != null) {
+        const n = Number(stored);
+        if (Number.isFinite(n) && n >= LIST_WIDTH_MIN && n <= LIST_WIDTH_MAX) {
+          setListWidthPercent(n);
+        }
+      }
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(MOBILE_SHEET_STORAGE_KEY);
+      if (stored === 'expanded') setMobileSheetHeightPercent(MOBILE_SHEET_EXPANDED_PERCENT);
+      else if (stored === 'peek') setMobileSheetHeightPercent(MOBILE_SHEET_PEEK_PERCENT);
+    } catch (_) {}
+  }, []);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const listWidthRef = useRef(listWidthPercent);
+  listWidthRef.current = listWidthPercent;
+
+  const getClientY = (e: MouseEvent | TouchEvent) =>
+    'touches' in e ? e.touches[0]?.clientY ?? 0 : (e as MouseEvent).clientY;
+
+  const handleSheetDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    sheetDragStartY.current = getClientY(e.nativeEvent);
+    sheetDragStartPercent.current = mobileSheetHeightPercent;
+    setIsDraggingSheet(true);
+  }, [mobileSheetHeightPercent]);
+
+  useEffect(() => {
+    if (!isDraggingSheet) return;
+    const container = mobileSplitContainerRef.current;
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const clientY = getClientY(e);
+      const deltaY = sheetDragStartY.current - clientY; // drag up = positive
+      const deltaPercent = (deltaY / rect.height) * 100;
+      const newPercent = sheetDragStartPercent.current + deltaPercent;
+      const clamped = Math.max(MOBILE_SHEET_MIN_PERCENT, Math.min(MOBILE_SHEET_MAX_PERCENT, newPercent));
+      setMobileSheetHeightPercent(clamped);
+    };
+    const onEnd = () => {
+      setIsDraggingSheet(false);
+      setMobileSheetHeightPercent((prev) => {
+        const snap = prev >= MOBILE_SHEET_SNAP_THRESHOLD ? MOBILE_SHEET_EXPANDED_PERCENT : MOBILE_SHEET_PEEK_PERCENT;
+        try {
+          localStorage.setItem(MOBILE_SHEET_STORAGE_KEY, snap === MOBILE_SHEET_EXPANDED_PERCENT ? 'expanded' : 'peek');
+        } catch (_) {}
+        return snap;
+      });
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', onEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
+    };
+  }, [isDraggingSheet]);
+
+  useEffect(() => {
+    if (isDraggingSheet && typeof document !== 'undefined') {
+      document.body.style.cursor = 'row-resize';
+      document.body.style.touchAction = 'none';
+      document.body.style.userSelect = 'none';
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.style.cursor = '';
+        document.body.style.touchAction = '';
+        document.body.style.userSelect = '';
+      }
+    };
+  }, [isDraggingSheet]);
+
+  useEffect(() => {
+    if (isResizing && typeof document !== 'undefined') {
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+    const container = splitContainerRef.current;
+    const onMove = (e: MouseEvent) => {
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const listPercent = ((rect.right - e.clientX) / rect.width) * 100;
+      const clamped = Math.max(LIST_WIDTH_MIN, Math.min(LIST_WIDTH_MAX, listPercent));
+      setListWidthPercent(clamped);
+    };
+    const onEnd = () => {
+      setIsResizing(false);
+      try {
+        const v = Math.round(listWidthRef.current);
+        if (Number.isFinite(v)) localStorage.setItem(LIST_WIDTH_STORAGE_KEY, String(v));
+      } catch (_) {}
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('mouseleave', onEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('mouseleave', onEnd);
+    };
+  }, [isResizing]);
 
   const [canRenderMap, setCanRenderMap] = useState(true);
   const isMountedRef = useRef(true);
   const urlSyncedRef = useRef(false);
-  const defaultsSetRef = useRef(false);
+
+  const LOCATION_TOAST_SESSION_KEY = 'parkway-search-location-toast-shown';
+
+  // Start with list open so results are visible
+  useEffect(() => {
+    setSidebarOpen(true);
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobileView(window.innerWidth < 1024);
@@ -89,7 +252,44 @@ function SearchPageContent() {
   const { data: driveways, loading, error, fetchDriveways } = useDriveways();
   const { showToast } = useToast();
 
-  // URL sync + defaults: on mount read query params, set default start/end and current location, run search
+  // Auto-detect user location on mount (skip if URL already has lat/lon)
+  useEffect(() => {
+    const latFromUrl = searchParams.get('latitude');
+    const lonFromUrl = searchParams.get('longitude');
+    if (latFromUrl && lonFromUrl) return; // URL has location, skip geolocation
+
+    if (navigator.geolocation && !filters.latitude && !filters.longitude) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setFilters(prev => ({
+            ...prev,
+            latitude: String(latitude),
+            longitude: String(longitude),
+          }));
+          try {
+            if (!sessionStorage.getItem(LOCATION_TOAST_SESSION_KEY)) {
+              sessionStorage.setItem(LOCATION_TOAST_SESSION_KEY, '1');
+              showToast('Location detected! You can now search nearby driveways.', 'success');
+            }
+          } catch (_) {}
+        },
+        (error) => {
+          // Silently fail - user can manually set location
+          console.log('Location detection failed:', error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount; URL check uses initial searchParams
+
+
+  // URL sync: on mount read query params, set filters, run search once with those params
   useEffect(() => {
     const location = searchParams.get('location') ?? '';
     const priceMin = searchParams.get('priceMin') ?? '';
@@ -102,12 +302,6 @@ function SearchPageContent() {
     const radius = searchParams.get('radius') ?? '';
     const sortParam = searchParams.get('sort');
     const sort = (sortParam === 'price_asc' || sortParam === 'price_desc' || sortParam === 'rating_desc' || sortParam === 'distance_asc' ? sortParam : undefined) as SearchFilters['sort'] | undefined;
-    const startParam = searchParams.get('start') ?? '';
-    const endParam = searchParams.get('end') ?? '';
-
-    const { start: defaultStart, end: defaultEnd } = getDefaultStartEnd();
-    const start = clampStartTimeToNow(startParam || defaultStart) || defaultStart;
-    const end = endParam || defaultEnd;
 
     const urlFilters: Partial<SearchFilters> = {
       location,
@@ -119,14 +313,11 @@ function SearchPageContent() {
       longitude,
       radius,
       sort,
-      start,
-      end,
     };
     setFilters(prev => ({ ...prev, ...urlFilters }));
-    setSearch(location || (latitude && longitude ? 'Current location' : ''));
+    setSearch(location);
     urlSyncedRef.current = true;
-
-    const params: Record<string, string> = {
+    fetchDriveways({
       page: '1',
       limit: '10',
       ...(location && { location }),
@@ -138,53 +329,18 @@ function SearchPageContent() {
       ...(longitude && { longitude }),
       ...(radius && { radius }),
       ...(sort && { sort }),
-    };
-    if (start) params.start = new Date(start).toISOString();
-    if (end) params.end = new Date(end).toISOString();
-
-    fetchDriveways(params).then((result) => {
+    }).then((result) => {
       if (result.success && result.data && isMountedRef.current) {
         setPagination(result.data.pagination);
       }
     });
-
-    if (!latitude || !longitude) {
-      if (navigator.geolocation && !defaultsSetRef.current) {
-        defaultsSetRef.current = true;
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            if (!isMountedRef.current) return;
-            const lat = String(position.coords.latitude);
-            const lon = String(position.coords.longitude);
-            setFilters(prev => ({ ...prev, latitude: lat, longitude: lon }));
-            setSearch(prev => (prev || 'Current location'));
-            fetchDriveways({
-              page: '1',
-              limit: '10',
-              latitude: lat,
-              longitude: lon,
-              ...(start && { start: new Date(start).toISOString() }),
-              ...(end && { end: new Date(end).toISOString() }),
-              ...(radius && { radius }),
-              ...(sort && { sort }),
-            }).then((result) => {
-              if (result.success && result.data && isMountedRef.current) {
-                setPagination(result.data.pagination);
-              }
-            });
-          },
-          () => {},
-          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-        );
-      }
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
   const buildSearchParams = useCallback((page: number, overrides?: Partial<SearchFilters>) => {
     const f = overrides ?? filters;
-    const params: Record<string, string> = {
+    return {
       page: page.toString(),
       limit: '10',
       ...(f.location && { location: f.location }),
@@ -197,9 +353,6 @@ function SearchPageContent() {
       ...(f.radius && { radius: f.radius }),
       ...(f.sort && { sort: f.sort }),
     };
-    if (f.start) params.start = new Date(f.start).toISOString();
-    if (f.end) params.end = new Date(f.end).toISOString();
-    return params;
   }, [filters]);
 
   const performSearch = async (page = 1, filterOverrides?: Partial<SearchFilters>) => {
@@ -223,8 +376,6 @@ function SearchPageContent() {
     if (f.longitude) params.set('longitude', f.longitude);
     if (f.radius) params.set('radius', f.radius);
     if (f.sort) params.set('sort', f.sort);
-    if (f.start) params.set('start', f.start);
-    if (f.end) params.set('end', f.end);
     if (page > 1) params.set('page', String(page));
     const qs = params.toString();
     const url = qs ? `/search?${qs}` : '/search';
@@ -232,17 +383,18 @@ function SearchPageContent() {
   }, [filters, router]);
 
   const handleFilterChange = (key: keyof SearchFilters, value: string | string[]) => {
-    const effective = key === 'start' && typeof value === 'string' ? clampStartTimeToNow(value) : value;
     setFilters(prev => ({
       ...prev,
-      [key]: effective
+      [key]: value
     }));
   };
 
-  const handleQuickSearch = () => {
+  const handleSearchSubmit = () => {
     const nextFilters = { ...filters, location: searchQuery };
+    handleFilterChange('location', searchQuery);
     performSearch(1, nextFilters);
     updateSearchUrl(1, nextFilters);
+    setMobileSearchExpanded(false); // collapse search bar on mobile after submit
   };
 
   const handleSearch = () => {
@@ -270,28 +422,20 @@ function SearchPageContent() {
     updateSearchUrl(page);
   };
 
-  const handleUseMyLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      showToast('Geolocation is not supported by your browser', 'error');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const nextFilters = {
-          ...filters,
-          latitude: String(latitude),
-          longitude: String(longitude),
-        };
-        setFilters(nextFilters);
-        performSearch(1, nextFilters);
-        updateSearchUrl(1, nextFilters);
-        showToast('Location set. Searching nearby driveways.', 'success');
-      },
-      () => showToast('Unable to get your location. Check permissions or try an address.', 'error'),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
-  }, [filters, performSearch, updateSearchUrl, showToast]);
+  const closeListAndReturnFocus = useCallback(() => {
+    setSidebarOpen(false);
+  }, []);
+
+  // Escape closes list (mobile) - must run before any early return (hooks order)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && sidebarOpen && typeof window !== 'undefined' && window.innerWidth < 1024) {
+        closeListAndReturnFocus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sidebarOpen, closeListAndReturnFocus]);
 
   const formatPrice = formatPriceUtil;
 
@@ -392,33 +536,232 @@ function SearchPageContent() {
     );
   }
 
-  const filterCount = [filters.priceMin, filters.priceMax, filters.carSize, filters.amenities?.length ? 1 : 0, filters.radius].filter(Boolean).length;
-  const listViewTopRem = 7; // navbar + breadcrumbs when list view is expanded
-
   return (
-    <AppLayout showFooter={false} showNavbar={listViewExpanded || !isMobileView} showBreadcrumbs={listViewExpanded || !isMobileView}>
-      {listViewExpanded ? (
-        /* List view: navbar + breadcrumbs visible, full list with Back to map */
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-white">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setListViewExpanded(false)}
-              className="gap-1"
-              aria-label="Back to map"
-            >
-              <ArrowLeftIcon className="w-4 h-4" aria-hidden />
-              Back to map
+    <AppLayout showFooter={false}>
+      {/* Search header: full-width white bar above map/list (not floating) */}
+      <div
+        className={`sticky top-16 z-sticky-bar bg-white border-b border-gray-200 shadow-sm ${!mobileSearchExpanded ? 'hidden lg:block' : 'block'}`}
+      >
+        <div className="container mx-auto px-3 py-3 sm:px-4">
+          <div className="lg:hidden flex items-center gap-2 w-full max-w-lg mx-auto">
+            <div className="flex-1 min-w-0">
+              <AddressAutocomplete
+                value={searchQuery}
+                onChange={(address) => setSearch(address)}
+                onLocationSelect={(lat, lon) => {
+                  handleFilterChange('latitude', String(lat));
+                  handleFilterChange('longitude', String(lon));
+                  performSearch(1);
+                }}
+                onSubmit={handleSearchSubmit}
+                minimal
+                placeholder="Where are you going? Address, landmark, or transit..."
+                className="text-base"
+              />
+            </div>
+            <button type="button" onClick={() => setMobileSearchExpanded(false)} aria-label="Close search" className="shrink-0 flex items-center justify-center w-11 h-11 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2">
+              <XMarkIcon className="w-5 h-5" aria-hidden />
+            </button>
+          </div>
+          <div className="hidden lg:flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full min-w-0 sm:flex-1 sm:max-w-lg">
+              <div className="flex-1 min-w-0 w-full">
+                <AddressAutocomplete
+                  value={searchQuery}
+                  onChange={(address) => setSearch(address)}
+                  onLocationSelect={(lat, lon) => {
+                    handleFilterChange('latitude', String(lat));
+                    handleFilterChange('longitude', String(lon));
+                    performSearch(1);
+                  }}
+                  placeholder="Where are you going? Address, landmark, or transit..."
+                />
+              </div>
+              <Button onClick={handleSearchSubmit} size="sm" className="w-full sm:w-auto shrink-0">Search</Button>
+            </div>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setShowFilters(!showFilters)} aria-label={showFilters ? 'Hide filters' : 'Show filters'} className="shrink-0 inline-flex items-center gap-2">
+              <FunnelIcon className="w-4 h-4 shrink-0" aria-hidden />
+              <span>Filters</span>
+              {(() => {
+                const activeCount = [filters.priceMin, filters.priceMax, filters.carSize, filters.amenities?.length ? 1 : 0, filters.radius].filter(Boolean).length;
+                return activeCount > 0 ? (
+                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-xs font-semibold bg-primary-600 text-white">
+                    {activeCount}
+                  </span>
+                ) : null;
+              })()}
             </Button>
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          {(() => {
+            const chips: { key: keyof SearchFilters; label: string; value?: string }[] = [];
+            if (filters.priceMin) chips.push({ key: 'priceMin', label: `Min $${filters.priceMin}` });
+            if (filters.priceMax) chips.push({ key: 'priceMax', label: `Max $${filters.priceMax}` });
+            if (filters.carSize) chips.push({ key: 'carSize', label: filters.carSize.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase()) });
+            filters.amenities?.forEach((a) => chips.push({ key: 'amenities', label: a.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()), value: a }));
+            if (filters.radius) chips.push({ key: 'radius', label: `${filters.radius} km` });
+            if (chips.length === 0) return null;
+            return (
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 mt-2">
+                {chips.map((chip) => (
+                  <span key={chip.value ? `${chip.key}-${chip.value}` : chip.key} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-800 border border-primary-200">
+                    {chip.label}
+                    <button type="button" onClick={() => removeFilter(chip.key, chip.value)} className="p-0.5 rounded-full hover:bg-primary-200/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" aria-label={`Remove ${chip.label}`}>
+                      <XMarkIcon className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Content area: fixed height so only the list scrolls, not the page or map */}
+      <div
+        className="flex flex-col flex-1 min-h-0 overflow-hidden"
+        style={{ height: `calc(100vh - ${CONTENT_TOP_OFFSET_REM}rem)` }}
+      >
+      {/* Desktop: resizable map | list with draggable divider */}
+      <div
+        ref={splitContainerRef}
+        className={`hidden lg:flex flex-1 min-h-0 w-full overflow-hidden ${isResizing ? 'select-none' : ''}`}
+        style={isResizing ? { cursor: 'col-resize' } : undefined}
+      >
+        <ErrorBoundary fallback={
+          <div className="flex-1 flex items-center justify-center bg-gray-100 p-4 min-h-0">
+            <div className="text-center p-6 bg-white rounded-lg shadow-lg max-w-md">
+              <p className="text-gray-700 mb-4">Map failed to load. You can still browse the list.</p>
+              <Button variant="outline" onClick={() => window.location.reload()}>Reload page</Button>
+            </div>
+          </div>
+        }>
+          <div
+            className="min-w-0 flex-shrink-0 h-full overflow-hidden bg-gray-100 relative"
+            style={{ width: `${100 - listWidthPercent}%` }}
+          >
+            {!emptyResults && canRenderMap ? (
+              <MapViewDirect
+                key="search-map-desktop"
+                center={mapCenter}
+                markers={mapMarkers}
+                height="100%"
+                highlightedMarkerId={hoveredDrivewayId || selectedDriveway}
+                onMarkerClick={(id: string) => {
+                  setSelectedDriveway(id);
+                  const element = document.getElementById(`driveway-${id}`);
+                  if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                onMarkerHover={setHoveredDrivewayId}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                <p className="text-sm">No driveways to display on map</p>
+              </div>
+            )}
+          </div>
+        </ErrorBoundary>
+        <div
+          role="separator"
+          aria-label="Resize list"
+          tabIndex={0}
+          onMouseDown={handleResizeStart}
+          className="flex-shrink-0 w-1.5 h-full bg-gray-200 hover:bg-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 cursor-col-resize flex items-center justify-center group"
+        >
+          <span className="w-0.5 h-8 bg-gray-400 group-hover:bg-primary-500 rounded-full pointer-events-none" aria-hidden />
+        </div>
+        <aside
+          className="min-w-0 min-h-0 flex-shrink-0 bg-white border-l border-gray-200 overflow-y-auto flex flex-col"
+          style={{ width: `${listWidthPercent}%` }}
+        >
+          <SearchResultsPanel
+            open={true}
+            onClose={() => {}}
+            panelRef={listPanelRef}
+            contentTopOffset="0"
+            isMobileView={false}
+            stacked={true}
+            emptyResults={emptyResults}
+            loading={loading}
+            driveways={sortedDrivewayList}
+            pagination={pagination}
+            selectedDrivewayId={selectedDriveway}
+            hoveredDrivewayId={hoveredDrivewayId}
+            onDrivewaySelect={(id) => setSelectedDriveway(id)}
+            onDrivewayHover={setHoveredDrivewayId}
+            onPageChange={handlePageChange}
+            onShowFilters={() => setShowFilters(true)}
+            sort={filters.sort ?? ''}
+            onSortChange={(value) => {
+              const nextSort = (value === '' ? undefined : value) as SearchFilters['sort'];
+              handleFilterChange('sort', value);
+              performSearch(1, { ...filters, sort: nextSort });
+              updateSearchUrl(1, { ...filters, sort: nextSort });
+            }}
+            radiusKm={filters.radius}
+            hasLocation={Boolean(filters.latitude && filters.longitude)}
+            searchLocationName={(searchQuery || filters.location)?.split(',')[0]?.trim() || undefined}
+            formatPrice={formatPrice}
+            renderStars={renderStars}
+            calculateDistanceKm={calculateDistanceKm}
+          />
+        </aside>
+      </div>
+
+      {/* Mobile: full-screen map with Airbnb-style bottom sheet (drag up to expand list) */}
+      <div
+        ref={mobileSplitContainerRef}
+        className={`lg:hidden relative flex-1 min-h-0 w-full overflow-hidden ${isDraggingSheet ? 'select-none' : ''}`}
+        aria-label="Search results and map"
+        style={{ height: '100%' }}
+      >
+        {/* Map: full height behind the sheet */}
+        <section
+          id="search-map-mobile"
+          className="absolute inset-0 bg-gray-100"
+          aria-label="Map"
+        >
+          {!emptyResults && canRenderMap ? (
+            <MapViewDirect
+              key="search-map-mobile"
+              center={mapCenter}
+              markers={mapMarkers}
+              height="100%"
+              onMarkerClick={(id: string) => setSelectedDriveway(id)}
+              highlightedMarkerId={hoveredDrivewayId || selectedDriveway}
+              onMarkerHover={setHoveredDrivewayId}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+              <p className="text-sm">No driveways to display on map</p>
+            </div>
+          )}
+        </section>
+
+        {/* Bottom sheet: rounded top, drag handle, scrollable list (Airbnb-style) */}
+        <div
+          className="absolute left-0 right-0 bottom-0 bg-white rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.12)] flex flex-col"
+          style={{ height: `${mobileSheetHeightPercent}%` }}
+          aria-label="Results list"
+        >
+          {/* Drag handle — gray bar at top (like Airbnb); touch-none so drag doesn't scroll list */}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Drag to expand or collapse list"
+            onMouseDown={handleSheetDragStart}
+            onTouchStart={handleSheetDragStart}
+            className="flex-shrink-0 h-10 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+          >
+            <span className="w-10 h-1 bg-gray-300 rounded-full" aria-hidden />
+          </div>
+          {/* Scrollable list area; safe-area bottom so last items clear home indicator */}
+          <div id="search-list-mobile" className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0)]">
             <SearchResultsPanel
               open={true}
               onClose={() => {}}
               panelRef={listPanelRef}
               contentTopOffset="0"
-              isMobileView={isMobileView}
+              isMobileView={true}
               stacked={true}
               emptyResults={emptyResults}
               loading={loading}
@@ -439,205 +782,71 @@ function SearchPageContent() {
               }}
               radiusKm={filters.radius}
               hasLocation={Boolean(filters.latitude && filters.longitude)}
-              searchLocationName={(searchQuery || filters.location)?.split(',')[0]?.trim() || undefined}
               formatPrice={formatPrice}
               renderStars={renderStars}
               calculateDistanceKm={calculateDistanceKm}
             />
           </div>
         </div>
-      ) : (
-        /* Map + list: desktop = map left + vertical list right; mobile = full-screen map + horizontal strip at bottom */
-        <div className={`flex w-full h-screen min-h-screen overflow-hidden ${isMobileView ? 'flex-col' : 'flex-row'}`}>
-          {/* Map area: full width on mobile, flex-1 on desktop */}
-          <div className={`relative z-0 ${isMobileView ? 'flex-1 min-h-0' : 'flex-1 min-w-0 min-h-0'}`}>
-          {/* Full-screen map background */}
-          <div className="absolute inset-0 z-0">
-            <ErrorBoundary fallback={
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 p-4">
-                <div className="text-center p-6 bg-white rounded-lg shadow-lg max-w-md">
-                  <p className="text-gray-700 mb-4">Map failed to load. You can still browse the list.</p>
-                  <Button variant="outline" onClick={() => window.location.reload()}>Reload page</Button>
-                </div>
-              </div>
-            }>
-              {!emptyResults && canRenderMap ? (
-                <MapViewDirect
-                  key="search-map"
-                  center={mapCenter}
-                  markers={mapMarkers}
-                  height="100%"
-                  highlightedMarkerId={hoveredDrivewayId || selectedDriveway}
-                  onMarkerClick={(id: string) => {
-                    setSelectedDriveway(id);
-                    const el = document.getElementById(`driveway-card-${id}`);
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                  }}
-                  onMarkerHover={setHoveredDrivewayId}
-                />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 bg-gray-100">
-                  <p className="text-sm">No driveways to display on map</p>
-                </div>
-              )}
-            </ErrorBoundary>
-          </div>
-
-          {/* Search bar strip at top (mobile + desktop): tap to open form; filter + See full list on the bar. */}
-          <div className="absolute top-0 left-0 right-0 z-10 px-3 pb-1.5 pt-[max(0.5rem,env(safe-area-inset-top,0))]">
-            {searchFormOpen ? (
-              <QuickSearchBar
-                locationValue={searchQuery}
-                onLocationChange={setSearch}
-                onLocationSelect={(lat, lon) => {
-                  handleFilterChange('latitude', String(lat));
-                  handleFilterChange('longitude', String(lon));
-                  performSearch(1);
-                  updateSearchUrl(1);
-                }}
-                startValue={filters.start ?? getDefaultStartEnd().start}
-                onStartChange={(v) => handleFilterChange('start', v)}
-                endValue={filters.end ?? getDefaultStartEnd().end}
-                onEndChange={(v) => handleFilterChange('end', v)}
-                onSearch={() => { handleQuickSearch(); setSearchFormOpen(false); }}
-                onUseMyLocation={handleUseMyLocation}
-                onFiltersClick={() => setShowFilters(true)}
-                filterCount={filterCount}
-                loading={loading}
-                onClose={() => setSearchFormOpen(false)}
-              />
-            ) : (
-              <div className="w-full max-w-lg mx-auto flex items-stretch gap-2 h-12">
-                {isMobileView && (
-                  <Link
-                    href="/"
-                    className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl border border-gray-200 bg-white shadow-lg text-gray-600 hover:bg-gray-50"
-                    aria-label="Back to home"
-                  >
-                    <ArrowLeftIcon className="w-5 h-5" aria-hidden />
-                  </Link>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setSearchFormOpen(true)}
-                  className="flex-1 min-w-0 h-12 flex items-center gap-2.5 px-3.5 bg-white rounded-xl shadow-lg border border-gray-200 hover:bg-gray-50 text-left"
-                  aria-label="Where are you going? Start and end time"
-                >
-                  <span className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-primary-100 text-primary-600">
-                    <MagnifyingGlassIcon className="w-4 h-4" aria-hidden />
-                  </span>
-                  <span className="flex-1 min-w-0 truncate text-sm text-gray-600">
-                    {searchQuery || filters.latitude ? (searchQuery || 'Current location') : 'Where are you going?'}
-                    {filters.start && filters.end && (
-                      <span className="text-gray-400">
-                        {' · '}
-                        {new Date(filters.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                        {' – '}
-                        {new Date(filters.end).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                      </span>
-                    )}
-                    {!searchQuery && !filters.latitude && !filters.start && ' · Start & end time'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(true)}
-                  className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl border border-gray-200 bg-white shadow-lg text-gray-600 hover:bg-gray-50 relative"
-                  aria-label="Filters"
-                >
-                  <FunnelIcon className="w-4 h-4" aria-hidden />
-                  {filterCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-500 text-white text-xs font-medium">
-                      {filterCount}
-                    </span>
+        {/* Bottom sheet when a pin is selected on mobile */}
+        {selectedDriveway && (() => {
+          const d = sortedDrivewayList.find((x) => x.id === selectedDriveway);
+          if (!d) return null;
+          const hasReviews = (d.reviewCount ?? 0) > 0;
+          return (
+            <>
+              <div className="lg:hidden fixed inset-0 bg-black/20 z-backdrop" aria-hidden onClick={() => setSelectedDriveway(null)} />
+              <div className="lg:hidden fixed left-0 right-0 bottom-0 z-overlay-content bg-white rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] p-6 pb-[env(safe-area-inset-bottom)]">
+                <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" aria-hidden />
+                <h3 className="text-base font-semibold text-[#111827]">{d.title}</h3>
+                <p className="text-[13px] text-[#6B7280] mt-0.5">{d.address}</p>
+                <div className="flex items-center gap-2 text-xs text-[#9CA3AF] mt-1.5 flex-wrap">
+                  {d.isAvailable && (
+                    <span className="px-1.5 py-0.5 text-xs font-medium text-green-700 bg-green-50 rounded">Available</span>
                   )}
-                </button>
-                {isMobileView && (
-                  <button
-                    type="button"
-                    onClick={() => setListViewExpanded(true)}
-                    className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl border border-gray-200 bg-white shadow-lg text-gray-600 hover:bg-gray-50"
-                    aria-label="Full list"
+                  {filters.latitude && filters.longitude && (() => {
+                    const km = calculateDistanceKm(d);
+                    if (km === null) return null;
+                    return <span>{km < 0.1 ? '< 100 m' : `${km.toFixed(1)} km`}</span>;
+                  })()}
+                  {hasReviews && (
+                    <span>★ {d.averageRating?.toFixed(1)} ({d.reviewCount})</span>
+                  )}
+                  {!hasReviews && <span className="bg-gray-100 text-[#9CA3AF] px-1.5 py-0.5 rounded text-xs">New</span>}
+                </div>
+                <div className="flex items-center justify-between gap-4 mt-4">
+                  <span className="text-lg font-bold text-primary-600">{formatPrice(d.pricePerHour)}<span className="text-xs font-normal text-[#9CA3AF]">/hr</span></span>
+                  <Link
+                    href={`/driveway/${d.id}`}
+                    onClick={() => setSelectedDriveway(null)}
+                    className="inline-flex items-center justify-center w-full py-2.5 px-6 rounded-lg bg-primary-600 text-white font-semibold text-sm hover:bg-primary-700"
                   >
-                    <ListBulletIcon className="w-4 h-4" aria-hidden />
-                  </button>
-                )}
+                    Reserve
+                  </Link>
+                </div>
               </div>
-            )}
-          </div>
-          </div>
+            </>
+          );
+        })()}
+      </div>
 
-          {/* Mobile: horizontal strip at bottom. Desktop: vertical list in right sidebar (rendered below). */}
-          {isMobileView && (
-          <div className="absolute bottom-0 left-0 right-0 z-10 pb-[env(safe-area-inset-bottom,0)] flex flex-col items-stretch">
-            <SearchResultsHorizontalStrip
-              emptyResults={emptyResults}
-              loading={loading}
-              driveways={sortedDrivewayList}
-              pagination={pagination}
-              selectedDrivewayId={selectedDriveway}
-              hoveredDrivewayId={hoveredDrivewayId}
-              onDrivewayHover={setHoveredDrivewayId}
-              onPageChange={handlePageChange}
-              sort={filters.sort ?? ''}
-              onSortChange={(value) => {
-                const nextSort = (value === '' ? undefined : value) as SearchFilters['sort'];
-                handleFilterChange('sort', value);
-                performSearch(1, { ...filters, sort: nextSort });
-                updateSearchUrl(1, { ...filters, sort: nextSort });
-              }}
-              radiusKm={filters.radius}
-              hasLocation={Boolean(filters.latitude && filters.longitude)}
-              searchLocationName={(searchQuery || filters.location)?.split(',')[0]?.trim() || undefined}
-              formatPrice={formatPrice}
-              renderStars={renderStars}
-              calculateDistanceKm={calculateDistanceKm}
-              isMobileView={isMobileView}
-              onExpandList={() => setListViewExpanded(true)}
-              onVisibleDrivewayChange={(id) => setSelectedDriveway(id)}
-            />
-          </div>
-          )}
-          {/* Desktop: right-side vertical list */}
-          {!isMobileView && (
-          <div className="w-[380px] min-w-[380px] flex-shrink-0 flex flex-col h-full min-h-0 bg-white border-l border-gray-200 overflow-hidden z-10 shadow-[ -4px_0_12px_rgba(0,0,0,0.06)]">
-            <SearchResultsHorizontalStrip
-              emptyResults={emptyResults}
-              loading={loading}
-              driveways={sortedDrivewayList}
-              pagination={pagination}
-              selectedDrivewayId={selectedDriveway}
-              hoveredDrivewayId={hoveredDrivewayId}
-              onDrivewayHover={setHoveredDrivewayId}
-              onPageChange={handlePageChange}
-              sort={filters.sort ?? ''}
-              onSortChange={(value) => {
-                const nextSort = (value === '' ? undefined : value) as SearchFilters['sort'];
-                handleFilterChange('sort', value);
-                performSearch(1, { ...filters, sort: nextSort });
-                updateSearchUrl(1, { ...filters, sort: nextSort });
-              }}
-              radiusKm={filters.radius}
-              hasLocation={Boolean(filters.latitude && filters.longitude)}
-              searchLocationName={(searchQuery || filters.location)?.split(',')[0]?.trim() || undefined}
-              formatPrice={formatPrice}
-              renderStars={renderStars}
-              calculateDistanceKm={calculateDistanceKm}
-              isMobileView={false}
-              onExpandList={() => setListViewExpanded(true)}
-              onVisibleDrivewayChange={undefined}
-            />
-          </div>
-          )}
+      {/* Mobile: floating search button when search bar collapsed (above safe area) */}
+      {!mobileSearchExpanded && (
+        <div className="lg:hidden fixed bottom-above-safe right-safe z-30" aria-label="Search">
+          <button
+            type="button"
+            onClick={() => setMobileSearchExpanded(true)}
+            aria-label="Open search"
+            className="flex items-center justify-center w-14 h-14 rounded-full bg-primary-600 text-white shadow-lg hover:bg-primary-700 active:bg-primary-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          >
+            <MagnifyingGlassIcon className="w-6 h-6" aria-hidden />
+          </button>
         </div>
       )}
 
-      {/* Filters Panel (Collapsible): overlay in map view, sticky in list view */}
+      {/* Filters Panel (Collapsible): compact first row + More (Location, Radius, Amenities, Apply) */}
       {showFilters && (
-        <div
-          className={`z-[100] bg-white border-b border-gray-200 shadow-sm pt-[env(safe-area-inset-top,0)] ${listViewExpanded ? 'sticky' : 'fixed left-0 right-0'}`}
-          style={{ top: listViewExpanded ? `${listViewTopRem}rem` : 0 }}
-        >
+        <div className="sticky z-sticky-bar bg-white border-b border-gray-200 shadow-sm" style={{ top: CONTENT_TOP_OFFSET }}>
           <div className="container mx-auto px-4 py-4">
             {/* Compact filter bar: one row */}
             <div className="flex flex-wrap items-end gap-3 mb-4">
@@ -694,7 +903,26 @@ function SearchPageContent() {
                   ]}
                 />
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleUseMyLocation} className="shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!navigator.geolocation) {
+                    showToast('Geolocation is not supported by your browser', 'error');
+                    return;
+                  }
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      handleFilterChange('latitude', String(pos.coords.latitude));
+                      handleFilterChange('longitude', String(pos.coords.longitude));
+                      showToast('Location updated successfully', 'success');
+                    },
+                    (err) => showToast('Unable to get your location. Please check your browser permissions.', 'error')
+                  );
+                }}
+                className="shrink-0"
+              >
                 <MapPinIcon className="w-4 h-4 mr-1" /> Use my location
               </Button>
               <Button
@@ -773,6 +1001,7 @@ function SearchPageContent() {
         </div>
       )}
 
+      </div>
     </AppLayout>
   );
 }
