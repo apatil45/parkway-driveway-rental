@@ -3,17 +3,18 @@
 import { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { LoadingSpinner, ErrorMessage, Button, Input, Select, SkeletonList, AddressAutocomplete } from '@/components/ui';
+import { LoadingSpinner, ErrorMessage, Button, SkeletonList } from '@/components/ui';
 import { AppLayout } from '@/components/layout';
 import { useToast } from '@/components/ui/Toast';
 import MapViewDirect from '@/components/ui/MapViewDirect';
 import { useDriveways } from '@/hooks';
-import { MapPinIcon, XMarkIcon, FunnelIcon, ArrowLeftIcon, MagnifyingGlassIcon, ListBulletIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, ArrowLeftIcon, MagnifyingGlassIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 import type { SearchDriveway } from '@/types/driveway';
 import { formatPrice as formatPriceUtil, distanceKm } from '@/lib/format';
 import SearchResultsHorizontalStrip from '@/components/search/SearchResultsHorizontalStrip';
 import SearchResultsPanel from '@/components/search/SearchResultsPanel';
 import QuickSearchBar from '@/components/search/QuickSearchBar';
+import SearchFiltersPanel from '@/components/search/SearchFiltersPanel';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getDefaultStartEnd, clampStartTimeToNow } from '@/lib/date-utils';
 
@@ -250,21 +251,6 @@ function SearchPageContent() {
     updateSearchUrl(1);
   };
 
-  const removeFilter = useCallback((key: keyof SearchFilters, value?: string) => {
-    if (key === 'amenities' && value) {
-      const next = filters.amenities.filter((a) => a !== value);
-      handleFilterChange('amenities', next);
-      performSearch(1, { ...filters, amenities: next });
-      updateSearchUrl(1, { ...filters, amenities: next });
-    } else {
-      const next = { ...filters, [key]: key === 'amenities' ? [] : '' };
-      if (key === 'sort') next.sort = undefined;
-      setFilters(next);
-      performSearch(1, next);
-      updateSearchUrl(1, next);
-    }
-  }, [filters]);
-
   const handlePageChange = (page: number) => {
     performSearch(page);
     updateSearchUrl(page);
@@ -369,6 +355,15 @@ function SearchPageContent() {
 
   const emptyResults = Array.isArray(drivewayList) && drivewayList.length === 0 && !loading;
 
+  /** Toggle filters from the top bar; collapsing the quick form when opening avoids the sheet covering the tall form. */
+  const handleFiltersButtonClick = useCallback(() => {
+    setShowFilters((open) => {
+      const next = !open;
+      if (next) setSearchFormOpen(false);
+      return next;
+    });
+  }, []);
+
   // Early returns AFTER all hooks
   if (loading && (!driveways || driveways.length === 0)) {
     return (
@@ -393,8 +388,6 @@ function SearchPageContent() {
   }
 
   const filterCount = [filters.priceMin, filters.priceMax, filters.carSize, filters.amenities?.length ? 1 : 0, filters.radius].filter(Boolean).length;
-  const listViewTopRem = 7; // navbar + breadcrumbs when list view is expanded
-
   return (
     <AppLayout showFooter={false} showNavbar={listViewExpanded || !isMobileView} showBreadcrumbs={listViewExpanded || !isMobileView}>
       {listViewExpanded ? (
@@ -412,6 +405,26 @@ function SearchPageContent() {
               Back to map
             </Button>
           </div>
+          {showFilters && (
+            <div className="shrink-0 border-b border-gray-200 bg-white px-3 py-2 shadow-sm">
+              <div className="mx-auto max-w-7xl">
+                <SearchFiltersPanel
+                  layout="list"
+                  filters={filters}
+                  showMoreFilters={showMoreFilters}
+                  onShowMoreChange={setShowMoreFilters}
+                  onFilterChange={handleFilterChange}
+                  onApply={() => {
+                    handleSearch();
+                    setShowFilters(false);
+                  }}
+                  onClose={() => setShowFilters(false)}
+                  onUseMyLocation={handleUseMyLocation}
+                  loading={loading}
+                />
+              </div>
+            </div>
+          )}
           <div className="flex-1 min-h-0 overflow-y-auto">
             <SearchResultsPanel
               open={true}
@@ -483,8 +496,17 @@ function SearchPageContent() {
             </ErrorBoundary>
           </div>
 
-          {/* Search bar strip at top (mobile + desktop): tap to open form; filter + See full list on the bar. */}
-          <div className="absolute top-0 left-0 right-0 z-10 px-3 pb-1.5 pt-[max(0.5rem,env(safe-area-inset-top,0))]">
+          {/* Search + filters: stacked under chrome; map stays clickable outside (pointer-events). */}
+          {showFilters && (
+            <button
+              type="button"
+              className="absolute inset-0 z-[5] bg-black/20 lg:hidden"
+              aria-label="Close filters"
+              onClick={() => setShowFilters(false)}
+            />
+          )}
+          <div className="pointer-events-none absolute top-0 left-0 right-0 z-20 flex flex-col items-stretch gap-1.5 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top,0))]">
+            <div className="pointer-events-auto mx-auto w-full max-w-lg">
             {searchFormOpen ? (
               <QuickSearchBar
                 locationValue={searchQuery}
@@ -501,13 +523,14 @@ function SearchPageContent() {
                 onEndChange={(v) => handleFilterChange('end', v)}
                 onSearch={() => { handleQuickSearch(); setSearchFormOpen(false); }}
                 onUseMyLocation={handleUseMyLocation}
-                onFiltersClick={() => setShowFilters(true)}
+                onFiltersClick={handleFiltersButtonClick}
                 filterCount={filterCount}
+                filtersOpen={showFilters}
                 loading={loading}
                 onClose={() => setSearchFormOpen(false)}
               />
             ) : (
-              <div className="w-full max-w-lg mx-auto flex items-stretch gap-2 h-12">
+              <div className="flex h-12 w-full items-stretch gap-2">
                 {isMobileView && (
                   <Link
                     href="/"
@@ -541,8 +564,9 @@ function SearchPageContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowFilters(true)}
-                  className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl border border-gray-200 bg-white shadow-lg text-gray-600 hover:bg-gray-50 relative"
+                  onClick={handleFiltersButtonClick}
+                  aria-expanded={showFilters}
+                  className={`flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl border border-gray-200 bg-white shadow-lg text-gray-600 hover:bg-gray-50 relative ${showFilters ? 'ring-2 ring-primary-500 ring-offset-2' : ''}`}
                   aria-label="Filters"
                 >
                   <FunnelIcon className="w-4 h-4" aria-hidden />
@@ -562,6 +586,25 @@ function SearchPageContent() {
                     <ListBulletIcon className="w-4 h-4" aria-hidden />
                   </button>
                 )}
+              </div>
+            )}
+            </div>
+            {showFilters && (
+              <div className="pointer-events-auto mx-auto flex w-full max-w-lg justify-end">
+                <SearchFiltersPanel
+                  layout="popover"
+                  filters={filters}
+                  showMoreFilters={showMoreFilters}
+                  onShowMoreChange={setShowMoreFilters}
+                  onFilterChange={handleFilterChange}
+                  onApply={() => {
+                    handleSearch();
+                    setShowFilters(false);
+                  }}
+                  onClose={() => setShowFilters(false)}
+                  onUseMyLocation={handleUseMyLocation}
+                  loading={loading}
+                />
               </div>
             )}
           </div>
@@ -629,147 +672,6 @@ function SearchPageContent() {
             />
           </div>
           )}
-        </div>
-      )}
-
-      {/* Filters Panel (Collapsible): overlay in map view, sticky in list view */}
-      {showFilters && (
-        <div
-          className={`z-[100] bg-white border-b border-gray-200 shadow-sm pt-[env(safe-area-inset-top,0)] ${listViewExpanded ? 'sticky' : 'fixed left-0 right-0'}`}
-          style={{ top: listViewExpanded ? `${listViewTopRem}rem` : 0 }}
-        >
-          <div className="container mx-auto px-4 py-4">
-            {/* Compact filter bar: one row */}
-            <div className="flex flex-wrap items-end gap-3 mb-4">
-              <div className="min-w-[80px]">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Price Min</label>
-                <Input
-                  type="number"
-                  value={filters.priceMin}
-                  onChange={(e) => handleFilterChange('priceMin', e.target.value)}
-                  placeholder="Min"
-                  className="text-sm w-20"
-                />
-              </div>
-              <div className="min-w-[80px]">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Price Max</label>
-                <Input
-                  type="number"
-                  value={filters.priceMax}
-                  onChange={(e) => handleFilterChange('priceMax', e.target.value)}
-                  placeholder="Max"
-                  className="text-sm w-20"
-                />
-              </div>
-              <div className="min-w-[100px]">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Car Size</label>
-                <Select
-                  value={filters.carSize}
-                  onChange={(e) => handleFilterChange('carSize', e.target.value)}
-                  className="text-sm"
-                  options={[
-                    { value: '', label: 'Any Size' },
-                    { value: 'small', label: 'Small' },
-                    { value: 'medium', label: 'Medium' },
-                    { value: 'large', label: 'Large' },
-                    { value: 'extra-large', label: 'Extra Large' },
-                  ]}
-                />
-              </div>
-              <div className="min-w-[140px]">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Sort</label>
-                <Select
-                  value={filters.sort || ''}
-                  onChange={(e) => {
-                    const val = e.target.value ?? '';
-                    handleFilterChange('sort', val);
-                  }}
-                  className="text-sm"
-                  options={[
-                    { value: '', label: 'Relevance' },
-                    { value: 'price_asc', label: 'Price: Low to High' },
-                    { value: 'price_desc', label: 'Price: High to Low' },
-                    { value: 'rating_desc', label: 'Rating: High to Low' },
-                    { value: 'distance_asc', label: 'Nearest first' },
-                  ]}
-                />
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleUseMyLocation} className="shrink-0">
-                <MapPinIcon className="w-4 h-4 mr-1" /> Use my location
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowMoreFilters((m) => !m)}
-                aria-expanded={showMoreFilters}
-                aria-label={showMoreFilters ? 'Hide more filters' : 'Show more filters'}
-                className="shrink-0"
-              >
-                {showMoreFilters ? 'Less' : 'More'}
-              </Button>
-            </div>
-
-            {/* More filters (Location, Radius, Amenities, Apply) */}
-            {showMoreFilters && (
-              <div className="border-t border-gray-200 pt-4 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <AddressAutocomplete
-                      label="Location"
-                      value={filters.location}
-                      onChange={(address) => handleFilterChange('location', address)}
-                      onLocationSelect={(lat, lon) => {
-                        handleFilterChange('latitude', String(lat));
-                        handleFilterChange('longitude', String(lon));
-                      }}
-                      userLocationProp={filters.latitude && filters.longitude ? { lat: Number(filters.latitude), lon: Number(filters.longitude) } : undefined}
-                      placeholder="City or address"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Radius (km)</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={filters.radius}
-                      onChange={(e) => handleFilterChange('radius', e.target.value)}
-                      placeholder="5"
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">Amenities</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['covered', 'security', 'ev_charging', 'easy_access'].map((amenity) => (
-                      <label key={amenity} className="flex items-center text-sm">
-                        <input
-                          type="checkbox"
-                          checked={filters.amenities.includes(amenity)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              handleFilterChange('amenities', [...filters.amenities, amenity]);
-                            } else {
-                              handleFilterChange('amenities', filters.amenities.filter(a => a !== amenity));
-                            }
-                          }}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-1"
-                        />
-                        <span className="capitalize">{amenity.replace('_', ' ')}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={handleSearch} loading={loading} size="sm">
-                    Apply filters
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       )}
 

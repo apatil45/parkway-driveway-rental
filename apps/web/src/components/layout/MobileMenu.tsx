@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks';
 
 interface MobileMenuProps {
@@ -12,7 +12,8 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuth();
 
   // Close menu on route change
   useEffect(() => {
@@ -36,16 +37,18 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const isAdmin = Boolean(user?.roles?.includes('ADMIN'));
   const navLinks = isAuthenticated
     ? [
-        { href: '/search', label: 'Search Parking' },
-        { href: '/driveways', label: 'My Driveways' },
-        { href: '/bookings', label: 'My Bookings' },
+        { href: '/search', label: 'Find parking' },
+        { href: '/bookings', label: 'Bookings' },
+        { href: '/driveways', label: 'My driveways' },
         { href: '/favorites', label: 'Favorites' },
+        { href: '/pricing', label: 'Pricing' },
         { href: '/dashboard', label: 'Dashboard' },
         ...(isAdmin ? [{ href: '/admin/verifications', label: 'Verifications' }] : []),
         { href: '/profile', label: 'Profile' },
       ]
     : [
-        { href: '/search', label: 'Search Parking' },
+        { href: '/search', label: 'Find parking' },
+        { href: '/driveways/new', label: 'List your driveway' },
         { href: '/about', label: 'About' },
         { href: '/pricing', label: 'Pricing' },
         { href: '/contact', label: 'Contact' },
@@ -97,7 +100,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-2">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href;
+                const isActive =
+                  pathname === link.href || pathname.startsWith(`${link.href}/`);
                 return (
                   <li key={link.href}>
                     <Link
@@ -125,13 +129,17 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                   <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                 </div>
-                <Link
-                  href="/profile"
-                  onClick={onClose}
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                <button
+                  type="button"
+                  onClick={async () => {
+                    onClose();
+                    await logout();
+                    router.push('/');
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
                 >
-                  Profile Settings
-                </Link>
+                  Sign out
+                </button>
               </>
             ) : (
               <>

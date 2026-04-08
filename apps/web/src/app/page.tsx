@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout';
-import { Card, Button, LoadingSpinner, AddressAutocomplete, ImageWithPlaceholder } from '@/components/ui';
+import { Card, Button, ButtonLink, LoadingSpinner, AddressAutocomplete, ImageWithPlaceholder } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api-client';
 import {
@@ -147,10 +147,10 @@ export default function Home() {
                   </h1>
                   <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                     {isOwner && isDriver
-                      ? 'Find parking or manage your driveways'
+                      ? 'Book a spot or manage your listings'
                       : isOwner
-                      ? 'Manage your driveways and earnings'
-                      : 'Find a driveway near you'}
+                      ? 'Your listings and payouts in one place'
+                      : 'Find and book nearby driveway parking fast'}
                   </p>
                   {/* Search block: location + CTA — primary conversion point */}
                   <div className="bg-gray-50 rounded-xl border border-gray-200 p-3 sm:p-4 md:p-5 shadow-sm">
@@ -169,14 +169,14 @@ export default function Home() {
                         onClick={handleSearchSubmit}
                         className="flex-1 min-w-0"
                       >
-                        Search
+                        Find parking
                       </Button>
                       {isOwner && (
                         <Link
                           href="/driveways/new"
                           className="inline-flex items-center justify-center font-medium rounded-lg border border-[color:rgb(var(--color-border))] bg-[color:rgb(var(--color-surface))] text-[color:rgb(var(--color-surface-foreground))] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 min-h-[44px] min-w-[44px] flex-1 min-w-0 touch-manipulation transition-colors shadow-sm"
                         >
-                          List driveway
+                          List a spot
                         </Link>
                       )}
                     </div>
@@ -320,23 +320,23 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                 <Card className="p-4 md:p-6">
                   <ShieldCheckIcon className="w-8 h-8 md:w-10 md:h-10 text-primary-600 mb-2 md:mb-4" />
-                  <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Secure & Verified</h3>
+                  <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Verified & backed</h3>
                   <p className="text-gray-600 text-sm md:text-base">
-                    All users and driveways are verified. Secure payment processing with instant transfers.
+                    We verify hosts and listings where we can. Payments run through Stripe; you’re not paying cash on the curb.
                   </p>
                 </Card>
                 <Card className="p-4 md:p-6">
                   <ClockIcon className="w-8 h-8 md:w-10 md:h-10 text-primary-600 mb-2 md:mb-4" />
-                  <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">24/7 Availability</h3>
+                  <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Built for quick stops</h3>
                   <p className="text-gray-600 text-sm md:text-base">
-                    Book parking anytime, anywhere. Real-time availability ensures you always find a spot.
+                    See what’s open near you, lock a window, and head over—no circling the block.
                   </p>
                 </Card>
                 <Card className="p-4 md:p-6">
                   <CurrencyDollarIcon className="w-8 h-8 md:w-10 md:h-10 text-primary-600 mb-2 md:mb-4" />
-                  <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Fair Pricing</h3>
+                  <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Straightforward pricing</h3>
                   <p className="text-gray-600 text-sm md:text-base">
-                    Transparent pricing with no hidden fees. Set your own rates or find the best deals.
+                    You see the total before you pay. Hosts set hourly rates; platform fees are spelled out upfront.
                   </p>
                 </Card>
               </div>
@@ -357,12 +357,9 @@ export default function Home() {
           <div className="container relative py-8 sm:py-12 md:py-16 lg:py-20">
             <div className="grid md:grid-cols-2 gap-6 md:gap-10 lg:gap-16 items-center">
               <div className="max-w-lg order-2 md:order-1">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[rgb(var(--color-surface-foreground))] tracking-tight mb-3 md:mb-4" style={{ letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-                  Find parking in minutes. Or earn from your driveway.
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[rgb(var(--color-surface-foreground))] tracking-tight mb-5 md:mb-6" style={{ letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                  Book driveway parking in minutes.
                 </h1>
-                <p className="text-base sm:text-lg text-gray-600 mb-5 md:mb-6 max-w-md">
-                  Secure, verified driveway rentals near you. Book instantly or list your space for free.
-                </p>
                 {/* Search block — primary conversion, prominent */}
                 <div className="rounded-2xl border-2 border-[rgb(var(--color-border))] bg-white p-5 sm:p-6 md:p-7 shadow-xl shadow-primary-900/10 ring-1 ring-black/5">
                   <p className="text-base sm:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Where are you going?</p>
@@ -374,7 +371,7 @@ export default function Home() {
                     className="w-full"
                     variant="hero"
                   />
-                  <div className="mt-4 sm:mt-5 flex flex-wrap gap-3">
+                  <div className="mt-4 sm:mt-5 flex flex-wrap gap-1">
                     <Button
                       type="button"
                       onClick={handleSearchSubmit}
@@ -382,7 +379,7 @@ export default function Home() {
                       size="lg"
                       className="flex-1 min-w-0 rounded-xl px-5 min-h-[48px] text-base font-semibold"
                     >
-                      Search
+                      Find parking
                     </Button>
                     <Link
                       href="/search"
@@ -393,7 +390,7 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="mt-4 text-sm text-gray-500">
-                  Secure payments • Verified users • Cancel anytime
+                  Secure checkout · Verified hosts · Free to list your spot
                 </p>
               </div>
               <div className="relative hidden md:block aspect-[4/3] max-h-[320px] lg:max-h-[380px] rounded-2xl overflow-hidden bg-primary-100/50 order-1 md:order-2 ring-1 ring-black/5">
@@ -410,15 +407,36 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Social proof: single line. Low info density — minimal vertical space on mobile. */}
-        <section className="py-6 sm:py-10 md:py-16 bg-white border-b">
-          <div className="container text-center">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">
-              Find parking near you
-            </h2>
-            <p className="text-gray-600 max-w-xl mx-auto text-sm sm:text-base">
-              Be among the first to find better parking or start earning from your driveway.
-            </p>
+        {/* Guest: clear next steps — search, list, sign up (no waitlist tone). */}
+        <section className="py-8 sm:py-10 bg-gray-50 border-b border-gray-100">
+          <div className="container">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="max-w-lg">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Get started</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Search live spots, list your driveway for free, or create an account.
+                </p>
+                {stats && !statsLoading && stats.activeDriveways > 0 && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    {stats.activeDriveways} spot{stats.activeDriveways === 1 ? '' : 's'} on the map right now.
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-center">
+                <ButtonLink href="/search" variant="primary" size="lg">
+                  Search parking
+                </ButtonLink>
+                <ButtonLink href="/driveways/new" variant="outline" size="lg">
+                  List your driveway
+                </ButtonLink>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center text-sm font-medium text-primary-700 hover:text-primary-800 min-h-[44px] px-2 sm:px-3"
+                >
+                  Sign up free →
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 

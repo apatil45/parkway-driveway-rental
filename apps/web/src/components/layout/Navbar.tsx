@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks';
 import UserMenu from './UserMenu';
 import MobileMenu from './MobileMenu';
-import SearchBar from './SearchBar';
 import { NotificationCenter, Logo } from '@/components/ui';
 
 export default function Navbar() {
@@ -20,15 +19,18 @@ export default function Navbar() {
     return null;
   }
 
+  /** Primary nav: keep the bar short; account-specific items also live in UserMenu (desktop) / drawer (mobile). */
   const navLinks = isAuthenticated
     ? [
-        { href: '/search', label: 'Search' },
-        { href: '/driveways', label: 'My Driveways' },
+        { href: '/search', label: 'Find parking' },
         { href: '/bookings', label: 'Bookings' },
+        { href: '/driveways', label: 'My driveways' },
         { href: '/favorites', label: 'Favorites' },
+        { href: '/pricing', label: 'Pricing' },
       ]
     : [
-        { href: '/search', label: 'Search' },
+        { href: '/search', label: 'Find parking' },
+        { href: '/driveways/new', label: 'List your driveway' },
         { href: '/about', label: 'About' },
         { href: '/pricing', label: 'Pricing' },
         { href: '/contact', label: 'Contact' },
@@ -38,74 +40,59 @@ export default function Navbar() {
     <>
       <header className="sticky top-0 z-navbar bg-[rgb(var(--color-surface))] border-b border-[rgb(var(--color-border))] shadow-sm safe-top">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14 md:h-16 min-h-[3.5rem]">
-            {/* Logo */}
-            <Logo variant="full" size="md" href="/" className="flex items-center" />
+          <div className="flex items-center justify-between gap-4 h-14 md:h-16 min-h-[3.5rem]">
+            {/* Logo — left */}
+            <Logo variant="full" size="md" href="/" className="flex shrink-0 items-center" />
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-6 flex-1 mx-6">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'text-primary-600 border-b-2 border-primary-600 pb-1'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-              {/* Global Search Bar */}
-              <div className="flex-1 max-w-md">
-                <SearchBar />
-              </div>
-            </nav>
+            {/* Nav + account — right (desktop); hamburger only on small screens */}
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-6 lg:gap-8">
+              <nav
+                className="hidden lg:flex items-center gap-6"
+                aria-label="Main"
+              >
+                {navLinks.map((link) => {
+                  const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`shrink-0 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'text-primary-600 border-b-2 border-primary-600 pb-1'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
 
-                {/* Right Side Actions */}
-                <div className="flex items-center space-x-4">
-                  {/* Desktop Auth/Actions */}
-                  <div className="hidden lg:flex items-center space-x-4">
-                     {isAuthenticated ? (
-                       <>
-                         <Link
-                           href="/dashboard"
-                           className="text-sm font-medium text-gray-600 hover:text-gray-900"
-                         >
-                           Dashboard
-                         </Link>
-                         {isAdmin && (
-                           <Link
-                             href="/admin/verifications"
-                             className="text-sm font-medium text-amber-700 hover:text-amber-800"
-                           >
-                             Verifications
-                           </Link>
-                         )}
-                         <Link
-                           href="/profile"
-                           className="text-sm font-medium text-gray-600 hover:text-gray-900"
-                         >
-                           Profile
-                         </Link>
-                         <NotificationCenter />
-                         <UserMenu />
-                       </>
-                     ) : (
+              <div className="hidden lg:flex items-center gap-4 border-l border-[rgb(var(--color-border))] pl-6 lg:pl-8">
+                {isAuthenticated ? (
+                  <>
+                    {isAdmin && (
+                      <Link
+                        href="/admin/verifications"
+                        className="shrink-0 text-sm font-medium text-amber-700 hover:text-amber-800"
+                      >
+                        Verifications
+                      </Link>
+                    )}
+                    <NotificationCenter />
+                    <UserMenu />
+                  </>
+                ) : (
                   <>
                     <Link
                       href="/login"
-                      className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                      className="shrink-0 text-sm font-medium text-gray-600 hover:text-gray-900"
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/register"
-                      className="inline-flex items-center justify-center rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-500 px-4 py-2.5"
+                      className="inline-flex shrink-0 items-center justify-center rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-500 px-4 py-2.5"
                     >
                       Sign Up
                     </Link>
@@ -113,8 +100,8 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Mobile Menu Button */}
               <button
+                type="button"
                 onClick={() => setMobileMenuOpen(true)}
                 className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 aria-label="Open navigation menu"

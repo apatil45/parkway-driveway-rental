@@ -57,6 +57,24 @@ jest.mock('@/components/ui/MapView', () => ({
   ),
 }));
 
+jest.mock('@/components/ui/MapViewDirect', () => ({
+  __esModule: true,
+  default: ({ markers, onMarkerClick }: any) => (
+    <div data-testid="map-view-direct">
+      {(markers ?? []).map((m: any) => (
+        <button
+          key={m.id}
+          type="button"
+          data-testid={`marker-${m.id}`}
+          onClick={() => onMarkerClick?.(m.id)}
+        >
+          {m.title}
+        </button>
+      ))}
+    </div>
+  ),
+}));
+
 // Mock AppLayout
 jest.mock('@/components/layout', () => ({
   AppLayout: ({ children }: any) => <div>{children}</div>,
@@ -100,7 +118,27 @@ describe('SearchPage', () => {
     const filtersButton = screen.getByRole('button', { name: /filters/i });
     fireEvent.click(filtersButton);
 
-    expect(screen.getByText(/hide filters/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^filters$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /apply filters/i })).toBeInTheDocument();
+  });
+
+  it('collapses filters when filter button is clicked again', () => {
+    render(<SearchPage />);
+
+    const filtersButton = screen.getByRole('button', { name: /filters/i });
+    fireEvent.click(filtersButton);
+    expect(screen.getByRole('button', { name: /apply filters/i })).toBeInTheDocument();
+
+    fireEvent.click(filtersButton);
+    expect(screen.queryByRole('button', { name: /apply filters/i })).not.toBeInTheDocument();
+  });
+
+  it('collapses filters when close is clicked', () => {
+    render(<SearchPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /filters/i }));
+    fireEvent.click(screen.getByRole('button', { name: /close filters/i }));
+    expect(screen.queryByRole('button', { name: /apply filters/i })).not.toBeInTheDocument();
   });
 
   it('calls fetchDriveways on mount', async () => {

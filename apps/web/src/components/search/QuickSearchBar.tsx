@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Input, AddressAutocomplete } from '@/components/ui';
-import { MapPinIcon, FunnelIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { getDateTimeLocalMin } from '@/lib/date-utils';
 
 export interface QuickSearchBarProps {
@@ -16,6 +16,8 @@ export interface QuickSearchBarProps {
   onUseMyLocation: () => void;
   onFiltersClick?: () => void;
   filterCount?: number;
+  /** When the advanced filters sheet is open (for a11y + pressed styling). */
+  filtersOpen?: boolean;
   loading?: boolean;
   /** When set, shows a close button to collapse the form (e.g. when opened from trigger). */
   onClose?: () => void;
@@ -33,6 +35,7 @@ export default function QuickSearchBar({
   onUseMyLocation,
   onFiltersClick,
   filterCount = 0,
+  filtersOpen = false,
   loading = false,
   onClose,
 }: QuickSearchBarProps) {
@@ -120,7 +123,8 @@ export default function QuickSearchBar({
               variant="secondary"
               size="sm"
               onClick={onFiltersClick}
-              className="shrink-0 inline-flex items-center gap-1.5"
+              aria-expanded={filtersOpen}
+              className={`shrink-0 inline-flex items-center gap-1.5${filtersOpen ? ' ring-2 ring-primary-500 ring-offset-2' : ''}`}
               aria-label="Filters"
             >
               <FunnelIcon className="w-4 h-4 shrink-0" aria-hidden />

@@ -29,7 +29,7 @@ export function getCookieConfig(request: NextRequest): {
   
   // For Vercel/production with HTTPS, use 'lax' for same-origin requests
   // This works well for same-domain API calls
-  const sameSite: 'lax' = 'lax';
+  const sameSite = 'lax' as const;
   
   // Extract domain from request URL for Vercel
   let domain: string | undefined;

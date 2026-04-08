@@ -31,10 +31,9 @@ export function useAuth() {
   const router = useRouter();
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
     let isMounted = true;
 
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       if (isMounted) {
         setAuthState(prev => {
           if (prev.loading) {

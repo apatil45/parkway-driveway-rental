@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * Adds security headers to all responses for improved security posture.
  * Works seamlessly with Vercel serverless functions.
  */
-export function middleware(request: NextRequest) {
+export function middleware(_request: NextRequest) {
   const response = NextResponse.next();
   
   // Security headers
