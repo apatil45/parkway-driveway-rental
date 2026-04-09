@@ -8,7 +8,6 @@ import { AppLayout } from '@/components/layout';
 import { useAuth } from '@/hooks';
 import api from '@/lib/api-client';
 import { createAppError } from '@/lib/errors';
-import Link from 'next/link';
 
 interface Booking {
   id: string;
@@ -43,14 +42,14 @@ function CheckoutContent() {
     if (bookingId && isAuthenticated) {
       fetchBooking();
     } else if (!bookingId) {
-      setError('Booking information is missing. Please try creating a new booking.');
+      setError('We’re missing your booking link. Go back to the spot and try reserving again.');
       setLoading(false);
     }
   }, [bookingId, isAuthenticated]);
 
   const fetchBooking = async () => {
     if (!bookingId) {
-      setError('Booking information is missing. Please try creating a new booking.');
+      setError('We’re missing your booking link. Go back to the spot and try reserving again.');
       setLoading(false);
       return;
     }
@@ -79,11 +78,11 @@ function CheckoutContent() {
         router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
         return;
       } else if (err.response?.status === 404) {
-        setError('This booking is no longer available. Please create a new booking.');
+        setError('This reservation isn’t available anymore. Pick another time or spot and try again.');
       } else if (err.response?.status === 403) {
-        setError('You are not authorized to view this booking');
+        setError('You’re signed in with a different account than the one that holds this booking. Switch accounts or open your Bookings page.');
       } else if (err.response?.status >= 500) {
-        setError('Unable to load booking details. Please try again in a moment.');
+        setError('We couldn’t load this booking. Wait a moment and refresh, or open Bookings from your account.');
       } else {
         // Use createAppError for consistent user-friendly messages
         const appError = createAppError(err);
@@ -125,9 +124,9 @@ function CheckoutContent() {
         <div className="container mx-auto px-4 py-8">
           <Card>
             <div className="text-center py-8">
-              <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
-              <p className="text-gray-600 mb-4">{error || 'Booking not found'}</p>
-              <ButtonLink href="/search">Back to Search</ButtonLink>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Checkout unavailable</h2>
+              <p className="text-gray-600 mb-4">{error || 'We couldn’t find that booking.'}</p>
+              <ButtonLink href="/search">Find parking</ButtonLink>
             </div>
           </Card>
         </div>
@@ -140,35 +139,38 @@ function CheckoutContent() {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6">Complete Your Booking</h1>
+        <h1 className="text-3xl font-bold mb-2">Pay & confirm</h1>
+        <p className="text-gray-600 mb-6 text-sm">
+          One secure payment confirms your spot. Need help? We’re here if something looks wrong.
+        </p>
         
         <div className="space-y-6">
           {/* Booking Summary */}
           <Card>
-            <h2 className="text-xl font-semibold mb-4">Booking Summary</h2>
+            <h2 className="text-xl font-semibold mb-4">Your reservation</h2>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Driveway:</span>
+                <span className="text-gray-600">Spot</span>
                 <span className="font-medium">{booking.driveway.title}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Address:</span>
+                <span className="text-gray-600">Address</span>
                 <span className="font-medium text-right max-w-xs">{booking.driveway.address}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Start Time:</span>
+                <span className="text-gray-600">Arrive</span>
                 <span className="font-medium">
                   {new Date(booking.startTime).toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">End Time:</span>
+                <span className="text-gray-600">Leave by</span>
                 <span className="font-medium">
                   {new Date(booking.endTime).toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Duration:</span>
+                <span className="text-gray-600">Length</span>
                 <span className="font-medium">
                   {Math.round((new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / (1000 * 60 * 60))} hours
                 </span>
@@ -194,7 +196,8 @@ function CheckoutContent() {
 
           {/* Payment Form */}
           <Card>
-            <h2 className="text-xl font-semibold mb-4">Payment</h2>
+            <h2 className="text-xl font-semibold mb-1">Payment</h2>
+            <p className="text-sm text-gray-600 mb-4">Processed securely by Stripe. You’re charged once—no surprise fees.</p>
             <StripeCheckout 
               amount={amountInCents} 
               bookingId={booking.id}

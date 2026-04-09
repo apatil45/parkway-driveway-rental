@@ -46,12 +46,12 @@ export default function BookingConfirmationPage() {
         if (!cancelled && data) {
           setBooking(data);
         } else if (!cancelled) {
-          setError('Booking not found.');
+          setError('We couldn’t load this booking.');
         }
       } catch (err: unknown) {
         if (!cancelled) {
           const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-          setError(message || 'Failed to load booking.');
+          setError(message || 'Something went wrong loading this booking.');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -81,8 +81,8 @@ export default function BookingConfirmationPage() {
         <div className="container mx-auto px-4 py-8">
           <Card>
             <div className="text-center py-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Booking not found</h2>
-              <p className="text-gray-600 mb-4">{error || 'This booking may have been cancelled or does not exist.'}</p>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No booking here</h2>
+              <p className="text-gray-600 mb-4">{error || 'It may have been cancelled, or the link is wrong. Open Bookings to see what’s active.'}</p>
               <Link href="/bookings">
                 <Button>View my bookings</Button>
               </Link>
@@ -119,8 +119,8 @@ export default function BookingConfirmationPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
             <CheckCircleIcon className="w-10 h-10 text-green-600" aria-hidden />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">You&apos;re booked!</h1>
-          <p className="text-gray-600 mt-1">Your parking is confirmed. Here are the details.</p>
+          <h1 className="text-2xl font-bold text-gray-900">You&apos;re set</h1>
+          <p className="text-gray-600 mt-1">Parking confirmed. Head over on time—the address below is where you’ll park.</p>
         </div>
 
         {/* Booking summary */}
@@ -130,7 +130,7 @@ export default function BookingConfirmationPage() {
             <div className="flex items-start gap-3">
               <MapPinIcon className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" aria-hidden />
               <div>
-                <p className="text-sm font-medium text-gray-700">Address</p>
+                <p className="text-sm font-medium text-gray-700">Where to park</p>
                 <p className="text-gray-900">{booking.driveway.address}</p>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function BookingConfirmationPage() {
             </div>
             <div className="pt-3 border-t border-gray-200">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total paid</span>
+                <span className="text-gray-600">Paid</span>
                 <span className="text-lg font-bold text-primary-600">${booking.totalPrice.toFixed(2)}</span>
               </div>
             </div>
@@ -183,7 +183,7 @@ export default function BookingConfirmationPage() {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          A confirmation email has been sent to your account.
+          We’ve emailed a receipt. Need help? Use Support from your profile—we’ll sort it out.
         </p>
       </div>
     </AppLayout>

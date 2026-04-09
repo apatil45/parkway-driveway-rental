@@ -6,8 +6,6 @@ import { AppLayout } from '@/components/layout';
 import { Card } from '@/components/ui';
 import {
   CheckCircleIcon,
-  XMarkIcon,
-  CurrencyDollarIcon,
   ShieldCheckIcon,
   ClockIcon,
   ChartBarIcon,
@@ -44,45 +42,43 @@ export default function PricingPage() {
     },
     owners: {
       title: 'For Property Owners',
-      subtitle: 'Earn passive income from your driveway',
+      subtitle: 'List for free, or grow faster with Parkway Plus — for hosts who want more visibility and tools',
       plans: [
         {
-          name: 'Free Listing',
+          name: 'Free listing',
           price: billingCycle === 'monthly' ? '$0' : '$0',
-          period: 'No fees',
-          description: 'List your driveway and start earning',
+          period: 'No subscription',
+          description: 'Everything you need to list your driveway and get booked',
           features: [
-            'Free to list',
-            'No monthly subscription',
-            'Set your own rates',
-            'Keep 85% of earnings',
-            '15% platform fee',
-            'Instant payouts',
-            '24/7 support',
-            'Manage availability easily',
-            'Real-time booking notifications',
+            '$0 to list — no monthly fee',
+            'Set your own rates and availability',
+            'Keep 85% of each booking (15% platform fee)',
+            'Appear in search and on the map',
+            'Booking requests and messaging',
+            'Standard payouts and notifications',
+            'Help center and email support',
           ],
-          cta: 'List Your Driveway',
+          cta: 'List your driveway',
           ctaLink: '/driveways/new',
           popular: true,
         },
         {
-          name: 'Premium Host',
+          name: 'Parkway Plus',
+          tagline: 'For hosts',
           price: billingCycle === 'monthly' ? '$9.99' : '$99.99',
           period: billingCycle === 'monthly' ? 'per month' : 'per year',
-          description: 'Maximize your earnings with premium features',
+          description: 'Higher placement, lower platform fee, and tools to run your spot like a side business',
           features: [
-            'Everything in Free Listing',
-            'Keep 90% of earnings (10% platform fee)',
-            'Priority listing placement',
-            'Advanced analytics dashboard',
-            'Bulk availability management',
-            'Custom pricing rules',
-            'Featured in search results',
-            'Dedicated support line',
-            'Marketing tools & insights',
+            'Everything in Free listing',
+            'Keep 90% of each booking (10% platform fee)',
+            'Priority placement in search and map results',
+            'Parkway Plus host badge on your listing',
+            'Analytics for views, requests, and earnings',
+            'Bulk availability and pricing shortcuts',
+            'Featured placement in your area (where available)',
+            'Priority support',
           ],
-          cta: 'Upgrade to Premium',
+          cta: 'Get Parkway Plus',
           ctaLink: '/register',
           popular: false,
         },
@@ -92,18 +88,18 @@ export default function PricingPage() {
 
   const feeStructure = [
     {
-      title: 'Platform Fees',
+      title: 'Platform fees (hosts)',
       items: [
         {
-          role: 'Free Listing',
+          role: 'Free listing',
           fee: '15% of each booking',
-          description: 'Standard platform fee for free hosts',
-    },
-    {
-          role: 'Premium Host',
+          description: 'Standard platform fee when you are not on Parkway Plus',
+        },
+        {
+          role: 'Parkway Plus',
           fee: '10% of each booking',
-          description: 'Reduced platform fee for premium subscribers',
-    },
+          description: 'Reduced platform fee while your Plus subscription is active',
+        },
       ],
     },
     {
@@ -128,8 +124,12 @@ export default function PricingPage() {
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
                 Simple, Transparent Pricing
               </h1>
-              <p className="text-xl md:text-2xl text-primary-100 mb-8">
-                No hidden fees. No surprises. Just fair pricing for everyone.
+              <p className="text-xl md:text-2xl text-primary-100 mb-4">
+                No hidden fees. No surprises. Drivers pay when they park; hosts list for free, with optional{' '}
+                <span className="font-semibold text-white">Parkway Plus</span> for more visibility and a lower platform fee.
+              </p>
+              <p className="text-base text-primary-200/90 max-w-2xl mx-auto">
+                Plus pricing below is for hosts only. Listing stays free until you choose to upgrade.
               </p>
             </div>
           </div>
@@ -203,6 +203,40 @@ export default function PricingPage() {
                 <p className="text-xl text-gray-600">
                   {pricingPlans.owners.subtitle}
                 </p>
+                <div className="mt-8 flex flex-col items-center gap-2">
+                  <p className="text-sm font-medium text-gray-700">Parkway Plus billing</p>
+                  <div
+                    className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1"
+                    role="group"
+                    aria-label="Billing period for Parkway Plus"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setBillingCycle('monthly')}
+                      className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
+                        billingCycle === 'monthly'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Monthly
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBillingCycle('yearly')}
+                      className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
+                        billingCycle === 'yearly'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Yearly
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Yearly saves about two months vs paying monthly.
+                  </p>
+                </div>
               </div>
               <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
                 {pricingPlans.owners.plans.map((plan, index) => (
@@ -218,9 +252,12 @@ export default function PricingPage() {
                       </div>
                     )}
                     <div className="text-center mb-6">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-1">
                         {plan.name}
                       </h3>
+                      {'tagline' in plan && plan.tagline && (
+                        <p className="text-sm font-medium text-primary-600 mb-2">{plan.tagline}</p>
+                      )}
                       <div className="mb-2">
                         <span className="text-4xl font-bold text-gray-900">
                           {plan.price}
@@ -241,7 +278,11 @@ export default function PricingPage() {
                     </ul>
                     <Link
                       href={plan.ctaLink}
-                      className="block w-full text-center bg-primary-600 text-white py-3 px-6 rounded-md font-semibold hover:bg-primary-700 transition-colors"
+                      className={`block w-full text-center py-3 px-6 rounded-md font-semibold transition-colors ${
+                        plan.name === 'Parkway Plus'
+                          ? 'bg-gray-900 text-white hover:bg-gray-800'
+                          : 'bg-primary-600 text-white hover:bg-primary-700'
+                      }`}
                     >
                       {plan.cta}
                     </Link>
@@ -320,7 +361,7 @@ export default function PricingPage() {
                   <ChartBarIcon className="w-12 h-12 text-primary-600 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Transparent Pricing</h3>
                   <p className="text-gray-600 text-sm">
-                    See exactly what you'll pay or earn before booking. No hidden fees or surprise charges.
+                    See exactly what you’ll pay or earn before booking. No hidden fees or surprise charges.
                   </p>
                 </Card>
               </div>
@@ -343,7 +384,25 @@ export default function PricingPage() {
                     Are there any hidden fees?
                   </h3>
                   <p className="text-gray-600">
-                    No. All fees are clearly displayed before you book. Drivers pay the listed price plus standard payment processing fees. Property owners keep 85-90% of the booking price depending on their plan.
+                    No. All fees are shown up front. Drivers pay the listed parking price plus standard card processing. Hosts keep 85% on a free listing or 90% with an active{' '}
+                    <span className="font-medium text-gray-800">Parkway Plus</span> subscription — plus the Plus membership itself if you choose it.
+                  </p>
+                </Card>
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Do I need Parkway Plus to list my driveway?
+                  </h3>
+                  <p className="text-gray-600">
+                    No. You can list and accept bookings on a <span className="font-medium text-gray-800">free listing</span> with no subscription. Parkway Plus is optional — it adds stronger placement, a lower platform fee on bookings, and host tools for people who want to scale up.
+                  </p>
+                </Card>
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    What is the difference between Free listing and Parkway Plus?
+                  </h3>
+                  <p className="text-gray-600">
+                    <span className="font-medium text-gray-800">Free listing</span> has no monthly cost and a 15% platform fee per booking.{' '}
+                    <span className="font-medium text-gray-800">Parkway Plus</span> is a monthly or yearly membership with a 10% platform fee and extras like better visibility in search, analytics, and priority support. You can change plans as your needs change.
                   </p>
                 </Card>
                 <Card className="p-6">

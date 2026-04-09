@@ -44,7 +44,7 @@ function CheckoutInner({
         if (paymentIntent && paymentIntent.status === 'succeeded') {
           // Payment actually succeeded - treat as success (handles race condition)
           const paymentIntentId = paymentIntent.id;
-          showToast('Payment confirmed! Your booking is now confirmed.', 'success');
+          showToast('Payment went through—your spot is confirmed.', 'success');
           
           // Verify and update booking status in background
           if (bookingId && paymentIntentId) {
@@ -80,7 +80,7 @@ function CheckoutInner({
         });
         
         // Provide user-friendly error messages
-        let errorMsg = 'Payment could not be processed. Please try again.';
+        let errorMsg = 'Payment didn’t go through. Check the card details and try again.';
         if (result.error.message) {
           // Use Stripe's error message if it's user-friendly
           const stripeMsg = result.error.message.toLowerCase();
@@ -107,8 +107,8 @@ function CheckoutInner({
       // Use type assertion to help TypeScript understand the discriminated union
       const successResult = result as { paymentIntent: { id: string } | string };
       if (!successResult.paymentIntent) {
-        setError('Payment completed but verification is pending');
-        showToast('Your payment was received. Please check your bookings page to confirm your booking status.', 'warning');
+        setError('Payment received—confirmation may take a moment');
+        showToast('Payment received. Open Bookings if this page doesn’t update in a minute.', 'warning');
         setLoading(false);
         if (onSuccess) {
           onSuccess();
@@ -123,7 +123,7 @@ function CheckoutInner({
       
       if (!paymentIntentId) {
         setError('Payment completed but no payment intent ID found');
-        showToast('Payment completed but verification failed. Please check your bookings.', 'warning');
+        showToast('Paid—if status looks stuck, check Bookings; our system catches up shortly.', 'warning');
         setLoading(false);
         if (onSuccess) {
           onSuccess();
@@ -131,7 +131,7 @@ function CheckoutInner({
         return;
       }
       
-      showToast('Payment confirmed! Your booking is now confirmed.', 'success');
+      showToast('Payment went through—your spot is confirmed.', 'success');
       
       // Verify and update booking status in background (completely non-blocking)
       // Webhook is the source of truth - this is just for instant feedback
@@ -184,7 +184,7 @@ function CheckoutInner({
       <PaymentElement />
       {error && <div className="text-red-600 text-sm">{error}</div>}
       <Button type="submit" loading={loading} disabled={!stripe}>
-        Pay ${(amount / 100).toFixed(2)}
+        Pay ${(amount / 100).toFixed(2)} securely
       </Button>
     </form>
   );

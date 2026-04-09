@@ -137,9 +137,9 @@ export default function DrivewayDetailsPage() {
       } catch (err: any) {
         if (!isMountedRef.current) return;
         if (err.response?.status === 404) {
-          setError('This parking space is no longer available.');
+          setError('This listing isn’t available right now. Try another spot nearby.');
         } else {
-          setError('Unable to load parking space details. Please try again.');
+          setError('We couldn’t load this spot. Check your connection and refresh the page.');
         }
       } finally {
         if (isMountedRef.current) {
@@ -215,7 +215,7 @@ export default function DrivewayDetailsPage() {
             }
             // Clear saved data after restoring
             sessionStorage.removeItem('bookingFormData');
-            showToast('Welcome back! Your booking details have been restored.', 'success');
+            showToast('We saved your times—pick up where you left off.', 'success');
           } else {
             // Clear data for different driveway
             sessionStorage.removeItem('bookingFormData');
@@ -310,7 +310,7 @@ export default function DrivewayDetailsPage() {
     
     // Prevent duplicate submissions
     if (isSubmittingRef.current) {
-      showToast('Please wait, your booking is being processed...', 'info');
+      showToast('Hang on—we’re submitting your booking…', 'info');
       return;
     }
     
@@ -328,7 +328,7 @@ export default function DrivewayDetailsPage() {
         console.error('Failed to save form data:', err);
       }
       
-      showToast('Please log in to complete your booking', 'info');
+        showToast('Sign in to finish—your times are saved.', 'info');
       const currentPath = window.location.pathname + window.location.search;
       router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
       return;
@@ -358,7 +358,7 @@ export default function DrivewayDetailsPage() {
       
       // Validate dates
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        showToast('Please select valid dates for your booking.', 'error');
+        showToast('Those times don’t look valid. Double-check arrival and departure.', 'error');
         setBookingLoading(false);
         return;
       }
@@ -466,12 +466,12 @@ export default function DrivewayDetailsPage() {
       // Handle specific error types
       if (err.response?.status === 409) {
         // Capacity exceeded
-        showToast('This time slot is no longer available. Please select a different time.', 'error');
+        showToast('Someone may have just booked that window. Pick a different time.', 'error');
         isSubmittingRef.current = false;
         setBookingLoading(false);
         return;
       } else if (err.response?.status >= 500) {
-        showToast('Server error. Please try again in a moment.', 'error');
+        showToast('Our servers hiccupped. Try again in a few seconds.', 'error');
         isSubmittingRef.current = false;
         setBookingLoading(false);
         return;
@@ -532,9 +532,9 @@ export default function DrivewayDetailsPage() {
       <AppLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
-            <p className="text-gray-600 mb-4">{error || 'Driveway not found'}</p>
-            <ButtonLink href="/search">Back to Search</ButtonLink>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Can’t show this spot</h2>
+            <p className="text-gray-600 mb-4">{error || 'This listing may have been removed.'}</p>
+            <ButtonLink href="/search">Find parking</ButtonLink>
           </div>
         </div>
       </AppLayout>
@@ -684,19 +684,22 @@ export default function DrivewayDetailsPage() {
           {/* Booking Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Book This Driveway</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Reserve this spot</h3>
               
               {!showBookingForm ? (
                 <div>
-                  <p className="text-gray-600 mb-4">
-                    Ready to book this driveway? Click below to start your reservation.
+                  <p className="text-gray-600 mb-2 text-sm">
+                    Most drivers stay 30 minutes to 2 hours—pick the window you need. You’ll pay securely after you confirm.
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Verified listings help everyone trust the address you see.
                   </p>
                   <Button
                     onClick={() => setShowBookingForm(true)}
                     className="w-full"
                     size="lg"
                   >
-                    Book Now
+                    Choose times
                   </Button>
                 </div>
               ) : (
@@ -709,8 +712,8 @@ export default function DrivewayDetailsPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-blue-800">Log in to complete your booking</p>
-                          <p className="text-sm text-blue-700 mt-1">You can fill out the form now and log in when you're ready to confirm.</p>
+                          <p className="text-sm font-medium text-blue-800">Sign in to finish checkout</p>
+                          <p className="text-sm text-blue-700 mt-1">Add your times now—we’ll save them until you sign in and pay.</p>
                         </div>
                       </div>
                     </div>
@@ -718,7 +721,7 @@ export default function DrivewayDetailsPage() {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Time
+                      Arrive
                     </label>
                     <input
                       type="datetime-local"
@@ -732,7 +735,7 @@ export default function DrivewayDetailsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Time
+                      Leave by
                     </label>
                     <input
                       type="datetime-local"
@@ -749,7 +752,7 @@ export default function DrivewayDetailsPage() {
                     <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                       <p className="text-sm text-red-700 font-medium">{durationError}</p>
                       <p className="text-xs text-red-600 mt-1">
-                        Minimum booking duration is 10 minutes. Please select a longer time period.
+                        Extend your end time—bookings need a bit more than a few minutes.
                       </p>
                     </div>
                   )}
@@ -768,7 +771,7 @@ export default function DrivewayDetailsPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">Total (incl. 15% fee)</p>
+                          <p className="text-sm text-gray-600">Total (includes platform fee)</p>
                           <p className="text-2xl font-bold text-primary-600">
                             ${calculatedPrice.toFixed(2)}
                           </p>
@@ -829,7 +832,7 @@ export default function DrivewayDetailsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Special Requests (Optional)
+                      Note for host (optional)
                     </label>
                     <textarea
                       value={bookingForm.specialRequests}
@@ -914,7 +917,7 @@ export default function DrivewayDetailsPage() {
                       className="flex-1"
                       size="lg"
                     >
-                      Cancel
+                      Back
                     </Button>
                     <Button
                       type="submit"
@@ -923,7 +926,7 @@ export default function DrivewayDetailsPage() {
                       className="flex-1"
                       size="lg"
                     >
-                      Confirm Booking
+                      Continue to payment
                     </Button>
                   </div>
                 </form>
@@ -931,7 +934,7 @@ export default function DrivewayDetailsPage() {
 
               {/* Owner Info */}
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-2">Owner</h4>
+                <h4 className="font-medium text-gray-900 mb-2">Host</h4>
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
                     <span className="text-sm font-medium text-gray-700">
