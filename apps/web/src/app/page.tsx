@@ -340,7 +340,7 @@ export default function Home() {
   return (
     <AppLayout showFooter={true} footerVariant="marketing">
       <div className="min-h-screen" role="presentation">
-        {/* Hero: outcome-driven headline, persona clarity, trust microcopy */}
+        {/* Hero: headline, subcopy, search, trust line */}
         <section className="relative bg-[rgb(var(--color-surface))] border-b border-[rgb(var(--color-border))] overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary-50/50 to-transparent pointer-events-none" aria-hidden />
           <div className="container relative py-8 sm:py-12 md:py-16 lg:py-20">
@@ -352,21 +352,6 @@ export default function Home() {
                 <p className="text-base sm:text-lg text-gray-600 mb-4 md:mb-6 max-w-md">
                   Secure, verified driveway rentals in {primaryMarket.displayName}. Book instantly or list your space for free.
                 </p>
-                {/* Persona toggle: anchor to relevant section */}
-                <div className="flex flex-wrap gap-3 mb-6">
-                  <a
-                    href="#for-drivers"
-                    className="min-h-[48px] inline-flex items-center justify-center rounded-xl font-semibold px-6 bg-primary-600 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
-                  >
-                    I Need Parking
-                  </a>
-                  <a
-                    href="#for-owners"
-                    className="min-h-[48px] inline-flex items-center justify-center rounded-xl font-semibold px-6 border-2 border-[rgb(var(--color-border))] text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
-                  >
-                    I Want To Earn
-                  </a>
-                </div>
                 {/* Search block — primary conversion, prominent */}
                 <div className="rounded-2xl border-2 border-[rgb(var(--color-border))] bg-white p-5 sm:p-6 md:p-7 shadow-xl shadow-primary-900/10 ring-1 ring-black/5">
                   <p className="text-base sm:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Where are you going?</p>

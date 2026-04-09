@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 import { NextRequest, NextResponse } from 'next/server';
 import { createApiResponse, createApiError } from '@parkway/shared';
 
@@ -10,25 +11,17 @@ interface ContactRequest {
   type: 'general' | 'support' | 'sales' | 'technical';
 }
 
-// Create email transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: false, 
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
-
-// Test transporter connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Email transporter error:', error);
-  } else {
-    console.log('✅ Email transporter ready to send messages');
-  }
-});
+function createMailTransporter(): Transporter {
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT || '587', 10),
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,6 +76,7 @@ export async function POST(request: NextRequest) {
       `,
     };
 
+    const transporter = createMailTransporter();
     await transporter.sendMail(adminEmail);
     await transporter.sendMail(userEmail);
 
