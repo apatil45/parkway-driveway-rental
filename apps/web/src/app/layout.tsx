@@ -19,8 +19,8 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Parkway Spot - Driveway Rental Platform',
-  description: 'Find and rent driveways near you. List your driveway and earn money. Parkway Spot.',
+  title: 'ParkwayAi - Driveway Rental Platform',
+  description: 'Find and rent driveways near you. List your driveway and earn money. ParkwayAi.',
   keywords: 'driveway rental, parking, driveway sharing, parking space',
   icons: {
     icon: '/favicon.svg',
@@ -28,8 +28,8 @@ export const metadata: Metadata = {
     apple: '/favicon.svg',
   },
   openGraph: {
-    title: 'Parkway Spot - Driveway Rental Platform',
-    description: 'Find and rent driveways near you. List your driveway and earn money. Parkway Spot.',
+    title: 'ParkwayAi - Driveway Rental Platform',
+    description: 'Find and rent driveways near you. List your driveway and earn money. ParkwayAi.',
     type: 'website',
   },
 }

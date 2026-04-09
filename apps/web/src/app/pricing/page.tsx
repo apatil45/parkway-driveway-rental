@@ -339,7 +339,7 @@ export default function PricingPage() {
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                  Why Choose Parkway Spot?
+                  Why Choose ParkwayAi?
                 </h2>
               </div>
               <div className="grid md:grid-cols-3 gap-8">
@@ -426,7 +426,7 @@ export default function PricingPage() {
                     Is there a minimum commitment?
                   </h3>
                   <p className="text-gray-600">
-                    No. There are no long-term contracts or minimum commitments. You can use Parkway Spot as much or as little as you want.
+                    No. There are no long-term contracts or minimum commitments. You can use ParkwayAi as much or as little as you want.
                   </p>
                 </Card>
               </div>
@@ -441,7 +441,7 @@ export default function PricingPage() {
               Ready to Get Started?
             </h2>
             <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-              Join drivers and property owners already using Parkway Spot. Sign up is free and takes less than 2 minutes.
+              Join drivers and property owners already using ParkwayAi. Sign up is free and takes less than 2 minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link

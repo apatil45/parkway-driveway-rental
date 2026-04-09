@@ -18,13 +18,13 @@ export default function TermsPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">1. Acceptance of Terms</h2>
             <p className="text-gray-600">
-              By using Parkway Spot, you agree to these Terms of Service. If you do not agree, please do not use our platform.
+              By using ParkwayAi, you agree to these Terms of Service. If you do not agree, please do not use our platform.
             </p>
           </section>
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">2. Description of Service</h2>
             <p className="text-gray-600">
-              Parkway Spot connects drivers with private driveway owners for parking. We provide a marketplace platform
+              ParkwayAi connects drivers with private driveway owners for parking. We provide a marketplace platform
               for listing, discovering, and booking parking spaces. We are not the owner of any listed spaces.
             </p>
           </section>

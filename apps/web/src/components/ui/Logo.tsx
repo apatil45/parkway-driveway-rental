@@ -12,10 +12,10 @@ const sizeMap = {
   lg: { icon: 44, text: 'text-2xl' },
 } as const;
 
-const wordmarkDisplay = 'Parkway Spot';
-const wordmarkA11y = 'Parkway Spot';
+const wordmarkDisplay = 'ParkwayAi';
+const wordmarkA11y = 'ParkwayAi';
 
-/** Parkway Spot brand: primary (navy) — from CSS vars */
+/** ParkwayAi brand: primary (navy) — from CSS vars */
 const BRAND = {
   primary: 'rgb(var(--color-primary-600))',
   primaryDark: '#ffffff',
@@ -23,7 +23,7 @@ const BRAND = {
 } as const;
 
 /**
- * Parkway Spot logo: driveway boundary + car parked inside (top view) = "book a spot on a driveway."
+ * ParkwayAi logo: driveway boundary + car parked inside (top view) = "book a spot on a driveway."
  * Use dark=true on dark backgrounds.
  */
 export default function Logo({

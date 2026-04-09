@@ -11,7 +11,6 @@ import { useAuth } from '@/hooks';
 import api from '@/lib/api-client';
 import { PricingService, PLATFORM_FEE_RATE } from '@/services/PricingService';
 import { createAppError } from '@/lib/errors';
-import { clampStartTimeToNow, getDateTimeLocalMin } from '@/lib/date-utils';
 
 interface Driveway {
   id: string;
@@ -352,8 +351,9 @@ export default function DrivewayDetailsPage() {
         return;
       }
 
-      // Convert datetime-local format (YYYY-MM-DDTHH:mm) to ISO string; start = max(now, user input)
-      const startDate = new Date(clampStartTimeToNow(bookingForm.startTime));
+      // Convert datetime-local format (YYYY-MM-DDTHH:mm) to ISO string
+      // datetime-local doesn't include timezone, so we need to create a proper Date object
+      const startDate = new Date(bookingForm.startTime);
       const endDate = new Date(bookingForm.endTime);
       
       // Validate dates
@@ -726,8 +726,7 @@ export default function DrivewayDetailsPage() {
                     <input
                       type="datetime-local"
                       value={bookingForm.startTime}
-                      onChange={(e) => setBookingForm(prev => ({ ...prev, startTime: clampStartTimeToNow(e.target.value) }))}
-                      min={getDateTimeLocalMin()}
+                      onChange={(e) => setBookingForm(prev => ({ ...prev, startTime: e.target.value }))}
                       className="input text-base min-h-[44px]"
                       style={{ fontSize: '16px' }}
                       required

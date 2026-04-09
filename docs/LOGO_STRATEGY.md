@@ -1,6 +1,6 @@
-# Parkway Spot Logo Strategy
+# ParkwayAi Logo Strategy
 
-A single reference for how the Parkway Spot logo should be conceived, designed, and used across all touchpoints.
+A single reference for how the ParkwayAi logo should be conceived, designed, and used across all touchpoints.
 
 ---
 
@@ -12,7 +12,7 @@ A single reference for how the Parkway Spot logo should be conceived, designed, 
 |------|----------|
 | **What we are** | Driveway/parking rental — find and book spots; list and earn. |
 | **What the logo should signal** | Trust, clarity, simplicity, modern (optionally “smart” if AI is part of the product). |
-| **Name** | **Parkway Spot** — one canonical spelling everywhere (not “Parkway AI” or “ParkwayAI” in copy). |
+| **Name** | **ParkwayAi** — one canonical spelling everywhere (not “Parkway AI” or “ParkwayAI” in copy). |
 | **Icon meaning** | Either: (a) stylized “P” for Parkway, or (b) an abstract symbol (path, driveway, pin) so the wordmark carries the name and the icon is a recognisable mark. |
 
 **Recommendation:** Decide once: letter “P” vs symbol. If you keep the P, use one consistent form (e.g. open-loop P). If you switch to a symbol, keep it simple and scalable.
@@ -26,7 +26,7 @@ A single reference for how the Parkway Spot logo should be conceived, designed, 
 | **Recognition** | Same mark and wordmark everywhere (web, app, emails, social). |
 | **Readability** | Minimum size for full logo (icon + wordmark): ~24px height in UI; icon-only can go smaller (e.g. 20px) for favicon / compact nav. |
 | **Scalability** | Logo is vector (SVG) so it scales without quality loss. |
-| **Accessibility** | Logo link has `aria-label="Parkway Spot home"`; icon is `aria-hidden` so screen readers get the wordmark/label only. |
+| **Accessibility** | Logo link has `aria-label="ParkwayAi home"`; icon is `aria-hidden` so screen readers get the wordmark/label only. |
 | **Context** | On dark backgrounds use a light version (icon + wordmark in white/light). On light backgrounds use primary blue icon + dark wordmark. |
 
 **Recommendation:** Define a single “minimum size” for full lockup and for icon-only (e.g. full ≥24px, icon-only ≥20px) and document it in usage rules.
@@ -51,9 +51,9 @@ A single reference for how the Parkway Spot logo should be conceived, designed, 
 
 | Concern | Strategy |
 |---------|----------|
-| **Distinctiveness** | “Parkway Spot” is more distinctive than “Parkway” alone — better for registration and enforcement. |
+| **Distinctiveness** | “ParkwayAi” is more distinctive than “Parkway” alone — better for registration and enforcement. |
 | **Clearance** | Before finalising and scaling use, run a **trademark search** (and ideally an opinion) from a lawyer in each key jurisdiction. |
-| **Usage** | Use the same spelling and style (Parkway Spot) in legal copy, footer, and terms so the mark is used consistently in commerce. |
+| **Usage** | Use the same spelling and style (ParkwayAi) in legal copy, footer, and terms so the mark is used consistently in commerce. |
 
 **Recommendation:** Do not rely on “looks fine” or “no one else uses it” — get a proper search and legal sign-off before investing heavily in the mark.
 
@@ -68,7 +68,7 @@ A single reference for how the Parkway Spot logo should be conceived, designed, 
 | **Logo component (SVG)** | All in-app usage (nav, footer, modals). | Single React component; icon from shared SVG path. |
 | **Favicon** | Browser tab, bookmarks. | Same icon as in component; SVG (and optional ICO). |
 | **Social / OG** | Previews (e.g. Open Graph). | Square or rounded image (e.g. 512×512) — icon only or icon+wordmark; PNG. |
-| **Email** | Header in transactional emails. | Linked image (hosted PNG or SVG URL) or text “Parkway Spot” + link. |
+| **Email** | Header in transactional emails. | Linked image (hosted PNG or SVG URL) or text “ParkwayAi” + link. |
 | **Print / PDF** | Invoices, contracts. | Vector (SVG/PDF) or high-res PNG (e.g. 2× for retina). |
 
 **Recommendation:** Export a small set of static files from the same icon (and optional full lockup): favicon.svg, favicon.ico, og-logo.png (512×512). Keep the component as the source of truth for the mark.
@@ -77,9 +77,9 @@ A single reference for how the Parkway Spot logo should be conceived, designed, 
 
 ## 2. Strategy summary
 
-1. **One name:** Parkway Spot everywhere (product, legal, meta, emails).
+1. **One name:** ParkwayAi everywhere (product, legal, meta, emails).
 2. **One component:** `<Logo variant size dark href asLink />` for all in-app use; same SVG mark for favicon and exports.
-3. **Two variants:** **icon-only** (favicon, compact nav, social avatar) and **full** (icon + “Parkway Spot” wordmark for header/footer).
+3. **Two variants:** **icon-only** (favicon, compact nav, social avatar) and **full** (icon + “ParkwayAi” wordmark for header/footer).
 4. **Two contexts:** **Light** (primary blue icon, dark wordmark) and **dark** (white/light icon and wordmark).
 5. **Minimum sizes:** Define once (e.g. full lockup ≥24px height, icon-only ≥20px) and stick to them in UI and docs.
 6. **Legal:** Trademark search and advice before locking the final mark and scaling usage.
@@ -100,7 +100,7 @@ A single reference for how the Parkway Spot logo should be conceived, designed, 
 - Stretch or change the aspect ratio of the icon or wordmark.
 - Use a different blue or typeface for the wordmark than the one defined in the component.
 - Add effects (e.g. drop shadow, 3D) unless a formal “alternate” version is defined.
-- Use “Parkway” alone in product UI when the official name is Parkway Spot (exception: legal/formal copy if advised).
+- Use “Parkway” alone in product UI when the official name is ParkwayAi (exception: legal/formal copy if advised).
 
 ---
 

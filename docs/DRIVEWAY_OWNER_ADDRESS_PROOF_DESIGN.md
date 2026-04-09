@@ -84,7 +84,7 @@ Documents: store in Supabase Storage under a path like `verifications/{drivewayI
 - **Rejection:**  
   “We couldn’t verify this listing. Reason: [rejection_reason]. You can upload a different document and try again.”
 - **Badge (public):**  
-  “Verified” with a small checkmark or shield; tooltip: “This listing’s address was verified by Parkway Spot.”
+  “Verified” with a small checkmark or shield; tooltip: “This listing’s address was verified by ParkwayAi.”
 
 ---
 

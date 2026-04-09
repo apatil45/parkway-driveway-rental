@@ -389,7 +389,7 @@ function SearchPageContent() {
 
   const filterCount = [filters.priceMin, filters.priceMax, filters.carSize, filters.amenities?.length ? 1 : 0, filters.radius].filter(Boolean).length;
   return (
-    <AppLayout showFooter={false} showNavbar={listViewExpanded || !isMobileView} showBreadcrumbs={listViewExpanded || !isMobileView}>
+    <AppLayout showFooter={false} showBreadcrumbs={listViewExpanded || !isMobileView}>
       {listViewExpanded ? (
         /* List view: navbar + breadcrumbs visible, full list with Back to map */
         <div className="flex flex-col flex-1 min-h-0">

@@ -34,7 +34,7 @@ So on every page, **the thing that moves the needle** is: **search** (driver), *
 - For **logged-in** users, platform-wide stats (users, spaces, completed, rating) are **nice to see**, not required to act.
 - **Change**: Section stays but is **secondary**: smaller section padding, 2×2 grid with compact stat cards (smaller type, less padding) so it doesn’t dominate or force long scroll.
 
-### 4. “Why Choose Parkway Spot?” (trust)
+### 4. “Why Choose ParkwayAi?” (trust)
 
 - **Logged-in**: They already chose. Trust copy is reinforcement, not conversion.
 - **Guest**: Supports sign-up but isn’t the CTA.

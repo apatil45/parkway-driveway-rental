@@ -101,12 +101,15 @@ export default function BookingConfirmationPage() {
   const calendarUrl = (() => {
     const format = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const title = encodeURIComponent(`Parking: ${booking.driveway.title}`);
-    const details = encodeURIComponent(`${booking.driveway.address}\n\nBooked via Parkway Spot`);
+    const details = encodeURIComponent(`${booking.driveway.address}\n\nBooked via ParkwayAi`);
     const location = encodeURIComponent(booking.driveway.address);
     const start = format(startDate);
     const end = format(endDate);
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
   })();
+
+  // Google Maps directions
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.driveway.address)}`;
 
   return (
     <AppLayout>
@@ -152,11 +155,16 @@ export default function BookingConfirmationPage() {
 
         {/* Actions */}
         <div className="space-y-3">
-          <Link href={`/bookings/${booking.id}/navigate`} className="block w-full">
+          <a
+            href={directionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full"
+          >
             <Button className="w-full" size="lg">
               Get directions
             </Button>
-          </Link>
+          </a>
           <a
             href={calendarUrl}
             target="_blank"

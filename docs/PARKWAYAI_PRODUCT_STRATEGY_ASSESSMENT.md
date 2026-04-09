@@ -1,4 +1,4 @@
-# Parkway Spot Product Strategy Assessment
+# ParkwayAi Product Strategy Assessment
 
 **Prepared for:** Pre-Series A parking marketplace  
 **Goals:** +40% booking conversion, +25% repeat rate  
@@ -9,7 +9,7 @@
 ## Executive Product Assessment
 
 ### Current State
-Parkway Spot has a **solid MVP foundation** with core marketplace mechanics in place: search (map + list), listing detail, booking flow, Stripe payment, and host verification. The Airbnb-style mobile search is a strong differentiator.
+ParkwayAi has a **solid MVP foundation** with core marketplace mechanics in place: search (map + list), listing detail, booking flow, Stripe payment, and host verification. The Airbnb-style mobile search is a strong differentiator.
 
 ### Critical Verdict
 **The product is conversion-optimized at the surface but structurally weak at the core.** The search experience is good; the trust, liquidity, and urgency systems are underdeveloped. You are likely leaking 30–50% of potential conversions at the decision layer (search → detail → booking) and losing repeaters at the post-booking layer.

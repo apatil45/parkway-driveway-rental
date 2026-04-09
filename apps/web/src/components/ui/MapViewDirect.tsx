@@ -107,7 +107,7 @@ function addMapboxMarkers(
     const isHighlighted = highlightedId === marker.id;
     const el = document.createElement('div');
     el.className = `custom-marker price-pin${isHighlighted ? ' price-pin-highlighted' : ''} mapbox-price-pin`;
-    el.innerHTML = `<div class="price-pin-inner"><div class="price-pin-wrapper"><span class="price-pin-value">$${marker.price % 1 === 0 ? marker.price.toFixed(0) : marker.price.toFixed(1)}</span></div><div class="price-pin-point" aria-hidden="true"></div></div>`;
+    el.innerHTML = `<div class="price-pin-wrapper"><span class="price-pin-value">$${marker.price % 1 === 0 ? marker.price.toFixed(0) : marker.price.toFixed(1)}</span></div>`;
     const mbMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
       .setLngLat(marker.position)
       .setPopup(
@@ -119,7 +119,7 @@ function addMapboxMarkers(
             <span class="text-sm font-bold text-primary-600">$${marker.price.toFixed(2)}/hr</span>
             ${marker.rating ? `<span class="text-xs text-gray-600">★ ${marker.rating.toFixed(1)}</span>` : ''}
           </div>
-          <a href="/driveway/${marker.id}" class="block text-center text-sm font-medium text-primary-600 hover:text-primary-700 mt-2 py-1.5">Book</a>
+          <a href="/driveway/${marker.id}" class="block text-center text-sm font-medium text-primary-600 hover:text-primary-700 mt-2 py-1.5">Reserve</a>
         `)
       )
       .addTo(map);
@@ -146,10 +146,10 @@ function addMarkersToMap(
     const isHighlighted = highlightedId === marker.id;
     const icon = L.divIcon({
       className: `custom-marker price-pin${isHighlighted ? ' price-pin-highlighted' : ''}`,
-      html: `<div class="price-pin-inner"><div class="price-pin-wrapper"><span class="price-pin-value">$${marker.price % 1 === 0 ? marker.price.toFixed(0) : marker.price.toFixed(1)}</span></div><div class="price-pin-point" aria-hidden="true"></div></div>`,
-      iconSize: [44, 52],
-      iconAnchor: [22, 52],
-      popupAnchor: [0, -52],
+      html: `<div class="price-pin-wrapper"><span class="price-pin-value">$${marker.price % 1 === 0 ? marker.price.toFixed(0) : marker.price.toFixed(1)}</span></div>`,
+      iconSize: [44, 44],
+      iconAnchor: [22, 44],
+      popupAnchor: [0, -44],
     });
     const leafletMarker = L.marker(marker.position, { icon });
 
@@ -163,7 +163,7 @@ function addMarkersToMap(
         <span class="text-sm font-bold text-primary-600">$${marker.price.toFixed(2)}/hr</span>
         ${marker.rating ? `<span class="text-xs text-gray-600">★ ${marker.rating.toFixed(1)}</span>` : ''}
       </div>
-      <a href="/driveway/${marker.id}" class="block text-center text-sm font-medium text-primary-600 hover:text-primary-700 mt-2 py-1.5">Book</a>
+      <a href="/driveway/${marker.id}" class="block text-center text-sm font-medium text-primary-600 hover:text-primary-700 mt-2 py-1.5">Reserve</a>
     `;
     leafletMarker.bindPopup(popupContent, { closeButton: true, autoClose: false });
     leafletMarker.on('click', () => onMarkerClick?.(marker.id));
@@ -266,6 +266,7 @@ export default function MapViewDirect({
             try { map.remove(); } catch (_) {}
             return;
           }
+          map.addControl(new mapboxgl.NavigationControl(), 'top-right');
           map.on('load', () => {
             if (!isMounted) return;
             applyMapboxStyleOverrides(map);
@@ -287,7 +288,7 @@ export default function MapViewDirect({
           const map = L.map(container, {
             center: initialCenter,
             zoom: 13,
-            zoomControl: false,
+            zoomControl: true,
           });
           if (!isMounted) {
             try { if (map.remove) map.remove(); } catch (_) {}
